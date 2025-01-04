@@ -1,0 +1,6 @@
+-- Neovim core configuration
+-- This file contains basic editor settings such as:
+-- - Key mappings
+-- - Editor behavior
+-- - UI preferences
+-- - Plugin configurations
