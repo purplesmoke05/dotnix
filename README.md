@@ -23,11 +23,8 @@ cd ~/.nix
 
 4. Apply system and home-manager configurations:
 ```bash
-# Apply system configuration
+# Apply system and home-manager configuration
 sudo nixos-rebuild switch --flake .#laptop
-
-# Apply home-manager configuration
-nix run nixpkgs#home-manager -- switch --flake .#laptop
 ```
 
 > Available profiles: `laptop`, `hq`
