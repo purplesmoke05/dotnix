@@ -215,7 +215,6 @@
     grim
     slurp
     wl-clipboard
-    fcitx5-with-addons
     fcitx5-mozc
     fcitx5-gtk
     libsForQt5.fcitx5-qt
@@ -226,7 +225,7 @@
     steam
   ];
 
-  # Hyprland Configuration
+  # Hyprland Configuration  
   # Wayland-native tiling window manager
   # - Pure Wayland: No Xwayland support
   programs.hyprland = {
@@ -268,38 +267,12 @@
       XDG_CURRENT_DESKTOP = "Hyprland";
       XDG_SESSION_TYPE = "wayland";
       XDG_SESSION_DESKTOP = "Hyprland";
-      FCITX_ADDON_DIRS = "${pkgs.fcitx5}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
+      FCITX_ADDON_DIRS = "${pkgs.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
       DISABLE_KWALLET = "1";
       FCITX_LOG_LEVEL = "debug";
       QT_IM_MODULE = "fcitx";
       GLFW_IM_MODULE = "fcitx";
       SDL_IM_MODULE = "fcitx";
-    };
-  };
-
-  # DBus Integration
-  # System service integration for input method
-  # - Fcitx5 DBus service
-  # - System-wide input method support
-  services.dbus = {
-    enable = true;
-    packages = with pkgs; [ fcitx5 fcitx5-mozc dbus ];
-  };
-
-  # Fcitx5 Service Management
-  # Input method service configuration
-  # - Automatic startup with session
-  # - Proper service dependencies
-  systemd.user.services.fcitx5-daemon = {
-    description = "Fcitx5 input method editor";
-    wantedBy = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${pkgs.fcitx5}/bin/fcitx5";
-      Restart = "on-failure";
-      RestartSec = 1;
     };
   };
 

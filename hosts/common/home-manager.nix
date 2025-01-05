@@ -11,7 +11,6 @@
     nodePackages.exa-mcp-server
     papirus-icon-theme
     mozc
-    fcitx5
     fcitx5-mozc
     fcitx5-gtk
     libsForQt5.fcitx5-qt
@@ -26,8 +25,14 @@
   # - Game engine (SDL/GLFW) support
   home.sessionVariables = {
     XMODIFIERS = "@im=fcitx";
+    NIXOS_OZONE_WL = "1";
+    XDG_CURRENT_DESKTOP = "Hyprland";
+    XDG_SESSION_TYPE = "wayland";
+    XDG_SESSION_DESKTOP = "Hyprland";
+    FCITX_ADDON_DIRS = "${pkgs.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
+    DISABLE_KWALLET = "1";
+    FCITX_LOG_LEVEL = "debug";
     QT_IM_MODULE = "fcitx";
-    INPUT_METHOD = "fcitx";
     GLFW_IM_MODULE = "fcitx";
     SDL_IM_MODULE = "fcitx";
   };
@@ -52,12 +57,17 @@
       force = true;
       text = ''
         [Groups/0]
+        # Group Name
         Name=Default
+        # Layout
         Default Layout=jp
+        # Default Input Method
         DefaultIM=mozc
 
         [Groups/0/Items/0]
+        # Name
         Name=mozc
+        # Layout
         Layout=jp
 
         [GroupOrder]

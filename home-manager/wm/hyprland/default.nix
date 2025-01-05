@@ -48,7 +48,7 @@
         "XMODIFIERS, @im=fcitx" # Input method configuration
         "QT_QPA_PLATFORM,wayland" # Force Qt to use Wayland
         "QT_QPA_PLATFORMTHEME,qt5ct" # Qt theme configuration
-        "QT_STYLE_OVERRIDE,kvantum" # Qt style override
+        "QT_STYLE_OVERRIDE,Adwaita-Dark" # Qt style override
         "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt window decorations
         "NIXOS_OZONE_WL,1" # Force Wayland for Chromium-based applications
       ];

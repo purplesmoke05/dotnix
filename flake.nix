@@ -77,6 +77,7 @@
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
+          backupFileExtension = "backup";
           extraSpecialArgs = {
             inherit inputs nixpkgs hostname username;
             userConfig = {
@@ -108,6 +109,13 @@
         let
           users = mkUsers hostname;
           username = systemUsers.${hostname}.primary;
+          currentUser = let 
+            envUser = builtins.getEnv "USER";
+            envSudo = builtins.getEnv "SUDO_USER";
+          in
+            if envSudo != "" then envSudo
+            else if envUser != "" then envUser
+            else username;
         in
         nixpkgs.lib.nixosSystem {
           inherit system;
@@ -117,6 +125,12 @@
             (mkSystemOverlays)
             (mkHomeManagerConfig { inherit hostname username; })
             ({ config, pkgs, ... }: {
+              assertions = [{
+                assertion = builtins.trace "Debug - Checking assertion: currentUser=${currentUser}, username=${username}"
+                  (currentUser != "" && currentUser == username);
+                message = "Current user (${if currentUser == "" then "unknown" else currentUser}) does not match configured username (${username})";
+              }];
+
               users.users = builtins.listToAttrs (
                 builtins.map (userKey: {
                   name = users.${userKey}.name;
