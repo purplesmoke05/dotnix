@@ -59,9 +59,9 @@
         in
         {
           "0" = layout { }; # Default layout
-          "1" = none; # Empty layout
+          "1" = layout { showBattery = false; }; # Layout without battery
           "2" = layout { showBattery = false; }; # Layout without battery
-          "3" = none; # Empty layout
+          "3" = layout { showBattery = false; }; # Layout without battery
         };
     };
 

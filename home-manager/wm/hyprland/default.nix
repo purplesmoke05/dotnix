@@ -3,6 +3,7 @@
     ./rofi.nix
     ./hyprpanel.nix
     ./gtk.nix
+    ./wpaperd.nix
   ];
 
   # Essential packages for Hyprland environment
@@ -61,7 +62,7 @@
         kb_model = ""; # No specific keyboard model
         kb_variant = ""; # No layout variant
         kb_options = ""; # No additional options
-        follow_mouse = 1; # Focus follows mouse
+        follow_mouse = 0; # No focus follows mouse
         touchpad = {
           natural_scroll = true; # Natural scrolling direction
         };
@@ -103,7 +104,7 @@
         "$mainMod, j, movefocus, l" # Focus left
         "$mainMod, k, movefocus, d" # Focus down
         "$mainMod, l, movefocus, u" # Focus up
-        "$mainMod, ;, movefocus, r" # Focus right
+        "$mainMod, semicolon, movefocus, r" # Focus right
         "$mainMod, Tab, cyclenext" # Next window
         "$mainMod SHIFT, Tab, cyclenext, prev" # Previous window
 
@@ -111,7 +112,7 @@
         "$mainMod SHIFT, j, movewindow, l" # Move left
         "$mainMod SHIFT, k, movewindow, d" # Move down
         "$mainMod SHIFT, l, movewindow, u" # Move up
-        "$mainMod SHIFT, ;, movewindow, r" # Move right
+        "$mainMod SHIFT, semicolon, movewindow, r" # Move right
 
         # Monitor control
         "$mainMod, Tab, exec, hyprctl monitors -j|jq 'map(select(.focused|not).activeWorkspace.id)[0]'|xargs hyprctl dispatch workspace"
