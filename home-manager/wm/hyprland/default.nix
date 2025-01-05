@@ -41,7 +41,9 @@
       # Basic Hyprland configuration
       "$mainMod" = "ALT"; # Main modifier key
       "$term" = "alacritty"; # Default terminal
-      "plugin:split-monitor-workspaces:count" = 5; # Number of workspaces per monitor
+
+      "plugin:hyprsplit:persistent_workspaces" = true;
+      "plugin:hyprsplit:num_workspaces" = 10;
 
       # Environment variables for proper integration
       env = [
@@ -51,11 +53,6 @@
         "QT_STYLE_OVERRIDE,Adwaita-Dark" # Qt style override
         "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt window decorations
         "NIXOS_OZONE_WL,1" # Force Wayland for Chromium-based applications
-      ];
-
-      # Monitor configuration
-      monitor = [
-        "eDP-1,1920x1080@60,0x0,1" # Built-in laptop display (1920x1080, 60Hz)
       ];
       
       # Input device configuration
@@ -83,19 +80,6 @@
       windowrule = [
         "float,^(pavucontrol)$" # Audio control in floating mode
         "float,^(nm-connection-editor)$" # Network manager in floating mode
-      ];
-
-      # Workspace monitor assignments
-      workspace = [
-        "1,monitor:eDP-1,default:true" # Primary workspace
-        "2,monitor:eDP-1"
-        "3,monitor:eDP-1"
-        "4,monitor:eDP-1"
-        "5,monitor:eDP-1"
-        "6,monitor:eDP-1"
-        "7,monitor:eDP-1"
-        "8,monitor:eDP-1"
-        "9,monitor:eDP-1"
       ];
 
       # Keybindings
@@ -162,20 +146,18 @@
         # Workspace navigation (commented out)
         # "SUPER,tab,workspace,e+1"
         # "SUPER SHIFT,tab,workspace,e-1"
+      ] ++ [
+          "$mainMod, 0, split:workspace, 10"
+          "$mainMod SHIFT, 0, split:movetoworkspace, 10"
       ] ++ (builtins.concatLists (
             builtins.genList (
               x:
               let
-                ws =
-                  let
-                    c = (x + 1) / 10;
-                  in
-                    builtins.toString (x + 1 - (c * 10));
+                ws = builtins.toString (x + 1);
               in
                 [
-                  "$mainMod, ${ws}, split:workspace, ${toString (x + 1)}"
-                  "$mainMod SHIFT, ${ws}, split:movetoworkspace, ${toString (x + 1)}"
-                  # "$mainMod CTRL, ${ws}, split:movetoworkspacesilent, ${toString (x + 1)}"
+                  "$mainMod, ${ws}, split:workspace, ${ws}"
+                  "$mainMod SHIFT, ${ws}, split:movetoworkspace, ${ws}"
                 ]
             ) 9
           ));
