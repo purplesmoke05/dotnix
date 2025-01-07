@@ -16,6 +16,7 @@
     libsForQt5.fcitx5-qt
     qt6Packages.fcitx5-qt
     fcitx5-configtool
+    appimage-run
  ];
 
   # Environment Variables

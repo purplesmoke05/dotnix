@@ -15,6 +15,8 @@
   # - Static hostname configuration
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
+  networking.wireless.userControlled.enable = true;
+  hardware.wirelessRegulatoryDatabase = true;
 
   # Localization Settings
   # Complete Japanese language support configuration
@@ -223,6 +225,12 @@
     qt6.qtbase
     vscode
     steam
+    unzip
+    zip
+    p7zip
+    unrar
+    rar
+    file-roller
   ];
 
   # Hyprland Configuration  
@@ -309,6 +317,7 @@
   # Wireless device support
   # - Auto-power on boot
   # - All profiles enabled
+  services.blueman.enable = true;
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
