@@ -45,4 +45,8 @@
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # networking.firewall.enable = false;
+
+  # NVIDIA Driver Configuration
+  # Enable NVIDIA driver
+  services.xserver.videoDrivers = [ "nvidia" ];
 }

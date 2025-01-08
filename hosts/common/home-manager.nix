@@ -43,10 +43,13 @@
   # - Adwaita theme for consistency
   # - GTK integration enabled
   home.pointerCursor = {
-    package = pkgs.adwaita-icon-theme;
     name = "Adwaita";
+    package = pkgs.adwaita-icon-theme;
     size = 24;
-    gtk.enable = true;
+    x11 = {
+      enable = true;
+      defaultCursor = "Adwaita";
+    };
   };
 
   # Input Method Configuration Files
@@ -177,6 +180,8 @@
     Unit = {
       Description = "Exa MCP Server";
       After = "network.target";
+      StartLimitIntervalSec = 3600;
+      StartLimitBurst = 5;
     };
 
     Service = {
@@ -185,6 +190,7 @@
       ExecStart = "${pkgs.nodePackages.exa-mcp-server}/bin/exa-mcp-server";
       Restart = "always";
       RestartSec = "10";
+      StartLimitAction = "none";
     };
 
     Install = {
