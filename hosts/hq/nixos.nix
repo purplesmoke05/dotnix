@@ -49,4 +49,10 @@
   # NVIDIA Driver Configuration
   # Enable NVIDIA driver
   services.xserver.videoDrivers = [ "nvidia" ];
+
+  fileSystems."/mnt/data" = {
+    device = "/dev/sda";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  };
 }

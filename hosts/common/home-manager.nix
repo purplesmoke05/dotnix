@@ -50,6 +50,7 @@
       enable = true;
       defaultCursor = "Adwaita";
     };
+    gtk.enable = true;
   };
 
   # Input Method Configuration Files
