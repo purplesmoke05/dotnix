@@ -62,10 +62,7 @@
         kb_model = ""; # No specific keyboard model
         kb_variant = ""; # No layout variant
         kb_options = ""; # No additional options
-        follow_mouse = 0; # No focus follows mouse
-        touchpad = {
-          natural_scroll = true; # Natural scrolling direction
-        };
+        follow_mouse = 2; # Enable hover scroll without focus
         repeat_rate = 50; # Key repeat rate
         repeat_delay = 200; # Delay before key repeat starts
       };

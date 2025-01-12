@@ -187,10 +187,8 @@
         function __auto_nix_develop --on-variable PWD
           if test -e ".python-version"
             set -l py_version (cat .python-version | string replace -a '.' "")
-            if test -e "flake.nix"
-              echo "Activating Python environment from .python-version..."
-              nix develop .#py$py_version
-            end
+            echo "Activating Python environment from .python-version..."
+            nix develop "git+file://$SYSTEM_FLAKE_PATH?ref=main#py$py_version"
           end
         end
       '';
@@ -273,6 +271,10 @@
       dates = "weekly";
       options = "--delete-older-than 7d";
     };
+    nixPath = [
+      "nixos=/etc/nixos"
+      "nixos-config=/etc/nixos/configuration.nix"
+    ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -295,6 +297,7 @@
       QT_IM_MODULE = "fcitx";
       GLFW_IM_MODULE = "fcitx";
       SDL_IM_MODULE = "fcitx";
+      SYSTEM_FLAKE_PATH = "$HOME/.nix";
     };
   };
 
