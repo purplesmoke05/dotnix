@@ -50,7 +50,7 @@
       powerManagement.enable = false;
       open = false;
       nvidiaSettings = true;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
+      package = config.boot.kernelPackages.nvidiaPackages.beta;
     };
     opengl = {
       enable = true;
@@ -59,6 +59,11 @@
         vaapiVdpau
         libvdpau-va-gl
         nvidia-vaapi-driver
+      ];
+      extraPackages32 = with pkgs.pkgsi686Linux; [
+        libva
+        vaapiVdpau
+        libvdpau-va-gl
       ];
     };
   };

@@ -181,6 +181,19 @@
   programs = {
     fish = {
       enable = true;
+      interactiveShellInit = ''
+        any-nix-shell fish --info-right | source
+
+        function __auto_nix_develop --on-variable PWD
+          if test -e ".python-version"
+            set -l py_version (cat .python-version | string replace -a '.' "")
+            if test -e "flake.nix"
+              echo "Activating Python environment from .python-version..."
+              nix develop .#py$py_version
+            end
+          end
+        end
+      '';
     };
     noisetorch.enable = true;
   };
@@ -217,6 +230,7 @@
     grim
     slurp
     wl-clipboard
+    any-nix-shell
     fcitx5-mozc
     fcitx5-gtk
     libsForQt5.fcitx5-qt

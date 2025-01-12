@@ -7,11 +7,13 @@
   # - rust-overlay: Rust toolchain and package overlay
   # - home-manager: User environment management
   # - hyprland utilities: hyprpanel, hyprspace, hyprsplit for window management
+  # - flake-utils: Utility functions for flake-based systems
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap.url = "github:xremap/nix-flake";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    flake-utils.url = "github:numtide/flake-utils";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -29,8 +31,41 @@
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, ... }@inputs:
     let
+      # Python builder utilities
+      mkPythonBuilders = pkgs: {
+        buildPython = { version, sha256 }: 
+          let
+            python = pkgs.python3Packages.python.overrideAttrs (oldAttrs: rec {
+              inherit version;
+              src = pkgs.fetchurl {
+                url = "https://www.python.org/ftp/python/${version}/Python-${version}.tar.xz";
+                inherit sha256;
+              };
+              passthru = oldAttrs.passthru // {
+                inherit version;
+                pythonVersion = version;
+                sourceVersion = version;
+                pythonAtLeast = v: builtins.compareVersions version v >= 0;
+                pythonOlder = v: builtins.compareVersions version v < 0;
+              };
+            });
+          in python;
+
+        # Available Python versions
+        pythonVersions = let self = mkPythonBuilders pkgs; in {
+          py312 = pkgs.python312;
+          # Custom build for specific patch version
+          py3122 = self.buildPython {
+            version = "3.12.2";
+            sha256 = "0w6qyfhc912xxav9x9pifwca40b4l49vy52wai9j0gc1mhni2a5y";
+          };
+          py311 = pkgs.python311;
+          py310 = pkgs.python310;
+        };
+      };
+
       # Package Overlays
       # Custom package overlays including node packages and external overlays
       overlays = {
@@ -38,6 +73,9 @@
           nodePackages = prev.nodePackages // {
             exa-mcp-server = prev.callPackage ./pkgs/nodePackages/exa-mcp-server {};
           };
+          
+          # Add Python-related functionality
+          inherit (mkPythonBuilders prev) buildPython pythonVersions;
         };
       };
 
@@ -147,7 +185,36 @@
           };
         };
     in
-    {
+    (flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+        pythonTools = mkPythonBuilders pkgs;
+      in
+      {
+        devShells = {
+          default = pkgs.mkShell {
+            packages = [ pythonTools.pythonVersions.py3122 ];
+            shellHook = ''
+              echo "Welcome to Python ${pythonTools.pythonVersions.py3122.version} environment"
+            '';
+          };
+
+          py3122 = pkgs.mkShell {
+            packages = [ pythonTools.pythonVersions.py3122 ];
+          };
+
+          py312 = pkgs.mkShell {
+            packages = [ pythonTools.pythonVersions.py312 ];
+          };
+
+          py311 = pkgs.mkShell {
+            packages = [ pythonTools.pythonVersions.py311 ];
+          };
+        };
+
+        packages = pythonTools.pythonVersions;
+      }
+    )) // {
       # Export overlays for external use
       inherit overlays;
 
