@@ -30,6 +30,27 @@
     bluez # Bluetooth support
     hyprlandPlugins.hyprspace # Virtual desktop plugin
     hyprlandPlugins.hyprsplit # Window splitting plugin
+    (pkgs.writeShellApplication {
+      name = "quick-term";
+      runtimeInputs = with pkgs; [ jq foot zellij ];
+      bashOptions = [ "pipefail" ];
+      text = ''
+        # shellcheck disable=SC2009
+        _pid="$(hyprctl clients -j | jq -r '.[] | select(.class == "foot-quick") | .pid')"
+
+        if [ -n "$_pid" ]; then
+          curr_focused="$(hyprctl activewindow -j | jq -r '.class')"
+          if [ "$curr_focused" = "foot-quick" ]; then
+            kill -9 "$_pid"
+          else
+            hyprctl dispatch focuswindow pid:"$_pid"
+          fi
+        else
+          foot -a "foot-quick" sh -c "zellij attach -c quick-term" >/dev/null 2>&1 &
+          exit 0
+        fi
+      '';
+    })
   ];
 
   wayland.windowManager.hyprland = {
@@ -41,7 +62,7 @@
     settings = {
       # Basic Hyprland configuration
       "$mainMod" = "ALT"; # Main modifier key
-      "$term" = "alacritty"; # Default terminal
+      "$term" = "foot -e zellij"; # Default terminal
 
       "plugin:hyprsplit:persistent_workspaces" = true;
       "plugin:hyprsplit:num_workspaces" = 10;
@@ -78,6 +99,28 @@
       windowrule = [
         "float,^(pavucontrol)$" # Audio control in floating mode
         "float,^(nm-connection-editor)$" # Network manager in floating mode
+      ];
+
+      windowrulev2 = [
+        "float,class:^()$,title:^(Picture in picture)$"
+        "float,class:^(brave)$,title:^(Save File)$"
+        "float,class:^(brave)$,title:^(Open File)$"
+        "float,class:^(blueman-manager)$"
+        "float,class:^(xdg-desktop-portal-gtk)$"
+        "float,class:^(xdg-desktop-portal-kde)$"
+        "float,class:^(xdg-desktop-portal-hyprland)$"
+        "float,class:^(zenity)$"
+        "float,class:^()$,title:^(Steam - Self Updater)$"
+        "float,class:^(pavucontrol)$"
+
+        # rulev2 for foot
+        "opacity 0.9 0.9, class:^(foot-quick)$"
+        "float, class:^(foot-quick)$"
+        "size 98% 40%, class:^(foot-quick)$"
+        "move 1% 45px, class:^(foot-quick)$"
+        "noshadow, class:^(foot-quick)$"
+        "pin,class:^(foot-quick)$"
+        "animation slideDown,class:^(foot-quick)$"
       ];
 
       # Keybindings
@@ -141,9 +184,25 @@
         # "$mainMod SHIFT,8,movetoworkspace,8"
         # "$mainMod SHIFT,9,movetoworkspace,9"
 
+        # Volume controls
+        ", XF86AudioLowerVolume, exec, pamixer -ud 3 && pamixer --get-volume > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
+        ", XF86AudioRaiseVolume, exec, pamixer -ui 3 && pamixer --get-volume > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
+        ", XF86AudioMute, exec, amixer sset Master toggle | sed -En '/\[on\]/ s/.*\[([0-9]+)%\].*/\1/ p; /\[off\]/ s/.*/0/p' | head -1 > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
+
+        # Media playback controls
+        ", XF86AudioPlay, exec, playerctl play-pause"
+        ", XF86AudioNext, exec, playerctl next"
+        ", XF86AudioPrev, exec, playerctl previous"
+
+        # Brightness controls
+        ", XF86MonBrightnessUp, exec, brightnessctl s +5%"
+        ", XF86MonBrightnessDown, exec, brightnessctl s 5%-"
+
         # Workspace navigation (commented out)
         # "SUPER,tab,workspace,e+1"
         # "SUPER SHIFT,tab,workspace,e-1"
+        # "CTRL, 3, exec, guake-toggle"
+        "CTRL, 3, exec, quick-term"
       ] ++ [
           "$mainMod, 0, split:workspace, 10"
           "$mainMod SHIFT, 0, split:movetoworkspace, 10"
@@ -160,25 +219,16 @@
             ) 9
           ));
 
-      # Hardware control bindings
-      bindle = [
-        # Volume controls
-        ", XF86AudioRaiseVolume, exec, pamixer -i 10"
-        ", XF86AudioLowerVolume, exec, pamixer -d 10"
-
-        # Brightness controls
-        ", XF86MonBrightnessUp, exec, brightnessctl set +10%"
-        ", XF86MonBrightnessDown, exec, brightnessctl set 10%-"
-      ];
-
       # Animation configuration
       animations = {
         enabled = true;
-        bezier = "myBezier, 0.05, 0.9, 0.1, 1.05"; # Custom animation curve
+        bezier = [
+          "myBezier, 0.05, 0.9, 0.1, 1.05"
+        ];
         animation = [
-          "windows, 1, 7, myBezier" # Window animations
-          "windowsOut, 1, 7, default, popin 80%" # Window closing animation
-          "workspaces, 1, 6, default" # Workspace switching animation
+          "windows, 1, 7, myBezier"
+          "windowsOut, 1, 7, default, popin 80%"
+          "workspaces, 1, 6, default"
         ];
       };
     };

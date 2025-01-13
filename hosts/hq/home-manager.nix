@@ -13,7 +13,7 @@
   # - Hyprland: Wayland compositor and window management
   imports = [
     ../../home-manager/development/default.nix
-    ../../home-manager/cli/default.nix
+    ../../home-manager/cli/default.nix 
     ../../home-manager/gui/default.nix
     ../../home-manager/wm/hyprland/default.nix
   ];

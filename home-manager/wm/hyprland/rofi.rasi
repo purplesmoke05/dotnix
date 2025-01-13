@@ -13,7 +13,7 @@
 configuration{
     font: "Sugar Snow 10";
     show-icons: true;
-    terminal: "alacritty";
+    terminal: "foot -e zellij";
     drun-display-format: "{icon} {name}";
     location: 0;
     disable-history: false;

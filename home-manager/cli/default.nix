@@ -7,5 +7,7 @@
     ./git/default.nix
     ./terminal/alacritty.nix
     ./terminal/starship.nix
+    ./terminal/zellij.nix
+    ./terminal/foot.nix
   ];
 }

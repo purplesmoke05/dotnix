@@ -4,7 +4,7 @@
     rofi = {
       enable = true;
       package = pkgs.rofi-wayland; # Use Wayland-compatible version
-      terminal = "${pkgs.alacritty}/bin/alacritty"; # Default terminal for terminal commands
+      terminal = "${pkgs.foot}/bin/foot -e zellij"; # Default terminal for terminal commands
       theme = builtins.toString ./rofi.rasi; # Custom theme file
 
       # Additional configuration options
