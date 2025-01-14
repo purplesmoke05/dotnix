@@ -64,6 +64,14 @@
       "$mainMod" = "ALT"; # Main modifier key
       "$term" = "foot -e zellij"; # Default terminal
 
+      # Hyprspace configuration
+      "plugin:hyprspace" = {
+        speed = "0.5";                   # アニメーション速度
+        transition = "wipe";             # トランジションエフェクト (wipe, slide, none)
+        workspaces = "10";              # 仮想デスクトップの数
+        gesture_sensitivity = "1.0";     # ジェスチャー感度
+      };
+
       "plugin:hyprsplit:persistent_workspaces" = true;
       "plugin:hyprsplit:num_workspaces" = 10;
 
@@ -121,6 +129,8 @@
         "noshadow, class:^(foot-quick)$"
         "pin,class:^(foot-quick)$"
         "animation slideDown,class:^(foot-quick)$"
+
+        "workspace 10 silent:split:0:0,class:^(discord)$"
       ];
 
       # Keybindings
@@ -201,8 +211,13 @@
         # Workspace navigation (commented out)
         # "SUPER,tab,workspace,e+1"
         # "SUPER SHIFT,tab,workspace,e-1"
-        # "CTRL, 3, exec, guake-toggle"
         "CTRL, 3, exec, quick-term"
+
+        # Hyprspace controls
+        "$mainMod, bracketleft, exec, hyprspace workspace -1"   # 前のワークスペースへ
+        "$mainMod, bracketright, exec, hyprspace workspace +1"  # 次のワークスペースへ
+        "$mainMod SHIFT, bracketleft, exec, hyprspace move -1"  # ウィンドウを前のワークスペースへ移動
+        "$mainMod SHIFT, bracketright, exec, hyprspace move +1" # ウィンドウを次のワークスペースへ移動
       ] ++ [
           "$mainMod, 0, split:workspace, 10"
           "$mainMod SHIFT, 0, split:movetoworkspace, 10"
@@ -231,12 +246,18 @@
           "workspaces, 1, 6, default"
         ];
       };
+
+      "exec-once" = [
+        "hyprctl dispatch exec [workspace 1 silent:split:0:0] ${pkgs.code-cursor}/bin/cursor"
+        "hyprctl dispatch exec [workspace 11 silent:split:0:0] ${pkgs.brave}/bin/brave"
+        "hyprctl dispatch exec [workspace 12 silent:split:0:0] ${pkgs.foot}/bin/foot"
+        "${pkgs.discord-ptb}/bin/discordptb"
+      ];
     };
 
     # Hyprland plugins
-    plugins = [
-      # inputs.hyprspace.packages.${pkgs.system}.Hyprspace
-      # inputs.hyprsplit.packages.${pkgs.system}.hyprsplit
+    plugins = [   
+      # inputs.Hyprspace.packages.${pkgs.system}.Hyprspace
       pkgs.hyprlandPlugins.hyprspace
       pkgs.hyprlandPlugins.hyprsplit
     ];

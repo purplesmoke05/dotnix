@@ -21,8 +21,8 @@
     hyprpanel = {
       url = "github:Jas-SinghFSU/HyprPanel";
     };
-    hyprspace = {
-      url = "github:myamusashi/Hyprspace/toml";
+    Hyprspace = {
+      url = "github:KZDKM/Hyprspace";
     };
     hyprsplit = {
       url = "github:shezdy/hyprsplit";
