@@ -192,50 +192,19 @@
 
         pythonPackages = pythonVersion: with pythonVersion.pkgs; [
           playwright
-          pytest
-          pytest-playwright
         ];
 
-        playwrightDeps = with pkgs; [
-          openssl
-          systemd
-          glibc
-          glib
-          cups.lib
-          nss
-          alsa-lib
-          at-spi2-core
-          dbus
-          libdrm
-          expat
-          xorg.libX11
-          xorg.libXcomposite
-          xorg.libXdamage
-          xorg.libXext
-          xorg.libXfixes
-          xorg.libXrandr
-          xorg.libxcb
-          mesa
-          libxkbcommon
-          pango
-          cairo
-          nspr
-        ];
-
-        playwrightEnv = {
-          shellHook = ''
-            export LD_LIBRARY_PATH=/run/opengl-driver/lib:/run/opengl-driver-32/lib:/lib
-            export FONTCONFIG_FILE=/etc/fonts/fonts.conf
-            playwright install
-          '';
-        };
-
-        # Python devShell生成用のヘルパー関数を更新
-        mkPythonShell = pythonVersion: pkgs.mkShell ({
+        mkPythonShell = pythonVersion: pkgs.mkShell {
           packages = [ pythonVersion ] 
             ++ (pythonPackages pythonVersion)
-            ++ playwrightDeps;
-        } // playwrightEnv);
+            ++ [ pkgs.playwright-driver.browsers ];
+            
+          shellHook = ''
+            echo "Welcome to Python ${pythonVersion.version} environment"
+            export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+            export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+          '';
+        };
 
       in
       {
