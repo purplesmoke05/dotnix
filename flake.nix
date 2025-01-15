@@ -126,8 +126,8 @@
           };
           users.${username} = {
             imports = [
-              ./hosts/common/home-manager.nix
-              ./hosts/${hostname}/home-manager.nix
+              ./hosts/nixos/common/home-manager.nix
+              ./hosts/nixos/${hostname}/home-manager.nix
             ];
           };
         };
@@ -158,7 +158,7 @@
         nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
-            ./hosts/common/nixos.nix
+            ./hosts/nixos/common/nixos.nix
             home-manager.nixosModules.home-manager
             (mkSystemOverlays)
             (mkHomeManagerConfig { inherit hostname username; })
@@ -178,7 +178,7 @@
                 }) enabledUsers
               );
             })
-            ./hosts/${hostname}/nixos.nix
+            ./hosts/nixos/${hostname}/nixos.nix
           ];
           specialArgs = {
             inherit nixpkgs inputs hostname username;
@@ -189,27 +189,67 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         pythonTools = mkPythonBuilders pkgs;
+
+        pythonPackages = pythonVersion: with pythonVersion.pkgs; [
+          playwright
+          pytest
+          pytest-playwright
+        ];
+
+        playwrightDeps = with pkgs; [
+          openssl
+          systemd
+          glibc
+          glib
+          cups.lib
+          nss
+          alsa-lib
+          at-spi2-core
+          dbus
+          libdrm
+          expat
+          xorg.libX11
+          xorg.libXcomposite
+          xorg.libXdamage
+          xorg.libXext
+          xorg.libXfixes
+          xorg.libXrandr
+          xorg.libxcb
+          mesa
+          libxkbcommon
+          pango
+          cairo
+          nspr
+        ];
+
+        playwrightEnv = {
+          shellHook = ''
+            export LD_LIBRARY_PATH=/run/opengl-driver/lib:/run/opengl-driver-32/lib:/lib
+            export FONTCONFIG_FILE=/etc/fonts/fonts.conf
+            playwright install
+          '';
+        };
+
+        # Python devShell生成用のヘルパー関数を更新
+        mkPythonShell = pythonVersion: pkgs.mkShell ({
+          packages = [ pythonVersion ] 
+            ++ (pythonPackages pythonVersion)
+            ++ playwrightDeps;
+        } // playwrightEnv);
+
       in
       {
         devShells = {
           default = pkgs.mkShell {
-            packages = [ pythonTools.pythonVersions.py3122 ];
+            packages = [ pythonTools.pythonVersions.py312 ];
             shellHook = ''
-              echo "Welcome to Python ${pythonTools.pythonVersions.py3122.version} environment"
+              echo "Welcome to Python ${pythonTools.pythonVersions.py312.version} environment"
             '';
           };
 
-          py3122 = pkgs.mkShell {
-            packages = [ pythonTools.pythonVersions.py3122 ];
-          };
-
-          py312 = pkgs.mkShell {
-            packages = [ pythonTools.pythonVersions.py312 ];
-          };
-
-          py311 = pkgs.mkShell {
-            packages = [ pythonTools.pythonVersions.py311 ];
-          };
+          py3122 = mkPythonShell pythonTools.pythonVersions.py3122;
+          py312 = mkPythonShell pythonTools.pythonVersions.py312;
+          py311 = mkPythonShell pythonTools.pythonVersions.py311;
         };
 
         packages = pythonTools.pythonVersions;
