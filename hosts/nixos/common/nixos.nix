@@ -184,19 +184,19 @@
       interactiveShellInit = ''
         any-nix-shell fish --info-right | source
 
-        function __auto_nix_develop --on-variable PWD
-          if test -n "$IN_NIX_SHELL"
-            return
-          end
+        # function __auto_nix_develop --on-variable PWD
+        #   if test -n "$IN_NIX_SHELL"
+        #     return
+        #   end
 
-          if test -e ".python-version"
-            set -l py_version (cat .python-version | string replace -a '.' "")
-            echo "Activating Python environment from .python-version..."
-            nix develop "git+file://$SYSTEM_FLAKE_PATH?ref=main#py$py_version"
-          end
-        end
+        #   if test -e ".python-version"
+        #     set -l py_version (cat .python-version | string replace -a '.' "")
+        #     echo "Activating Python environment from .python-version..."
+        #     nix develop "git+file://$SYSTEM_FLAKE_PATH?ref=main#py$py_version"
+        #   end
+        # end
 
-        __auto_nix_develop
+        # __auto_nix_develop
       '';
     };
     noisetorch.enable = true;
@@ -250,6 +250,10 @@
     rar
     file-roller
   ];
+
+  # Nix-ld Configuration
+  # Enable nix-ld for better compatibility with alien packages
+  programs.nix-ld.dev.enable = true;
 
   # Hyprland Configuration  
   # Wayland-native tiling window manager
