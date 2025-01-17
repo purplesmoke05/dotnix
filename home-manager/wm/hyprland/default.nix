@@ -120,6 +120,7 @@
         "float,class:^(zenity)$"
         "float,class:^()$,title:^(Steam - Self Updater)$"
         "float,class:^(pavucontrol)$"
+        "float,class:^()$,title:^(Playwright Inspector)$"
 
         # rulev2 for foot
         "opacity 0.9 0.9, class:^(foot-quick)$"

@@ -27,13 +27,11 @@
     hyprsplit = {
       url = "github:shezdy/hyprsplit";
     };
-    nix-ld.url = "github:Mic92/nix-ld";
-    nix-ld.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, nix-ld, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -162,7 +160,6 @@
           modules = [
             ./hosts/nixos/common/nixos.nix
             home-manager.nixosModules.home-manager
-            nix-ld.nixosModules.nix-ld
             (mkSystemOverlays)
             (mkHomeManagerConfig { inherit hostname username; })
             ({ config, pkgs, ... }: {
@@ -216,6 +213,7 @@
             packages = [ pythonTools.pythonVersions.py312 ];
             shellHook = ''
               echo "Welcome to Python ${pythonTools.pythonVersions.py312.version} environment"
+              export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
             '';
           };
 

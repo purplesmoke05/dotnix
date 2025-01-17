@@ -184,19 +184,7 @@
       interactiveShellInit = ''
         any-nix-shell fish --info-right | source
 
-        # function __auto_nix_develop --on-variable PWD
-        #   if test -n "$IN_NIX_SHELL"
-        #     return
-        #   end
-
-        #   if test -e ".python-version"
-        #     set -l py_version (cat .python-version | string replace -a '.' "")
-        #     echo "Activating Python environment from .python-version..."
-        #     nix develop "git+file://$SYSTEM_FLAKE_PATH?ref=main#py$py_version"
-        #   end
-        # end
-
-        # __auto_nix_develop
+        alias dev="nix develop $HOME/.nix#"
       '';
     };
     noisetorch.enable = true;
@@ -249,11 +237,76 @@
     unrar
     rar
     file-roller
+    playwright.browsers
   ];
 
   # Nix-ld Configuration
   # Enable nix-ld for better compatibility with alien packages
-  programs.nix-ld.dev.enable = true;
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      openssl
+      systemd
+      glibc
+      glibc.dev
+      glib
+      cups.lib
+      cups
+      nss
+      nssTools
+      alsa-lib
+      dbus
+      at-spi2-core
+      libdrm
+      expat
+      xorg.libX11
+      xorg.libXcomposite
+      xorg.libXdamage
+      xorg.libXext
+      xorg.libXfixes
+      xorg.libXrandr
+      xorg.libxcb
+      mesa
+      libxkbcommon
+      pango
+      cairo
+      nspr
+      xorg.libXcursor
+      xorg.libXi
+      gtk3
+      gdk-pixbuf
+      xorg.libXrender
+      freetype
+      fontconfig
+      # Other things from runtime
+      flac
+      freeglut
+      libjpeg
+      libpng
+      libpng12
+      libsamplerate
+      libmikmod
+      libtheora
+      libtiff
+      pixman
+      speex
+      SDL_image
+      SDL_ttf
+      SDL_mixer
+      SDL2_ttf
+      SDL2_mixer
+      libappindicator-gtk2
+      libdbusmenu-gtk2
+      libindicator-gtk2
+      libcaca
+      libcanberra
+      libgcrypt
+      libvpx
+      librsvg
+      xorg.libXft
+      libvdpau
+    ];
+  };
 
   # Hyprland Configuration  
   # Wayland-native tiling window manager
