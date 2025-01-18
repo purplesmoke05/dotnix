@@ -967,4 +967,9 @@
       key = "escape";
       when = "editorHasMultipleSelections && editorTextFocus && !config.emacs-mcx.useMetaPrefixEscape";
     }
+    {
+      key = "ctrl+h";
+      command = "-emacs-mcx.deleteBackwardChar";
+      when = "editorTextFocus && !editorReadonly";
+    }
   ]

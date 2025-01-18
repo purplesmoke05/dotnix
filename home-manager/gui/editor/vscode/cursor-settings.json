@@ -1,0 +1,58 @@
+{
+  "editor": {
+    "formatOnSave": true
+  },
+  "explorer": {
+    "confirmDelete": false,
+    "confirmDragAndDrop": false
+  },
+  "extensions": {
+    "ignoreRecommendations": true
+  },
+  "git": {
+    "autofetch": true,
+    "confirmSync": false
+  },
+  "nix": {
+    "enableLanguageServer": true,
+    "formatterPath": [
+      "nix",
+      "fmt",
+      "--",
+      "-"
+    ]
+  },
+  "roo-cline": {
+    "allowedCommands": [
+      "npm test",
+      "npm install",
+      "tsc",
+      "git log",
+      "git diff",
+      "git show"
+    ]
+  },
+  "terminal": {
+    "integrated": {
+      "defaultProfile": {
+        "linux": "fish"
+      },
+      "profiles": {
+        "linux": {
+          "fish": {
+            "args": [
+              "--login"
+            ],
+            "path": "fish"
+          }
+        }
+      }
+    }
+  },
+  "update": {
+    "mode": "none"
+  },
+  "window": {
+    "commandCenter": 1
+  }
+}

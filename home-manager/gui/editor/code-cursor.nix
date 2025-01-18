@@ -1,4 +1,4 @@
-{pkgs, ...}: let 
+{pkgs, config, lib, ...}: let 
   beautifyJson = json:
     pkgs.runCommand "beautified.json" {
       buildInputs = [ pkgs.jq ];
@@ -12,6 +12,13 @@ in {
     code-cursor
   ];
 
-  xdg.configFile."Cursor/User/keybindings.json".source = beautifyJson (builtins.toJSON (import ./vscode/keybindings.nix));
-  xdg.configFile."Cursor/User/settings.json".source = beautifyJson (builtins.toJSON (import ./vscode/settings.nix));
+  home.activation = {
+    writeCursorConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      $DRY_RUN_CMD mkdir -p ${config.home.homeDirectory}/.config/Cursor/User
+      $DRY_RUN_CMD cp ${beautifyJson (builtins.toJSON (import ./vscode/settings.nix))} ${config.home.homeDirectory}/.config/Cursor/User/settings.json
+      $DRY_RUN_CMD cp ${beautifyJson (builtins.toJSON (import ./vscode/keybindings.nix))} ${config.home.homeDirectory}/.config/Cursor/User/keybindings.json
+      $DRY_RUN_CMD chmod 644 ${config.home.homeDirectory}/.config/Cursor/User/settings.json
+      $DRY_RUN_CMD chmod 644 ${config.home.homeDirectory}/.config/Cursor/User/keybindings.json
+    '';
+  };
 }

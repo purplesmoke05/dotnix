@@ -185,7 +185,8 @@
         any-nix-shell fish --info-right | source
 
         alias dev="nix develop $HOME/.nix#"
-        
+        alias update="uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py && uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py && sudo -E nixos-rebuild switch --flake .#hq"
+
         # Activate VSCode shell integration
         if test "$TERM_PROGRAM" = "vscode"
             . (code --locate-shell-integration-path fish)

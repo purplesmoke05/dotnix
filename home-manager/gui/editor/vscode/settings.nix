@@ -1,33 +1,50 @@
 {
-  "terminal.integrated.defaultProfile.linux" = "fish";
-  "terminal.integrated.profiles.linux" = {
-    fish = {
-      path = "fish";
-      args = ["--login"];
-    };
-  };
-  "editor.formatOnSave" = true;
-
-  "window.commandCenter" = 1;
-  "git.autofetch" = true;
-  "git.confirmSync" = false;
-  "explorer.confirmDelete" = false;
-  "explorer.confirmDragAndDrop" = false;
-  "nix.enableLanguageServer" = true;
-  "nix.formatterPath" = [
-    "nix"
-    "fmt"
-    "--"
-    "-"
+  editor = {
+  formatOnSave = true;
+};
+  explorer = {
+  confirmDelete = false;
+  confirmDragAndDrop = false;
+};
+  extensions = {
+  ignoreRecommendations = true;
+};
+  git = {
+  autofetch = true;
+  confirmSync = false;
+};
+  nix = {
+  enableLanguageServer = true;
+  formatterPath = [
+    "nix" "fmt" "--" "-"
   ];
-  "roo-cline.allowedCommands" = [
-    "npm test"
-    "npm install"
-    "tsc"
-    "git log"
-    "git diff"
-    "git show"
+};
+  roo-cline = {
+  allowedCommands = [
+    "npm test" "npm install" "tsc" "git log" "git diff" "git show"
   ];
-  "update.mode" = "none";
-  "extensions.ignoreRecommendations" = true;
+};
+  terminal = {
+  integrated = {
+  defaultProfile = {
+  linux = "fish";
+};
+  profiles = {
+  linux = {
+  fish = {
+  args = [
+    "--login"
+  ];
+  path = "fish";
+};
+};
+};
+};
+};
+  update = {
+  mode = "none";
+};
+  window = {
+  commandCenter = 1;
+};
 }

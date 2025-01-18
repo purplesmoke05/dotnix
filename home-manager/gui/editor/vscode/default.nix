@@ -37,6 +37,31 @@ in {
       rust-lang.rust-analyzer
       shardulm94.trailing-spaces
       redhat.vscode-yaml
+    ] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
+      {
+        name = "cform";
+        publisher = "aws-scripting-guy";
+        version = "0.0.24";
+        sha256 = "X3Om8uB94Va/uABnZhzm2ATbqj3wzqt/s2Z844lZcmU=";
+      }
+      {
+        name = "jumpy2";
+        publisher = "davidlgoldberg";
+        version = "1.7.0";
+        sha256 = "1j668ias08jkkz3v1fnljxphhkpgy0imbii2s9i0db390c07j1qf";
+      }
+      {
+        name = "roo-cline";
+        publisher = "rooveterinaryinc";
+        version = "3.1.6";
+        sha256 = "19v27pispwqnsfjiimyka1gfqlxmpwl05ja3iv3c035wwj0v985c";
+      }
+      {
+        name = "zenkaku";
+        publisher = "mosapride";
+        version = "0.0.3";
+        sha256 = "0abbgg0mjgfy5495ah4iiqf2jck9wjbflvbfwhwll23g0wdazlr5";
+      }
     ];
   };
   
