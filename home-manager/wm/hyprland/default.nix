@@ -84,7 +84,7 @@
         "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt window decorations
         "NIXOS_OZONE_WL,1" # Force Wayland for Chromium-based applications
       ];
-      
+
       # Input device configuration
       input = {
         kb_layout = "jp"; # Japanese keyboard layout
@@ -150,7 +150,7 @@
 
         # Utility controls
         "$mainMod SHIFT, c, exec, hyprpicker --autocopy" # Color picker
-      
+
         # Window focus
         "$mainMod, j, movefocus, l" # Focus left
         "$mainMod, k, movefocus, d" # Focus down
@@ -257,7 +257,7 @@
     };
 
     # Hyprland plugins
-    plugins = [   
+    plugins = [
       # inputs.Hyprspace.packages.${pkgs.system}.Hyprspace
       pkgs.hyprlandPlugins.hyprspace
       pkgs.hyprlandPlugins.hyprsplit

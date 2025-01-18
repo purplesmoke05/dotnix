@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 def get_cursor_keybindings_path() -> Optional[Path]:
     """Get the path to Cursor keybindings.json based on the operating system."""
     home = Path.home()
-    
+
     if platform.system() == "Windows":
         return home / "AppData/Roaming/Cursor/User/keybindings.json"
     elif platform.system() == "Darwin":  # macOS
@@ -104,7 +104,6 @@ def main():
             exit(1)
     else:
         print("VSCode keybindings.json not found")
-        exit(1)
 
     # Convert to Nix format
     converter = KeybindingsConverter(input_file, output_file)

@@ -918,11 +918,6 @@
     "when": "!config.emacs-mcx.useMetaPrefixMacCmd"
   },
   {
-    "command": "workbench.action.toggleSidebarVisibility",
-    "key": "ctrl+q",
-    "when": "config.emacs-mcx.useMetaPrefixMacCmd"
-  },
-  {
     "command": "-workbench.action.toggleSidebarVisibility",
     "key": "ctrl+alt+space",
     "when": "config.emacs-mcx.useMetaPrefixMacCmd"
@@ -971,5 +966,25 @@
     "command": "-emacs-mcx.deleteBackwardChar",
     "key": "ctrl+h",
     "when": "editorTextFocus && !editorReadonly"
+  },
+  {
+    "command": "deleteLeft",
+    "key": "ctrl+h",
+    "when": "textInputFocus"
+  },
+  {
+    "command": "deleteLeft",
+    "key": "ctrl+backspace",
+    "when": "textInputFocus"
+  },
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "ctrl+q",
+    "when": "config.emacs-mcx.useMetaPrefixMacCmd"
+  },
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "ctrl+]",
+    "when": "!config.emacs-mcx.useMetaPrefixMacCmd"
   }
 ]

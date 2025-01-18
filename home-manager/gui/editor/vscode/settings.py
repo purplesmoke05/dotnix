@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 def get_cursor_settings_path() -> Optional[Path]:
     """Get the path to Cursor settings.json based on the operating system."""
     home = Path.home()
-    
+
     if platform.system() == "Windows":
         return home / "AppData/Roaming/Cursor/User/settings.json"
     elif platform.system() == "Darwin":  # macOS
@@ -50,7 +50,7 @@ class SettingsConverter:
         for key, value in d.items():
             formatted_value = self._format_value(value)
             lines.append(f"{spaces}{key} = {formatted_value};")
-        lines.append(f"{' ' * (indent-2)}}}") 
+        lines.append(f"{' ' * (indent-2)}}}")
         return "\n".join(lines)
 
     def _read_json(self) -> Optional[Dict[str, Any]]:
@@ -84,7 +84,7 @@ class SettingsConverter:
 
         # Convert to Nix format
         nix_content = self._format_dict(settings)
-        
+
         # Write to file
         return self._write_nix(nix_content)
 
@@ -106,7 +106,6 @@ def main():
             exit(1)
     else:
         print("Cursor settings.json not found")
-        exit(1)
 
     # Convert to Nix format
     converter = SettingsConverter(input_file, output_file)
@@ -117,4 +116,4 @@ def main():
         exit(1)
 
 if __name__ == "__main__":
-    main() 
+    main()

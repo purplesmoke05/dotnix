@@ -1,17 +1,68 @@
 {
+  accessibility = {
+  dimUnfocused = {
+  enabled = true;
+};
+};
+  cursor = {
+  cpp = {
+  disabledLanguages = [
+    "plaintext" "markdown" "scminput"
+  ];
+};
+};
+  diffEditor = {
+  experimental = {
+  useTrueInlineView = true;
+};
+};
   editor = {
+  bracketPairColorization = {
+  enabled = true;
+};
+  cursorBlinking = "expand";
+  cursorSmoothCaretAnimation = "on";
+  cursorStyle = "line-thin";
+  dragAndDrop = false;
   formatOnSave = true;
+  guides = {
+  bracketPairs = true;
+};
+  minimap = {
+  maxColumn = 80;
+  showSlider = "always";
+};
+  renderLineHighlight = "all";
+  renderLineHighlightOnlyWhenFocus = true;
+  renderWhitespace = "all";
+  showFoldingControls = "always";
+  smoothScrolling = true;
+  wordSegmenterLocales = "ja";
 };
   explorer = {
+  compactFolders = false;
   confirmDelete = false;
   confirmDragAndDrop = false;
+  excludeGitIgnore = true;
 };
   extensions = {
   ignoreRecommendations = true;
 };
+  files = {
+  autoGuessEncoding = true;
+  autoSave = "afterDelay";
+  candidateGuessEncodings = [
+    "utf8" "shiftjis" "eucjp"
+  ];
+  insertFinalNewline = true;
+  trimFinalNewlines = true;
+  trimTrailingWhitespace = true;
+};
   git = {
-  autofetch = true;
+  autofetch = "all";
   confirmSync = false;
+  pruneOnFetch = true;
+  suggestSmartCommit = false;
 };
   nix = {
   enableLanguageServer = true;
@@ -24,11 +75,34 @@
     "npm test" "npm install" "tsc" "git log" "git diff" "git show"
   ];
 };
+  scm = {
+  alwaysShowRepositories = true;
+  compactFolders = false;
+  defaultViewMode = "tree";
+  diffDecorationsGutterWidth = 5;
+  graph = {
+  badges = "all";
+};
+  inputFontFamily = "editor";
+  inputFontSize = 14;
+};
+  search = {
+  searchEditor = {
+  focusResultsOnSearch = true;
+};
+  seedOnFocus = true;
+  showLineNumbers = true;
+};
   terminal = {
   integrated = {
+  copyOnSelection = true;
+  cursorBlinking = true;
+  cursorStyle = "line";
   defaultProfile = {
   linux = "fish";
 };
+  enableImages = true;
+  enableVisualBell = true;
   profiles = {
   linux = {
   fish = {
@@ -39,6 +113,8 @@
 };
 };
 };
+  rightClickBehavior = "paste";
+  smoothScrolling = true;
 };
 };
   update = {
@@ -46,5 +122,31 @@
 };
   window = {
   commandCenter = 1;
+  customMenuBarAltFocus = false;
+  menuBarVisibility = "hidden";
 };
+  workbench = {
+  colorTheme = "Catppuccin Mocha";
+  editor = {
+  autoLockGroups = {
+  terminalEditor = false;
+};
+  closeOnFileDelete = true;
+  pinnedTabsOnSeparateRow = true;
+  scrollToSwitchTabs = false;
+  wrapTabs = true;
+};
+  iconTheme = "ayu";
+  list = {
+  smoothScrolling = true;
+};
+  tree = {
+  expandMode = "doubleClick";
+  indent = 24;
+};
+  view = {
+  alwaysShowHeaderActions = true;
+};
+};
+  explorer.focusFirstFile = true;
 }
