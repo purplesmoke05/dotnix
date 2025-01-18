@@ -44,6 +44,7 @@
   confirmDelete = false;
   confirmDragAndDrop = false;
   excludeGitIgnore = true;
+  focusFirstFile = true;
 };
   extensions = {
   ignoreRecommendations = true;
@@ -148,5 +149,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  explorer.focusFirstFile = true;
 }

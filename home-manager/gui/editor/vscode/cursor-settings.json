@@ -45,7 +45,8 @@
     "compactFolders": false,
     "confirmDelete": false,
     "confirmDragAndDrop": false,
-    "excludeGitIgnore": true
+    "excludeGitIgnore": true,
+    "focusFirstFile": true
   },
   "extensions": {
     "ignoreRecommendations": true
@@ -159,6 +160,5 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  },
-  "explorer.focusFirstFile": true
+  }
 }

@@ -188,6 +188,40 @@
       shellInit = ''
         any-nix-shell fish --info-right | source
 
+        # Directory navigation function using peco and ghq
+        function peco_ghq
+            set -l query (commandline)
+
+            if test -n $query
+                set peco_flags --query "$query"
+            end
+
+            ghq list --full-path | peco $peco_flags | read recent
+            if [ $recent ]
+                cd $recent
+                commandline -r \'\'
+                commandline -f repaint
+            end
+        end
+
+        # Function to select and kill processes using peco
+        function peco_kill
+            set -e proc
+            set -l query (commandline)
+
+            if test -n $query
+                ps aux | peco --query "$query" | read proc
+            else
+                ps aux | peco | read proc
+            end
+            if test -n "$proc"
+                set -l pid (echo $proc | awk '{print $2}')
+                echo "kill pid: $pid. [$proc]"
+                kill $pid
+            end
+            set -e proc
+        end
+
         # Git add, commit, and push function
         function gish
             # Stage all changes
@@ -244,6 +278,10 @@
           end
         end
 
+        # Key binding settings
+        bind \cr peco_ghq
+        bind \cw peco_kill
+
         # Execute initialization checks
         __check_vscode_and_develop
         __auto_nix_develop
@@ -298,6 +336,8 @@
     rar
     file-roller
     playwright.browsers
+    ghq
+    peco
   ];
 
   # Nix-ld Configuration

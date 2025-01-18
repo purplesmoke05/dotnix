@@ -6,6 +6,25 @@
     enable = true;
     userName = "purplesmoke05";
     userEmail = "yosuke.otosu@gmail.com";
+    aliases = {
+      st = "status";
+      co = "checkout";
+      gr = "grep";
+      df = "diff";
+      cm = "commit";
+      b = "branch";
+      rs = "reset";
+      rsh = "reset --hard HEAD";
+      ph = "push";
+      pl = "pull";
+    };
+    extraConfig = {
+      ghq = {
+        root = [
+          "~/Projects"
+        ];
+      };
+    };
   };
 
   # GitHub CLI configuration
