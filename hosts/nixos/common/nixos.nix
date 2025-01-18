@@ -181,17 +181,48 @@
   programs = {
     fish = {
       enable = true;
+      shellAliases = {
+        dev = "nix develop $HOME/.nix#";
+        update = "uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py && uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py && sudo -E nixos-rebuild switch --flake .#hq";
+      };
       shellInit = ''
         any-nix-shell fish --info-right | source
 
-        alias dev="nix develop $HOME/.nix#"
-        alias update="uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py && uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py && sudo -E nixos-rebuild switch --flake .#hq"
+        # Git add, commit, and push function
+        function gish
+            # Stage all changes
+            git add -A
+            # Show status
+            git status
+
+            read -l -P "Commit with this content. OK? (y/N): " confirm
+            switch $confirm
+                case y Y yes Yes YES
+                    read -l -P "Input Commit Message: " msg
+                    git commit -m "$msg"
+                    set -l current_branch (git rev-parse --abbrev-ref HEAD)
+                    git push origin $current_branch --force
+                case '*'
+                    echo "Quit."
+            end
+        end
+
+        # Create new feature branch from develop
+        function girk
+            # Switch to develop branch
+            git checkout develop
+            # Pull latest changes
+            git pull origin develop
+            # Create and switch to new feature branch
+            read -l -P "Input feature branch name: " branch_name
+            git checkout -b $branch_name
+        end
 
         # Activate VSCode shell integration
         if test "$TERM_PROGRAM" = "vscode"
             . (code --locate-shell-integration-path fish)
         end
-        
+
         # Function to check VSCode and activate development environment
         function __check_vscode_and_develop
           if test "$TERM_PROGRAM" = "vscode"
@@ -337,7 +368,7 @@
     ];
   };
 
-  # Hyprland Configuration  
+  # Hyprland Configuration
   # Wayland-native tiling window manager
   # - Pure Wayland: No Xwayland support
   programs.hyprland = {
@@ -370,7 +401,7 @@
   };
 
   nixpkgs.config.allowUnfree = true;
-  
+
   # Environment Variables
   # System-wide environment configuration
   # - Input method integration
