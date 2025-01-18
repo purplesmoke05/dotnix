@@ -6,6 +6,8 @@
   imports = [
     ./browser/browser.nix
     ./editor/neovim.nix
+    ./editor/code-cursor.nix
+    ./editor/vscode/default.nix
     ./chat/discord.nix
   ];
 

@@ -181,10 +181,40 @@
   programs = {
     fish = {
       enable = true;
-      interactiveShellInit = ''
+      shellInit = ''
         any-nix-shell fish --info-right | source
 
         alias dev="nix develop $HOME/.nix#"
+        
+        # Activate VSCode shell integration
+        if test "$TERM_PROGRAM" = "vscode"
+            . (code --locate-shell-integration-path fish)
+        end
+        
+        # Function to check VSCode and activate development environment
+        function __check_vscode_and_develop
+          if test "$TERM_PROGRAM" = "vscode"
+            and not test -n "$IN_NIX_SHELL"
+            echo "VSCode detected, activating development environment..."
+            dev
+          end
+        end
+
+        # Auto-activate nix develop when entering directory with flake.nix
+        function __auto_nix_develop --on-variable PWD
+          if test -n "$IN_NIX_SHELL"
+            return
+          end
+
+          if test -e flake.nix
+            echo "Found flake.nix, activating development environment..."
+            nix develop
+          end
+        end
+
+        # Execute initialization checks
+        __check_vscode_and_develop
+        __auto_nix_develop
       '';
     };
     noisetorch.enable = true;
@@ -214,7 +244,6 @@
   environment.systemPackages = with pkgs; [
     git
     alacritty
-    code-cursor
     waybar
     wofi
     dunst
@@ -229,7 +258,6 @@
     qt6Packages.fcitx5-qt
     qt5.qtbase
     qt6.qtbase
-    vscode
     steam
     unzip
     zip
