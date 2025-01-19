@@ -1,4 +1,4 @@
-{pkgs, ...}: let 
+{pkgs, ...}: let
   beautifyJson = json:
     pkgs.runCommand "beautified.json" {
       buildInputs = [ pkgs.jq ];
@@ -37,6 +37,7 @@ in {
       rust-lang.rust-analyzer
       shardulm94.trailing-spaces
       redhat.vscode-yaml
+      catppuccin.catppuccin-vsc
     ] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
       {
         name = "cform";
@@ -64,10 +65,10 @@ in {
       }
     ];
   };
-  
+
   home.packages = with pkgs; [
     vscode
   ];
-  
+
   xdg.configFile."Code/User/settings.json".text = builtins.toJSON (import ./settings.nix);
 }

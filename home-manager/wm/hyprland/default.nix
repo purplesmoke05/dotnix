@@ -45,7 +45,7 @@
             hyprctl dispatch focuswindow pid:"$_pid"
           fi
         else
-          foot -a "foot-quick" sh -c "zellij attach -c quick-term" >/dev/null 2>&1 &
+          foot -a "foot-quick" -e zellij attach -c quick-term >/dev/null 2>&1 &
           exit 0
         fi
       '';

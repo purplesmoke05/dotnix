@@ -199,7 +199,7 @@
             ghq list --full-path | peco $peco_flags | read recent
             if [ $recent ]
                 cd $recent
-                commandline -r \'\'
+                commandline -r ""
                 commandline -f repaint
             end
         end
