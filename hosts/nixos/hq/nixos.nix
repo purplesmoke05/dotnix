@@ -60,7 +60,7 @@
   services.dnsmasq = {
     enable = true;
     settings = {
-      interface = "wlp5s0";
+      interface = [ "wlp5s0" "docker0" ];
       dhcp-range = "10.42.0.100,10.42.0.200,24h";
       dhcp-option = [
         "option:router,10.42.0.1"
@@ -68,6 +68,9 @@
       ];
       domain = "local";
       bind-interfaces = true;
+      server = [ "8.8.8.8" "8.8.4.4" ];
+      log-queries = true;
+      log-dhcp = true;
     };
   };
 }
