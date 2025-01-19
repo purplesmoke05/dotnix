@@ -160,5 +160,6 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  }
+  },
+  "diffEditor.ignoreTrimWhitespace": false
 }

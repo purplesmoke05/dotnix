@@ -35,7 +35,7 @@
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
-        buildPython = { version, sha256 }: 
+        buildPython = { version, sha256 }:
           let
             python = pkgs.python3Packages.python.overrideAttrs (oldAttrs: rec {
               inherit version;
@@ -73,7 +73,7 @@
           nodePackages = prev.nodePackages // {
             exa-mcp-server = prev.callPackage ./pkgs/nodePackages/exa-mcp-server {};
           };
-          
+
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
         };
@@ -143,11 +143,11 @@
       };
 
       # NixOS System Builder
-      mkSystem = { system ? "x86_64-linux", hostname, enabledUsers ? [ "primary" ] }: 
+      mkSystem = { system ? "x86_64-linux", hostname, enabledUsers ? [ "primary" ] }:
         let
           users = mkUsers hostname;
           username = systemUsers.${hostname}.primary;
-          currentUser = let 
+          currentUser = let
             envUser = builtins.getEnv "USER";
             envSudo = builtins.getEnv "SUDO_USER";
           in
@@ -195,10 +195,10 @@
         ];
 
         mkPythonShell = pythonVersion: pkgs.mkShell {
-          packages = [ pythonVersion ] 
+          packages = [ pythonVersion ]
             ++ (pythonPackages pythonVersion)
             ++ [ pkgs.playwright-driver.browsers ];
-            
+
           shellHook = ''
             echo "Welcome to Python ${pythonVersion.version} environment"
             export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}

@@ -149,4 +149,5 @@
   alwaysShowHeaderActions = true;
 };
 };
+  diffEditor.ignoreTrimWhitespace = false;
 }
