@@ -316,7 +316,6 @@
     alacritty
     waybar
     wofi
-    dunst
     swww
     grim
     slurp

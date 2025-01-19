@@ -88,7 +88,7 @@
         [Hotkey]
         EnumerateKeys=
         TriggerKeys=
-        
+
         [Behavior]
         DefaultInputMethod=mozc
         ShareInputState=All
@@ -183,6 +183,7 @@
       After = "network.target";
       StartLimitIntervalSec = 3600;
       StartLimitBurst = 5;
+      DefaultState = "inactive";
     };
 
     Service = {
@@ -196,6 +197,17 @@
 
     Install = {
       WantedBy = [ "default.target" ];
+      Enable = false;
     };
+  };
+
+  programs.ssh = {
+    enable = true;
+
+    extraConfig = ''
+      AddKeysToAgent yes
+      ServerAliveInterval 60
+    '';
+
   };
 }

@@ -13,7 +13,7 @@
     brightnessctl # Brightness control
     power-profiles-daemon # Power management
     btop # System monitor
-    pkgs.hyprpanel # Main panel package
+    hyprpanel # Main panel package
   ];
 
   # Hyprpanel configuration

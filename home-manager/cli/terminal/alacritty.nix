@@ -2,7 +2,7 @@
 let
   # Color scheme based on Tokyo Night theme
   # Source: https://github.com/zatchheems/tokyo-night-alacritty-theme
-  
+
   # Normal color palette
   n_black = "#32344a";
   n_red = "#f7768e";

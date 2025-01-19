@@ -31,7 +31,7 @@
   users.users.${username} = {
     isNormalUser = true;
     description = "Yosuke Otosu";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "docker"];
     packages = with pkgs; [
     ];
   };
@@ -54,5 +54,20 @@
     device = "/dev/sda";
     fsType = "ext4";
     options = [ "defaults" "nofail" ];
+  };
+
+  # DHCP Server Configuration
+  services.dnsmasq = {
+    enable = true;
+    settings = {
+      interface = "wlp5s0";
+      dhcp-range = "10.42.0.100,10.42.0.200,24h";
+      dhcp-option = [
+        "option:router,10.42.0.1"
+        "option:dns-server,8.8.8.8,8.8.4.4"
+      ];
+      domain = "local";
+      bind-interfaces = true;
+    };
   };
 }

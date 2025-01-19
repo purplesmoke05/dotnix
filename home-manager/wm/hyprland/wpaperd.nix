@@ -13,9 +13,9 @@
   home.activation.linkWallpapers = lib.hm.dag.entryAfter ["writeBoundary"] ''
     wallpaperDir="$HOME/Pictures/Wallpapers"
     mkdir -p "$wallpaperDir"
-    
+
     find "$wallpaperDir" -type l -delete
-    
+
     for pkg in ${toString [
       pkgs.nixos-artwork.wallpapers.binary-black
       pkgs.nixos-artwork.wallpapers.gear

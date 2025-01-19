@@ -15,6 +15,7 @@
   experimental = {
   useTrueInlineView = true;
 };
+  ignoreTrimWhitespace = false;
 };
   editor = {
   bracketPairColorization = {
@@ -66,7 +67,7 @@
   suggestSmartCommit = false;
 };
   nix = {
-  enableLanguageServer = true;
+  enableLanguageServer = false;
   formatterPath = [
     "nix" "fmt" "--" "-"
   ];
@@ -149,5 +150,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  diffEditor.ignoreTrimWhitespace = false;
 }

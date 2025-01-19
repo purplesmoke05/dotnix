@@ -28,7 +28,6 @@
     libsecret # Secret service
     networkmanagerapplet # Network management GUI
     bluez # Bluetooth support
-    hyprlandPlugins.hyprspace # Virtual desktop plugin
     hyprlandPlugins.hyprsplit # Window splitting plugin
     (pkgs.writeShellApplication {
       name = "quick-term";
@@ -253,13 +252,13 @@
         "hyprctl dispatch exec [workspace 11 silent:split:0:0] ${pkgs.brave}/bin/brave"
         "hyprctl dispatch exec [workspace 12 silent:split:0:0] ${pkgs.foot}/bin/foot"
         "${pkgs.discord-ptb}/bin/discordptb"
+        "hyprpanel"
       ];
     };
 
     # Hyprland plugins
     plugins = [
       # inputs.Hyprspace.packages.${pkgs.system}.Hyprspace
-      pkgs.hyprlandPlugins.hyprspace
       pkgs.hyprlandPlugins.hyprsplit
     ];
   };
