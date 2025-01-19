@@ -6,6 +6,7 @@
     enableFishIntegration = true;
     settings = {
       default_layout = "compact";
+      session_serialization = false;
       default_shell = "fish";
 
       keybinds = {
