@@ -14,8 +14,7 @@
               "SwitchToMode" = "Locked";
             };
             "bind \"Alt t\"" = {
-              "NewPane" = "Right";
-              "Resize" = "Increase";
+              "NewPane" ={};
             };
             "unbind \"Ctrl p\""= {};
             "unbind \"Ctrl n\""= {};

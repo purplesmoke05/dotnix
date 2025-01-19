@@ -253,17 +253,8 @@
       when = "listFocus && treeElementCanCollapse && !inputFocus || listFocus && treeElementHasParent && !inputFocus";
     }
     {
-      command = "workbench.action.togglePanel";
-      key = "ctrl+=";
-    }
-    {
       command = "-workbench.action.togglePanel";
       key = "ctrl+j";
-    }
-    {
-      command = "workbench.action.togglePanel";
-      key = "ctrl+=";
-      when = "!terminalFocus";
     }
     {
       command = "-workbench.action.togglePanel";
@@ -510,11 +501,6 @@
       key = "alt+2";
     }
     {
-      command = "workbench.action.focusActiveEditorGroup";
-      key = "ctrl+]";
-      when = "terminalFocus";
-    }
-    {
       command = "editor.action.rename";
       key = "ctrl+x ctrl+r";
       when = "editorHasRenameProvider && editorTextFocus && !editorReadonly";
@@ -708,11 +694,6 @@
       command = "-editor.debug.action.toggleBreakpoint";
       key = "f9";
       when = "debuggersAvailable && disassemblyViewFocus || debuggersAvailable && editorTextFocus";
-    }
-    {
-      command = "-workbench.files.action.focusOpenEditorsView";
-      key = "ctrl+k e";
-      when = "workbench.explorer.openEditorsView.active";
     }
     {
       command = "editor.action.triggerSuggest";
@@ -986,5 +967,10 @@
       command = "workbench.action.toggleSidebarVisibility";
       key = "ctrl+]";
       when = "!config.emacs-mcx.useMetaPrefixMacCmd";
+    }
+    {
+      command = "workbench.action.togglePanel";
+      key = "ctrl+=";
+      when = "terminalFocus";
     }
   ]

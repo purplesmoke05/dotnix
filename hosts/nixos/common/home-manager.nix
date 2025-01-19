@@ -17,6 +17,7 @@
     qt6Packages.fcitx5-qt
     fcitx5-configtool
     appimage-run
+    awscli2
  ];
 
   # Environment Variables

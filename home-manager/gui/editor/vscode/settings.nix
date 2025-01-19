@@ -96,6 +96,9 @@
   showLineNumbers = true;
 };
   terminal = {
+  external = {
+  linuxExec = "foot";
+};
   integrated = {
   copyOnSelection = true;
   cursorBlinking = true;
