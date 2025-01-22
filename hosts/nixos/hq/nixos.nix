@@ -71,6 +71,7 @@
       server = [ "8.8.8.8" "8.8.4.4" ];
       log-queries = true;
       log-dhcp = true;
+      clear-on-reload = true;
     };
   };
 }

@@ -972,5 +972,27 @@
     "command": "workbench.action.togglePanel",
     "key": "ctrl+=",
     "when": "terminalFocus"
+  },
+  {
+    "command": "roo-cline.SidebarProvider.focus",
+    "key": "ctrl+shift+r"
+  },
+  {
+    "command": "editor.action.clipboardPasteAction",
+    "key": "ctrl+y"
+  },
+  {
+    "command": "-editor.action.clipboardPasteAction",
+    "key": "shift+insert"
+  },
+  {
+    "command": "workbench.action.terminal.pasteSelection",
+    "key": "ctrl+y",
+    "when": "terminalFocus && terminalHasBeenCreated || terminalFocus && terminalProcessSupported"
+  },
+  {
+    "command": "-workbench.action.terminal.pasteSelection",
+    "key": "shift+insert",
+    "when": "terminalFocus && terminalHasBeenCreated || terminalFocus && terminalProcessSupported"
   }
 ]

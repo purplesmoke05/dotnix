@@ -56,7 +56,7 @@
   candidateGuessEncodings = [
     "utf8" "shiftjis" "eucjp"
   ];
-  insertFinalNewline = true;
+  insertFinalNewline = false;
   trimFinalNewlines = true;
   trimTrailingWhitespace = true;
 };
@@ -70,11 +70,6 @@
   enableLanguageServer = false;
   formatterPath = [
     "nix" "fmt" "--" "-"
-  ];
-};
-  roo-cline = {
-  allowedCommands = [
-    "npm test" "npm install" "tsc" "git log" "git diff" "git show"
   ];
 };
   scm = {
@@ -153,4 +148,7 @@
   alwaysShowHeaderActions = true;
 };
 };
+  roo-cline.allowedCommands = [
+    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make"
+  ];
 }

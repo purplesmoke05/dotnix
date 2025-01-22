@@ -60,7 +60,7 @@
       "shiftjis",
       "eucjp"
     ],
-    "insertFinalNewline": true,
+    "insertFinalNewline": false,
     "trimFinalNewlines": true,
     "trimTrailingWhitespace": true
   },
@@ -77,16 +77,6 @@
       "fmt",
       "--",
       "-"
-    ]
-  },
-  "roo-cline": {
-    "allowedCommands": [
-      "npm test",
-      "npm install",
-      "tsc",
-      "git log",
-      "git diff",
-      "git show"
     ]
   },
   "scm": {
@@ -164,5 +154,18 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  }
+  },
+  "roo-cline.allowedCommands": [
+    "npm test",
+    "npm install",
+    "tsc",
+    "git log",
+    "git diff",
+    "git show",
+    "nix-shell",
+    "cd",
+    "go",
+    "git",
+    "make"
+  ]
 }

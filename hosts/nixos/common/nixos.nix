@@ -337,6 +337,7 @@
     playwright.browsers
     ghq
     peco
+    obsidian
   ];
 
   # Nix-ld Configuration
