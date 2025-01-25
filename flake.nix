@@ -71,6 +71,14 @@
             exa-mcp-server = prev.callPackage ./pkgs/nodePackages/exa-mcp-server {};
           };
 
+          # Obsidian X11 mode override
+          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
+            installPhase = builtins.replaceStrings
+              [ "--ozone-platform=wayland" ]
+              [ "--ozone-platform=x11" ]
+              oldAttrs.installPhase;
+          });
+
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
         };
