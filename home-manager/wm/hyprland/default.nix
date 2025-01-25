@@ -59,6 +59,12 @@
     systemd.enableXdgAutostart = true;
 
     settings = {
+      render.explicit_sync = 0;
+      xwayland = {
+        use_nearest_neighbor = false;
+        force_zero_scaling = true;
+      };
+
       # Basic Hyprland configuration
       "$mainMod" = "ALT"; # Main modifier key
       "$term" = "foot -e zellij"; # Default terminal
@@ -82,6 +88,7 @@
         "QT_STYLE_OVERRIDE,Adwaita-Dark" # Qt style override
         "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt window decorations
         "NIXOS_OZONE_WL,1" # Force Wayland for Chromium-based applications
+        "ELECTRON_OZONE_PLATFORM_HINT,auto"
       ];
 
       # Input device configuration
