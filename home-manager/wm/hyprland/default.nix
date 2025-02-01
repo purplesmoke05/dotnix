@@ -258,6 +258,7 @@
         "hyprctl dispatch exec [workspace 1 silent:split:0:0] ${pkgs.code-cursor}/bin/cursor"
         "hyprctl dispatch exec [workspace 11 silent:split:0:0] ${pkgs.brave}/bin/brave"
         "hyprctl dispatch exec [workspace 12 silent:split:0:0] ${pkgs.foot}/bin/foot"
+        "hyprctl dispatch exec [workspace 9 silent:split:0:0] ${pkgs.youtube-music}/bin/youtube-music"
         "${pkgs.discord-ptb}/bin/discordptb"
         "hyprpanel"
       ];

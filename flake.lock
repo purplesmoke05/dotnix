@@ -1068,32 +1068,32 @@
         "xremap": "xremap_2"
       },
       "locked": {
-        "lastModified": 1735494397,
-        "narHash": "sha256-Vy6IuJvfsdEGAhfnRjtVk9hsK5UqpwxjjP/1EaKylpA=",
-        "owner": "xremap",
-        "repo": "nix-flake",
-        "rev": "c14d1dec78be97bc1a3bd15fc4203a833f692527",
+        "lastModified": 1737900736,
+        "narHash": "sha256-CWZslunux87Dw366QotT7Z+kNEdG6uwD1ch/23BRWns=",
+        "owner": "purplesmoke05",
+        "repo": "xremap-nix-flake",
+        "rev": "93a9061273b718d1f27ad090287ae41f19189af9",
         "type": "github"
       },
       "original": {
-        "owner": "xremap",
-        "repo": "nix-flake",
+        "owner": "purplesmoke05",
+        "repo": "xremap-nix-flake",
         "type": "github"
       }
     },
     "xremap_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1735466906,
-        "narHash": "sha256-6w3sLuGay+WPtQ1MtddvECtwh0U7EQUCDDQxkzYRe5o=",
-        "owner": "k0kubun",
+        "lastModified": 1737899304,
+        "narHash": "sha256-qYT3ALU/wx6IFQqZ+puiey8hkRhc9a/adMVmN+6xUVM=",
+        "owner": "purplesmoke05",
         "repo": "xremap",
-        "rev": "e8ab19f9133a4440247f50432094f8e25f001ea8",
+        "rev": "128c98e82ce99e76408fbbc9b6b3a069faa8b774",
         "type": "github"
       },
       "original": {
-        "owner": "k0kubun",
-        "ref": "v0.10.3",
+        "owner": "purplesmoke05",
+        "ref": "master",
         "repo": "xremap",
         "type": "github"
       }

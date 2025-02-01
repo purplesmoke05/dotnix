@@ -11,7 +11,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    xremap.url = "github:xremap/nix-flake";
+    xremap.url = "github:purplesmoke05/xremap-nix-flake";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     home-manager = {
@@ -75,7 +75,7 @@
           obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
             installPhase = builtins.replaceStrings
               [ "--ozone-platform=wayland" ]
-              [ "--ozone-platform=x11" ]
+              [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
               oldAttrs.installPhase;
           });
 

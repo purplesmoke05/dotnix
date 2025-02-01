@@ -131,6 +131,7 @@
   services.xremap = {
     userName = username;
     serviceMode = "system";
+    withHypr = true;
     config = {
       modmap = [
         {
@@ -148,6 +149,30 @@
           };
           application = {
             not = [];
+          };
+        }
+        {
+          name = "Emacs-style basic keybindings for Obsidian";
+          remap = {
+            C-a = "KEY_HOME";
+            C-e = "KEY_END";
+            C-b = "KEY_LEFT";
+            C-f = "KEY_RIGHT";
+            C-p = "KEY_UP";
+            C-n = "KEY_DOWN";
+
+            C-h = "KEY_BACKSPACE";
+            C-d = "KEY_DELETE";
+
+            M-v = "KEY_PAGEUP";
+            C-v = "KEY_PAGEDOWN";
+
+            C-w = "C-x";
+            M-w = "C-c";
+            C-y = "C-v";
+          };
+          application = {
+            only = ["obsidian" "Obsidian" "obsidian.Obsidian" "Obsidian.obsidian" "Obsidian.Obsidian"];
           };
         }
       ];
@@ -338,6 +363,7 @@
     ghq
     peco
     obsidian
+    gcc
   ];
 
   # Nix-ld Configuration

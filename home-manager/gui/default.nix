@@ -9,6 +9,7 @@
     ./editor/code-cursor.nix
     ./editor/vscode/default.nix
     ./chat/discord.nix
+    ./music
   ];
 
   # Additional GUI applications
