@@ -11,7 +11,6 @@
     deno
     bun
     zig
-    rust-bin.stable.latest.default
     uv
   ];
 }

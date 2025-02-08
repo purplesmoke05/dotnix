@@ -195,6 +195,20 @@
         pkgs = nixpkgs.legacyPackages.${system};
         pythonTools = mkPythonBuilders pkgs;
 
+        mkRustShell = pkgs.mkShell {
+          packages = [
+            pkgs.rustup
+            pkgs.openssl
+          ];
+
+          shellHook = ''
+            echo "Welcome to Rust development environment with rustup"
+            if ! command -v rustup &> /dev/null; then
+              rustup default stable
+            fi
+          '';
+        };
+
         pythonPackages = pythonVersion: with pythonVersion.pkgs; [
           playwright
         ];
@@ -222,6 +236,7 @@
             '';
           };
 
+          rust = mkRustShell;
           py3122 = mkPythonShell pythonTools.pythonVersions.py3122;
           py312 = mkPythonShell pythonTools.pythonVersions.py312;
           py311 = mkPythonShell pythonTools.pythonVersions.py311;

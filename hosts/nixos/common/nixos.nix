@@ -213,6 +213,33 @@
       shellInit = ''
         any-nix-shell fish --info-right | source
 
+        # Rust toolchain auto-installer function
+        function __check_rust_toolchain
+          if test -e rust-toolchain.toml
+            echo "Found rust-toolchain.toml, activating Rust development environment..."
+            if not test -n "$IN_NIX_SHELL"
+              nix develop $HOME/.nix#rust
+            end
+
+            # Install specific Rust version from rust-toolchain.toml
+            if type -q toml2json
+              set rust_version (toml2json rust-toolchain.toml | jq -r .toolchain.channel)
+              if test -n "$rust_version"
+                echo "Installing Rust version: $rust_version"
+                rustup override set $rust_version
+              end
+            else
+              echo "Warning: toml2json not found. Please ensure python3Packages.toml is installed"
+            end
+          end
+        end
+
+        # Directory change handler
+        function __on_pwd_change --on-variable PWD
+          __auto_nix_develop
+          __check_rust_toolchain
+        end
+
         # Directory navigation function using peco and ghq
         function peco_ghq
             set -l query (commandline)
@@ -309,7 +336,7 @@
 
         # Execute initialization checks
         __check_vscode_and_develop
-        __auto_nix_develop
+        __check_rust_toolchain
       '';
     };
     noisetorch.enable = true;
@@ -364,6 +391,15 @@
     peco
     obsidian
     gcc
+    openssl
+    openssl.dev
+    pkg-config
+    python3Packages.toml
+    jq
+    rustup
+    remarshal
+    gnum4
+    gnumake
   ];
 
   # Nix-ld Configuration
@@ -487,7 +523,13 @@
       GLFW_IM_MODULE = "fcitx";
       SDL_IM_MODULE = "fcitx";
       SYSTEM_FLAKE_PATH = "$HOME/.nix";
+      OPENSSL_DIR = "${pkgs.openssl.dev}";
+      OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+      OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include";
     };
+  };
+  environment.variables = {
+    PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
   };
 
   # System Security Configuration

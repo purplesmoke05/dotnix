@@ -44,7 +44,7 @@
   compactFolders = false;
   confirmDelete = false;
   confirmDragAndDrop = false;
-  excludeGitIgnore = true;
+  excludeGitIgnore = false;
   focusFirstFile = true;
 };
   extensions = {
@@ -119,6 +119,7 @@
 };
 };
   rightClickBehavior = "paste";
+  scrollback = 10000;
   smoothScrolling = true;
 };
 };
