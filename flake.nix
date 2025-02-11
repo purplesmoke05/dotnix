@@ -79,6 +79,14 @@
               oldAttrs.installPhase;
           });
 
+          # Brave Wayland IME override
+          brave = prev.brave.overrideAttrs (oldAttrs: rec {
+            installPhase = builtins.replaceStrings
+              [ "--ozone-platform=wayland" ]
+              [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
+              oldAttrs.installPhase;
+          });
+
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
         };
