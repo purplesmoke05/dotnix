@@ -32,10 +32,6 @@
     extraPackages = with pkgs; [
       ripgrep
       biome
-      nodePackages.eslint
-      nodePackages.prettier
-      nodePackages.typescript-language-server
-      # ...
     ];
 
     # Additional Lua configuration

@@ -7,7 +7,7 @@
   # Required packages for Hyprpanel functionality
   home.packages = with pkgs; [
     jq # JSON processor for updates module
-    vulnix # Security vulnerability scanner
+    # vulnix # Security vulnerability scanner
     pavucontrol # PulseAudio volume control
     pulseaudio # Audio system
     brightnessctl # Brightness control

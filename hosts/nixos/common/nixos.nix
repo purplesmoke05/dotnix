@@ -131,7 +131,7 @@
   services.xremap = {
     userName = username;
     serviceMode = "system";
-    withHypr = true;
+    # withHypr = true;
     config = {
       modmap = [
         {
@@ -146,6 +146,7 @@
           name = "Emacs-style backspace binding";
           remap = {
             C-h = "Backspace";
+            RO = "Shift-RO";
           };
           application = {
             not = [];
@@ -213,23 +214,33 @@
       shellInit = ''
         any-nix-shell fish --info-right | source
 
-        # Rust toolchain auto-installer function
+        # Python version auto-switcher function
+        function __check_python_version
+          if test -e .python-version
+            set -l py_version (cat .python-version | string trim)
+            set -l version_dots (string join "" (string split "." $py_version))
+
+            if not test -n "$IN_NIX_SHELL"
+              set -l dev_shell "py$version_dots"
+
+              if nix flake show $HOME/.nix --json | jq -e ".devShells.\"x86_64-linux\".$dev_shell" > /dev/null
+                echo "Python $py_version環境を有効化します..."
+                nix develop $HOME/.nix#$dev_shell
+              else
+                echo "警告: サポートされていないPythonバージョン: $py_version"
+                echo "デフォルトの3.12を使用します"
+              end
+            end
+          end
+        end
+
+        # Function to check Rust toolchain
         function __check_rust_toolchain
           if test -e rust-toolchain.toml
-            echo "Found rust-toolchain.toml, activating Rust development environment..."
+            set -l toolchain (remarshal -i rust-toolchain.toml -if toml -of json | jq -r .toolchain.channel)
             if not test -n "$IN_NIX_SHELL"
-              nix develop $HOME/.nix#rust
-            end
-
-            # Install specific Rust version from rust-toolchain.toml
-            if type -q toml2json
-              set rust_version (toml2json rust-toolchain.toml | jq -r .toolchain.channel)
-              if test -n "$rust_version"
-                echo "Installing Rust version: $rust_version"
-                rustup override set $rust_version
-              end
-            else
-              echo "Warning: toml2json not found. Please ensure python3Packages.toml is installed"
+              echo "Rust $toolchain環境を有効化します..."
+              nix develop $HOME/.nix#rust$toolchain
             end
           end
         end
@@ -238,6 +249,7 @@
         function __on_pwd_change --on-variable PWD
           __auto_nix_develop
           __check_rust_toolchain
+          __check_python_version
         end
 
         # Directory navigation function using peco and ghq
@@ -452,11 +464,11 @@
       libtiff
       pixman
       speex
-      SDL_image
-      SDL_ttf
-      SDL_mixer
-      SDL2_ttf
-      SDL2_mixer
+      # SDL_image
+      # SDL_ttf
+      # SDL_mixer
+      # SDL2_ttf
+      # SDL2_mixer
       libappindicator-gtk2
       libdbusmenu-gtk2
       libindicator-gtk2
