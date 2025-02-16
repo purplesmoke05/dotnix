@@ -72,11 +72,6 @@
     "nix" "fmt" "--" "-"
   ];
 };
-  roo-cline = {
-  allowedCommands = [
-    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make"
-  ];
-};
   scm = {
   alwaysShowRepositories = true;
   compactFolders = false;
@@ -154,4 +149,7 @@
   alwaysShowHeaderActions = true;
 };
 };
+  roo-cline.allowedCommands = [
+    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make"
+  ];
 }

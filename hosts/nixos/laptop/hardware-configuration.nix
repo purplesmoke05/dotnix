@@ -41,6 +41,8 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux"; # 64-bit Intel/AMD system
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware; # Intel CPU microcode updates
 
+  hardware.enableAllFirmware = true;
+
   # Graphics hardware configuration
   # - NVIDIA GPU setup with proprietary drivers
   # - Optimized for Wayland compatibility

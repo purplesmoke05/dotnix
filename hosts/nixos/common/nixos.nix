@@ -239,8 +239,8 @@
           if test -e rust-toolchain.toml
             set -l toolchain (remarshal -i rust-toolchain.toml -if toml -of json | jq -r .toolchain.channel)
             if not test -n "$IN_NIX_SHELL"
-              echo "Rust $toolchain環境を有効化します..."
-              nix develop $HOME/.nix#rust$toolchain
+              echo "Rustプロジェクトを検出しました（toolchain: $toolchain）"
+              nix develop $HOME/.nix#rust
             end
           end
         end

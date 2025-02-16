@@ -210,9 +210,10 @@
           ];
 
           shellHook = ''
-            echo "Welcome to Rust development environment with rustup"
-            if ! command -v rustup &> /dev/null; then
-              rustup default stable
+            echo "Welcome to Rust development environment"
+            if test -e rust-toolchain.toml; then
+              echo "rust-toolchain.tomlを検出しました"
+              rustup toolchain install $(remarshal -i rust-toolchain.toml -if toml -of json | jq -r .toolchain.channel)
             fi
           '';
         };
