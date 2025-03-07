@@ -34,7 +34,6 @@ in {
       ms-python.vscode-pylance
       ms-python.debugpy
       mechatroner.rainbow-csv
-      rust-lang.rust-analyzer
       shardulm94.trailing-spaces
       redhat.vscode-yaml
       catppuccin.catppuccin-vsc

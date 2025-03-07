@@ -25,13 +25,11 @@
 
     # External tools and language servers
     # - ripgrep: Fast text search
-    # - biome: JavaScript/TypeScript formatter
     # - ESLint: JavaScript linter
     # - Prettier: Code formatter
     # - TypeScript language server
     extraPackages = with pkgs; [
       ripgrep
-      biome
     ];
 
     # Additional Lua configuration

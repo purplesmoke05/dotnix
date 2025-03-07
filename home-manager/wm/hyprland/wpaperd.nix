@@ -28,23 +28,6 @@
     done
   '';
 
-  systemd.user.services.wpaperd = {
-    Unit = {
-      Description = "Wayland wallpaper daemon";
-      PartOf = ["graphical-session.target"];
-      After = ["graphical-session.target"];
-    };
-
-    Service = {
-      ExecStart = "${pkgs.wpaperd}/bin/wpaperd";
-      Restart = "always";
-    };
-
-    Install = {
-      WantedBy = ["graphical-session.target"];
-    };
-  };
-
   programs.wpaperd = {
     enable = true;
     settings = {

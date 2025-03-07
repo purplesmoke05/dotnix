@@ -131,6 +131,7 @@
   services.xremap = {
     userName = username;
     serviceMode = "system";
+    withWlroots = true;
     # withHypr = true;
     config = {
       modmap = [

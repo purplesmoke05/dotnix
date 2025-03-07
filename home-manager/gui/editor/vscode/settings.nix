@@ -16,6 +16,7 @@
   useTrueInlineView = true;
 };
   ignoreTrimWhitespace = false;
+  maxComputationTime = 0;
 };
   editor = {
   bracketPairColorization = {
@@ -71,6 +72,42 @@
   formatterPath = [
     "nix" "fmt" "--" "-"
   ];
+};
+  roo-cline = {
+  allowedCommands = [
+    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make"
+  ];
+};
+  rust-analyzer = {
+  cargo = {
+  buildScripts = {
+  overrideCommand = [
+    "cargo" "check" "--all-targets" "--quiet" "--workspace" "--all-features" "--message-format=json" "--jobs" "4"
+  ];
+};
+};
+  check = {
+  overrideCommand = [
+    "cargo" "check" "--all-targets" "--quiet" "--workspace" "--all-features" "--message-format=json" "--jobs" "4"
+  ];
+};
+  checkOnSave = true;
+  diagnostics = {
+  disabled = [
+    "unresolved-proc-macro" "inactive-code"
+  ];
+};
+  inlayHints = {
+  bindingModeHints = {
+  enable = false;
+};
+  chainingHints = {
+  enable = false;
+};
+};
+  procMacro = {
+  enable = true;
+};
 };
   scm = {
   alwaysShowRepositories = true;
@@ -135,7 +172,7 @@
   closeOnFileDelete = true;
   pinnedTabsOnSeparateRow = true;
   scrollToSwitchTabs = false;
-  wrapTabs = true;
+  wrapTabs = false;
 };
   iconTheme = "ayu";
   list = {
@@ -149,7 +186,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  roo-cline.allowedCommands = [
-    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make"
-  ];
 }

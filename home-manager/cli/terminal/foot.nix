@@ -29,7 +29,7 @@ in
       };
 
       scrollback = {
-        lines = 10000;
+        lines = 100000;
         multiplier = 3.0;
       };
       mouse = {

@@ -12,5 +12,6 @@
     bun
     zig
     uv
+    sqlite
   ];
 }
