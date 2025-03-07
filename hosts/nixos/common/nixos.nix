@@ -130,10 +130,11 @@
   # - Emacs-style keybindings system-wide
   services.xremap = {
     userName = username;
-    serviceMode = "system";
+    serviceMode = "user";
     withWlroots = true;
-    # withHypr = true;
+    debug = false;
     config = {
+      keypress_delay_ms = 10;
       modmap = [
         {
           name = "Remap CapsLock to Control";
@@ -144,14 +145,17 @@
       ];
       keymap = [
         {
-          name = "Emacs-style backspace binding";
+          name = "Remap RO to Shift_L-RO";
+          remap = {
+            KEY_RO = "KEY_LEFTSHIFT-KEY_RO";
+          };
+        }
+        {
+          name = "Emacs-style";
           remap = {
             C-h = "Backspace";
-            RO = "Shift-RO";
           };
-          application = {
-            not = [];
-          };
+
         }
         {
           name = "Emacs-style basic keybindings for Obsidian";

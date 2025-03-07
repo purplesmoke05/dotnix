@@ -75,7 +75,7 @@
 };
   roo-cline = {
   allowedCommands = [
-    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make"
+    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make" "cargo" "grep"
   ];
 };
   rust-analyzer = {
