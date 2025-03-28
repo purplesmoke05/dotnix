@@ -8,6 +8,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
+  # boot.kernelPackages = pkgs.linuxPackages_6_11;
 
   # Network Configuration
   # Basic network setup with NetworkManager for connection management
@@ -370,6 +371,10 @@
         enable = true;
         setSocketVariable = true;
       };
+      autoPrune.enable = true;
+      daemon.settings = {
+        dns = ["8.8.8.8" "8.8.4.4"];
+      };
     };
   };
 
@@ -417,6 +422,9 @@
     remarshal
     gnum4
     gnumake
+    llvmPackages.libclang.lib
+    clang
+    jetbrains.rust-rover
   ];
 
   # Nix-ld Configuration
@@ -456,7 +464,6 @@
       gdk-pixbuf
       xorg.libXrender
       freetype
-      fontconfig
       # Other things from runtime
       flac
       freeglut
@@ -484,6 +491,10 @@
       librsvg
       xorg.libXft
       libvdpau
+      zstd
+      libiconv
+      llvmPackages.libclang.lib
+      clang
     ];
   };
 
@@ -547,6 +558,7 @@
   };
   environment.variables = {
     PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
+    LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib";
   };
 
   # System Security Configuration
@@ -602,4 +614,10 @@
   programs.thunar.enable = true;
   services.gvfs.enable = true;
   services.tumbler.enable = true;
+
+  # NVIDIA Container Support
+  # NVIDIA Container Toolkit configuration
+  # - Enables GPU support in containers
+  # - Required for Docker containers using NVIDIA GPUs
+  hardware.nvidia-container-toolkit.enable = true;
 }

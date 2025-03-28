@@ -84,4 +84,9 @@
       clear-on-reload = true;
     };
   };
+
+  systemd.services.dnsmasq = {
+    after = [ "docker.service" ];
+    requires = [ "docker.service" ];
+  };
 }

@@ -110,12 +110,11 @@
       };
 
       # Application-specific window rules
-      windowrule = [
-        "float,^(pavucontrol)$" # Audio control in floating mode
-        "float,^(nm-connection-editor)$" # Network manager in floating mode
-      ];
+      windowrule = [];
 
       windowrulev2 = [
+        "float,class:^(pavucontrol)$"
+        "float,class:^(nm-connection-editor)$"
         "float,class:^()$,title:^(Picture in picture)$"
         "float,class:^(brave)$,title:^(Save File)$"
         "float,class:^(brave)$,title:^(Open File)$"
