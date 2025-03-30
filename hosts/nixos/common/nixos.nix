@@ -422,9 +422,11 @@
     remarshal
     gnum4
     gnumake
+    zstd
     llvmPackages.libclang.lib
     clang
     jetbrains.rust-rover
+    libclang
   ];
 
   # Nix-ld Configuration

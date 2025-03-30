@@ -13,5 +13,16 @@
     zig
     uv
     sqlite
+    volta
+  ];
+
+  # Environment variables for Volta
+  home.sessionVariables = {
+    VOLTA_HOME = "$HOME/.volta";
+  };
+
+  # Add Volta binary directory to PATH
+  home.sessionPath = [
+    "$VOLTA_HOME/bin"
   ];
 }
