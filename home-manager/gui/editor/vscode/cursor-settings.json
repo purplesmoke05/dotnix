@@ -221,5 +221,6 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  }
+  },
+  "motia.autoStartServer": true
 }

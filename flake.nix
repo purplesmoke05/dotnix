@@ -58,7 +58,7 @@
           py312 = pkgs.python312;
           # Custom build for specific patch version
           py3122 = self.buildPython {
-            version = "3.12.2";
+            version = "3.12.9";
             sha256 = "0w6qyfhc912xxav9x9pifwca40b4l49vy52wai9j0gc1mhni2a5y";
           };
           py311 = pkgs.python311;
@@ -83,12 +83,12 @@
           });
 
           # Brave Wayland IME override
-          brave = prev.brave.overrideAttrs (oldAttrs: rec {
-            installPhase = builtins.replaceStrings
-              [ "--ozone-platform=wayland" ]
-              [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
-              oldAttrs.installPhase;
-          });
+          # brave = prev.brave.overrideAttrs (oldAttrs: rec {
+          #   installPhase = builtins.replaceStrings
+          #    [ "--ozone-platform=wayland" ]
+          #    [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
+          #    oldAttrs.installPhase;
+          # });
 
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;

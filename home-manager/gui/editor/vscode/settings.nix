@@ -186,4 +186,5 @@
   alwaysShowHeaderActions = true;
 };
 };
+  motia.autoStartServer = true;
 }

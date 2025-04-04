@@ -14,6 +14,7 @@
     uv
     sqlite
     volta
+    claude-code
   ];
 
   # Environment variables for Volta
