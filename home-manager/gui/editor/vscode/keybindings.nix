@@ -995,4 +995,8 @@
       key = "shift+insert";
       when = "terminalFocus && terminalHasBeenCreated || terminalFocus && terminalProcessSupported";
     }
+    {
+      command = "composerMode.agent";
+      key = "ctrl+i";
+    }
   ]

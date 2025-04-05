@@ -28,7 +28,6 @@
     libsecret # Secret service
     networkmanagerapplet # Network management GUI
     bluez # Bluetooth support
-    hyprlandPlugins.hyprsplit # Window splitting plugin
     (pkgs.writeShellApplication {
       name = "quick-term";
       runtimeInputs = with pkgs; [ jq foot zellij ];
@@ -54,6 +53,8 @@
 
   wayland.windowManager.hyprland = {
     enable = true;
+
+    package = null;
 
     systemd.enable = true;
     systemd.enableXdgAutostart = true;

@@ -40,7 +40,6 @@
   # System architecture and CPU configuration
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux"; # 64-bit Intel/AMD system
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware; # Intel CPU microcode updates
-
   hardware.enableAllFirmware = true;
 
   # Graphics hardware configuration
@@ -50,6 +49,8 @@
   hardware = {
     graphics = {
       enable = true;
+      driSupport = true;
+      driSupport32Bit = true;
     };
     nvidia = {
       modesetting.enable = true;

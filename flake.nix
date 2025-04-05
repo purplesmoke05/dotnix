@@ -27,6 +27,22 @@
     hyprsplit = {
       url = "github:shezdy/hyprsplit";
     };
+    /*
+    hyprland = {
+      url = "github:hyprwm/Hyprland/v0.48.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.hyprland-protocols.follows = "hyprland-protocols";
+    };
+    hyprland-protocols = {
+      url = "github:hyprwm/hyprland-protocols/v0.6.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    xdg-desktop-portal-hyprland = {
+      url = "github:hyprwm/xdg-desktop-portal-hyprland";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.hyprland-protocols.follows = "hyprland-protocols";
+      inputs.hyprland.follows = "hyprland";
+    };*/
   };
 
   # System Configuration
@@ -198,6 +214,7 @@
           ];
           specialArgs = {
             inherit nixpkgs inputs hostname username;
+            /*inherit (inputs) hyprland hyprland-protocols;*/
           };
         };
     in

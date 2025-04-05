@@ -1,4 +1,4 @@
-{ inputs, config, pkgs, hostname, username, ... }:
+{ inputs, config, pkgs, hostname, username, /*hyprland, hyprland-protocols,*/ ... }:
 
 {
   # System Boot Configuration
@@ -7,7 +7,8 @@
   # - xanmod kernel: Optimized for desktop performance with better scheduling and lower latency
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
+  # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
+  boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
 
   # Network Configuration
@@ -430,6 +431,10 @@
     clang
     jetbrains.rust-rover
     libclang
+    libdrm.dev
+    libglvnd
+    mesa
+    libdrm
   ];
 
   # Nix-ld Configuration
@@ -509,7 +514,8 @@
   # - Pure Wayland: No Xwayland support
   programs.hyprland = {
     enable = true;
-    xwayland.enable = false;
+    xwayland.enable = true;
+    # package = hyprland.packages.${pkgs.system}.hyprland;
   };
 
   # System State Version

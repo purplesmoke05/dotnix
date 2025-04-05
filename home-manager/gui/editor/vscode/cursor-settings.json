@@ -71,6 +71,9 @@
     "pruneOnFetch": true,
     "suggestSmartCommit": false
   },
+  "motia": {
+    "autoStartServer": true
+  },
   "nix": {
     "enableLanguageServer": false,
     "formatterPath": [
@@ -221,6 +224,5 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  },
-  "motia.autoStartServer": true
+  }
 }

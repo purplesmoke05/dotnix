@@ -67,6 +67,9 @@
   pruneOnFetch = true;
   suggestSmartCommit = false;
 };
+  motia = {
+  autoStartServer = true;
+};
   nix = {
   enableLanguageServer = false;
   formatterPath = [
@@ -186,5 +189,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  motia.autoStartServer = true;
 }
