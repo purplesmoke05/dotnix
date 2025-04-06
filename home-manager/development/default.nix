@@ -15,6 +15,7 @@
     sqlite
     volta
     claude-code
+    ctop
   ];
 
   # Environment variables for Volta

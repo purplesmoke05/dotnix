@@ -105,6 +105,11 @@
           #    [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
           #    oldAttrs.installPhase;
           # });
+          # OpenSSH override with custom patch
+          openssh = prev.openssh.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
+            doCheck = false;
+          });
 
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
