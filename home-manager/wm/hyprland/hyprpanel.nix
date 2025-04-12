@@ -23,50 +23,51 @@
     systemd.enable = true; # Enable systemd integration
     overwrite.enable = true; # Allow configuration overwrites
 
-    # Panel layout configuration
-    layout = {
-      "bar.layouts" =
-        let
-          # Define standard layout with optional battery indicator
-          layout = { showBattery ? true }: {
-            "left" = [
-              "dashboard" # System dashboard
-              "workspaces" # Workspace indicator
-              "windowtitle" # Active window title
-              "updates" # System updates
-              "storage" # Storage usage
-            ] ++ (if showBattery then [ "battery" ] else [ ]);
-            "middle" = [
-              "media" # Media controls
-            ];
-            "right" = [
-              "cpu" # CPU usage
-              "ram" # Memory usage
-              "volume" # Volume control
-              "network" # Network status
-              "bluetooth" # Bluetooth status
-              "systray" # System tray
-              "clock" # Clock
-              "notifications" # Notification center
-            ];
-          };
-          # Empty layout definition
-          none = {
-            "left" = [ ];
-            "middle" = [ ];
-            "right" = [ ];
-          };
-        in
-        {
-          "0" = layout { }; # Default layout
-          "1" = layout { showBattery = false; }; # Layout without battery
-          "2" = layout { showBattery = false; }; # Layout without battery
-          "3" = layout { showBattery = false; }; # Layout without battery
-        };
-    };
-
     # Panel appearance and behavior settings
-    settings = {
+    settings = {    # Panel layout configuration
+      layout = {
+        "bar.layouts" =
+          let
+            # Define standard layout with optional battery indicator
+            layout = { showBattery ? true }: {
+              "left" = [
+                "dashboard" # System dashboard
+                "workspaces" # Workspace indicator
+                "windowtitle" # Active window title
+                "updates" # System updates
+                "storage" # Storage usage
+              ] ++ (if showBattery then [ "battery" ] else [ ]);
+              "middle" = [
+                "media" # Media controls
+              ];
+              "right" = [
+                "cpu" # CPU usage
+                "ram" # Memory usage
+                "volume" # Volume control
+                "network" # Network status
+                "bluetooth" # Bluetooth status
+                "systray" # System tray
+                "clock" # Clock
+                "notifications" # Notification center
+              ];
+            };
+            # Empty layout definition
+            none = {
+              "left" = [ ];
+              "middle" = [ ];
+              "right" = [ ];
+            };
+          in
+          {
+            "0" = layout { }; # Default layout
+            "1" = layout { showBattery = false; }; # Layout without battery
+            "2" = layout { showBattery = false; }; # Layout without battery
+            "3" = layout { showBattery = false; }; # Layout without battery
+          };
+      };
+
+      theme.name = "catppuccin_mocha";
+
       # Updates module configuration
       bar.customModules.updates = {
         pollingInterval = 1440000; # Check updates every 24 hours
