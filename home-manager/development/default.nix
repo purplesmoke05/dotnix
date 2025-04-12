@@ -16,6 +16,11 @@
     volta
     claude-code
     ctop
+    grim
+    slurp
+    wl-clipboard
+    wl-screenrec
+    killall
   ];
 
   # Environment variables for Volta
