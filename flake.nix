@@ -99,12 +99,12 @@
           });
 
           # Brave Wayland IME override
-          # brave = prev.brave.overrideAttrs (oldAttrs: rec {
-          #   installPhase = builtins.replaceStrings
-          #    [ "--ozone-platform=wayland" ]
-          #    [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
-          #    oldAttrs.installPhase;
-          # });
+          brave = prev.brave.overrideAttrs (oldAttrs: rec {
+            installPhase = builtins.replaceStrings
+             [ "--ozone-platform=wayland" ]
+             [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
+             oldAttrs.installPhase;
+          });
           # OpenSSH override with custom patch
           openssh = prev.openssh.overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];

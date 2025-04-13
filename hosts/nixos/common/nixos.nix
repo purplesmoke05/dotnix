@@ -367,7 +367,7 @@
   # - Flatpak: Additional application distribution
   virtualisation = {
     docker = {
-      enable = true;
+      enable = false;
       rootless = {
         enable = true;
         setSocketVariable = true;
