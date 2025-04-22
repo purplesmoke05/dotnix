@@ -1,3 +1,4 @@
 .specstory/**
 tasks/**
+!tasks/implement_feature.md
 logs/**
