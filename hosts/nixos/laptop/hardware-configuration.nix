@@ -47,14 +47,8 @@
   # - Optimized for Wayland compatibility
   # - Power management disabled to prevent issues
   hardware = {
-    graphics = {
-      enable = true;
-      driSupport = true;
-      driSupport32Bit = true;
-    };
     nvidia = {
       modesetting.enable = true;
-      powerManagement.enable = false;
       open = false;
       nvidiaSettings = true;
       package = config.boot.kernelPackages.nvidiaPackages.stable;

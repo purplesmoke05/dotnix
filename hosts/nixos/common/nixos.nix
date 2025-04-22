@@ -10,6 +10,7 @@
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
+  boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
 
   # Network Configuration
   # Basic network setup with NetworkManager for connection management
@@ -632,4 +633,6 @@
   # - Enables GPU support in containers
   # - Required for Docker containers using NVIDIA GPUs
   hardware.nvidia-container-toolkit.enable = true;
+  hardware.nvidia.powerManagement.enable = true;
+  hardware.nvidia.open = false;
 }

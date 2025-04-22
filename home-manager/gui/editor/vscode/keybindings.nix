@@ -1,7 +1,7 @@
 [
     {
       command = "workbench.action.terminal.focus";
-      key = "ctrl+=";
+      key = "ctrl+[Equal]";
     }
     {
       command = "workbench.action.focusActiveEditorGroup";
@@ -970,7 +970,7 @@
     }
     {
       command = "workbench.action.togglePanel";
-      key = "ctrl+=";
+      key = "ctrl+[Equal]";
       when = "terminalFocus";
     }
     {

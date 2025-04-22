@@ -15,7 +15,9 @@
     ../../../home-manager/development/default.nix
     ../../../home-manager/cli/default.nix
     ../../../home-manager/gui/default.nix
+    ../../../home-manager/gui/claude-desktop.nix
     ../../../home-manager/wm/hyprland/default.nix
+    ../../../home-manager/mcp-servers/default.nix
   ];
 
   # Basic Home Configuration

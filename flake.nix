@@ -21,11 +21,20 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    claude-desktop = {
+      url = "github:k3d3/claude-desktop-linux-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
     hyprpanel = {
       url = "github:Jas-SinghFSU/HyprPanel";
     };
     hyprsplit = {
       url = "github:shezdy/hyprsplit";
+    };
+    mcp-servers-nix = {
+      url = "github:natsukium/mcp-servers-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     /*
     hyprland = {
@@ -47,7 +56,7 @@
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -86,25 +95,92 @@
       # Custom package overlays including node packages and external overlays
       overlays = {
         default = final: prev: {
-          nodePackages = prev.nodePackages // {
-            exa-mcp-server = prev.callPackage ./pkgs/nodePackages/exa-mcp-server {};
-          };
+          # Add the code-cursor package definition here
+          code-cursor = let
+            pname = "cursor";
+            # NOTE: You might want to update the version and hashes periodically
+            version = "0.48.7"; # Example version, update if needed
+
+            sources = {
+              x86_64-linux = final.fetchurl {
+                url = "https://downloads.cursor.com/production/1d623c4cc1d3bb6e0fe4f1d5434b47b958b05876/linux/x64/Cursor-0.48.7-x86_64.AppImage";
+                hash = "sha256-LxAUhmEM02qCaeUUsHgjv0upAF7eerX+/QiGeKzRY4M=";
+              };
+              aarch64-linux = final.fetchurl {
+                url = "https://downloads.cursor.com/production/1d623c4cc1d3bb6e0fe4f1d5434b47b958b05876/linux/arm64/Cursor-0.48.7-aarch64.AppImage";
+                hash = "sha256-l1T0jLX7oWjq4KzxO4QniUAjzVbBu4SWA1r5aXGpDS4=";
+              };
+              x86_64-darwin = final.fetchurl {
+                url = "https://downloads.cursor.com/production/1d623c4cc1d3bb6e0fe4f1d5434b47b958b05876/darwin/x64/Cursor-darwin-x64.dmg";
+                hash = "sha256-h9zcmZRpOcfBRK5Xw/AdY/rwlINEHYiUgpCoGXg6hSY=";
+              };
+              aarch64-darwin = final.fetchurl {
+                url = "https://downloads.cursor.com/production/1d623c4cc1d3bb6e0fe4f1d5434b47b958b05876/darwin/arm64/Cursor-darwin-arm64.dmg";
+                hash = "sha256-FsXabTXN1Bkn1g4ZkQVqa+sOx4JkSG9c09tp8lAcPKM=";
+              };
+            };
+
+            src = sources.${prev.stdenv.hostPlatform.system} or (throw "Unsupported system: ${prev.stdenv.hostPlatform.system}");
+
+            appimageContents = final.appimageTools.extractType2 {
+              inherit pname version src;
+            };
+
+            linux = final.appimageTools.wrapType2 {
+              inherit pname version src;
+
+              extraPkgs = pkgs: with pkgs; [
+                libsecret
+                xorg.libxshmfence
+                nss
+                xorg.libxkbfile
+                xorg.libX11
+                xorg.libXrandr
+                xorg.libXi
+                gtk3
+                rsync
+              ];
+
+              extraInstallCommands = ''
+                ${final.rsync}/bin/rsync -a ${appimageContents}/usr/share $out/ --exclude "*.so"
+
+                substituteInPlace $out/share/applications/cursor.desktop \
+                  --replace "/usr/share/cursor/cursor" "$out/bin/cursor" \
+                  --replace "Exec=cursor" "Exec=$out/bin/cursor"
+
+                mv $out/bin/${pname} $out/bin/${pname}.bin
+                cat > $out/bin/${pname} <<EOF
+                #!/bin/sh
+                exec $out/bin/${pname}.bin --ozone-platform-hint=auto --enable-wayland-ime=true --disable-gpu "$@"
+                EOF
+                chmod +x $out/bin/${pname}
+              '';
+            };
+
+            darwin = prev.stdenvNoCC.mkDerivation {
+              inherit pname version src;
+              nativeBuildInputs = [ prev.undmg ];
+              sourceRoot = ".";
+              installPhase = ''
+                mkdir -p $out/Applications
+                cp -r Cursor.app $out/Applications/
+                mkdir -p $out/bin
+                ln -s "$out/Applications/Cursor.app/Contents/Resources/app/bin/cursor" "$out/bin/cursor"
+              '';
+            };
+          in
+            if prev.stdenv.isLinux then linux
+            else if prev.stdenv.isDarwin then darwin
+            else throw "Unsupported platform";
 
           # Obsidian X11 mode override
           obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
             installPhase = builtins.replaceStrings
               [ "--ozone-platform=wayland" ]
-              [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
+              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
               oldAttrs.installPhase;
           });
 
-          # Brave Wayland IME override
-          brave = prev.brave.overrideAttrs (oldAttrs: rec {
-            installPhase = builtins.replaceStrings
-             [ "--ozone-platform=wayland" ]
-             [ "--ozone-platform=wayland --enable-wayland-ime=true --disable-gpu" ]
-             oldAttrs.installPhase;
-          });
           # OpenSSH override with custom patch
           openssh = prev.openssh.overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
@@ -154,7 +230,7 @@
           useUserPackages = true;
           backupFileExtension = "backup";
           extraSpecialArgs = {
-            inherit inputs nixpkgs hostname username;
+            inherit inputs nixpkgs hostname username mcp-servers-nix;
             userConfig = {
               desktop = true;
               dev = true;
@@ -276,6 +352,7 @@
         };
 
         packages = pythonTools.pythonVersions;
+        formatter = pkgs.nixpkgs-fmt;
       }
     )) // {
       # Export overlays for external use

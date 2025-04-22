@@ -8,7 +8,6 @@
   # - Configuration Tools: Input method setup utilities
   # - Exa MCP Server Package
   home.packages = with pkgs; [
-    nodePackages.exa-mcp-server
     papirus-icon-theme
     mozc
     fcitx5-mozc
@@ -178,29 +177,6 @@
   # - Automatic startup after network
   # - Development API key configuration
   # - Automatic restart on failure
-  systemd.user.services.exa-mcp-server = {
-    Unit = {
-      Description = "Exa MCP Server";
-      After = "network.target";
-      StartLimitIntervalSec = 3600;
-      StartLimitBurst = 5;
-      DefaultState = "inactive";
-    };
-
-    Service = {
-      Type = "simple";
-      Environment = "EXA_API_KEY=dummy-api-key-for-development";
-      ExecStart = "${pkgs.nodePackages.exa-mcp-server}/bin/exa-mcp-server";
-      Restart = "always";
-      RestartSec = "10";
-      StartLimitAction = "none";
-    };
-
-    Install = {
-      WantedBy = [ "default.target" ];
-      Enable = false;
-    };
-  };
 
   programs.ssh = {
     enable = true;

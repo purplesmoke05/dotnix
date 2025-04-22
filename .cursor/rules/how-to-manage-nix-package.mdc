@@ -1,0 +1,103 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# --- Cursor/Cline Agent Rules and Guidelines for Nix Configuration ---
+
+# このファイルはAIエージェントの動作制御と、Nix設定管理のガイドラインを記述します。
+# ガイドラインはコメント(#)で記述されています。AIエージェントはこれらのガイドラインに従ってください。
+
+# === アクセス制御ルール (例) ===
+# デフォルトは安全のため禁止推奨
+# disallow file **/*
+# disallow command *
+
+# --- 許可するファイル編集 ---
+allow file flake.nix
+allow file home-manager/**/*.nix
+allow file hosts/**/*.nix
+allow file pkgs/**/*.nix
+allow file *.md
+# allow file .cursorrules # このファイル自体の編集を許可する場合
+
+# --- 禁止するファイル編集 ---
+disallow file flake.lock # flake.lock はコマンドで更新する
+disallow file .git/**
+disallow file result*
+disallow file /nix/store/** # Nixストアは絶対に編集しない
+
+# --- 許可するコマンド実行 ---
+allow command nix flake check *
+allow command nix flake lock --update-input *
+allow command nix fmt *
+allow command git status
+allow command git diff *
+allow command git add *
+allow command ls *
+allow command cat *
+allow command nix build .* # ビルドテスト用
+
+# --- 禁止するコマンド実行 ---
+disallow command nix flake update # 全更新は原則禁止
+disallow command nixos-rebuild * # ユーザーの最終確認なしでの適用禁止
+disallow command home-manager switch * # ユーザーの最終確認なしでの適用禁止
+disallow command sudo *
+disallow command rm *
+disallow command git commit * # 自動コミット禁止
+disallow command git push * # 自動プッシュ禁止
+
+# === Nix設定管理ガイドライン ===
+
+# --- 基本原則 ---
+# 1. 宣言的: すべての設定はNix言語で宣言的に記述します。手動での設定変更は行いません。
+# 2. 再現性: `flake.lock` ファイルにより、依存関係のバージョンを固定し、ビルドの再現性を保証します。
+# 3. モジュール性: 設定は機能ごとにモジュール化します (例: gui, cli, shell, wm)。
+
+# --- ファイル編集 ---
+# * 主な編集対象: `flake.nix`, `home-manager/`, `hosts/`, `pkgs/` 内の `.nix` ファイル。
+# * `flake.lock`: **絶対に手動で編集しないでください。** `nix flake lock --update-input <input>` コマンドを使用します。
+# * コメント: 変更理由や複雑な箇所にはコメントを追加してください。
+
+# --- パッケージ管理 ---
+# * 追加場所:
+#   - GUIアプリ: `home-manager/gui/` 以下の適切なファイル。
+#   - CLIツール: `home-manager/cli/` 以下の適切なファイル。
+#   - システム全体: `hosts/<hostname>/nixos.nix` または `hosts/common/nixos.nix` の `environment.systemPackages`。
+# * Home Manager vs NixOS: ユーザー固有の設定はHome Manager、システム全体の設定はNixOSモジュールで行います。
+# * バージョン: 基本的に `flake.nix` の `nixpkgs` に追従します。特定バージョンが必要な場合はオーバーライドを使用します。
+# * Unfree パッケージ: システム設定 (NixOSモジュール) の `nixpkgs.config.allowUnfreePredicate` で許可リストに追加します。Home Manager側では設定しません (`useGlobalPkgs = true` のため)。
+
+# --- Flake Inputs ---
+# * 更新: `nix flake lock --update-input <input>` を使用し、**特定の input のみ** 更新します。`nix flake update` (全更新) は、依存関係の互換性が崩れる可能性があるため、ユーザーの明確な指示がない限り実行しません。
+# * 追加: 新しい input を追加したら、`outputs` 関数の引数にも追加するのを忘れないでください。
+
+# --- オーバーライドとオーバーレイ ---
+# * 必要な場合のみ使用します。パッケージのデフォルト設定で問題ない場合は、オーバーライドは不要です。
+# * Waylandフラグ追加など、特定の挙動変更にオーバーライドを使用します。
+# * オーバーライドは、それを使用するモジュール内、または `flake.nix` の `overlays` セクションに定義します。
+
+# --- コマンド実行 ---
+# * 適用コマンド (`nixos-rebuild switch`, `home-manager switch`): 変更内容を提示し、**ユーザーの承認を得てから** 実行してください。AIが自己判断で適用してはいけません。
+# * 検証コマンド (`nix flake check`, `nix build .#<target>`): 変更内容の妥当性を確認するために実行しても構いません。
+# * フォーマット: `.nix` ファイルを編集した場合、`nix fmt` (または `nixpkgs-fmt`, `alejandra`) を実行してフォーマットを整えてください。
+
+# --- Git ---
+# * 変更後は `git status`, `git diff` で差分を確認し、ユーザーに提示してください。
+# * `git add`: 編集したファイルや追加したファイルをステージングするために使用します。
+# * `git commit`, `git push`: **ユーザーの指示があった場合のみ** 実行します。コミットメッセージもユーザーの指示に従うか、提案してください。
+# * (Use appropriate emojis at the beginning of commit messages, e.g., ✨ feat, 🐛 fix, 📝 docs.)
+
+# --- コミュニケーション ---
+# * 応答言語: **日本語**で応答してください。
+# * コードとコメントの言語: コード内のコメント、変数名、コミットメッセージなどは**英語**で記述してください。(Respond in Japanese. Write code comments, variable names, commit messages, etc. in English.)
+
+# --- セキュリティ ---
+# * 機密情報 (APIキー、パスワード等) は絶対にコードに含めないでください。
+# * `.env` ファイルや `secrets` ディレクトリなど、機密情報が含まれる可能性のあるファイルには触れないでください。
+
+# --- その他 ---
+# * 不明な点や判断に迷う場合は、ユーザーに質問してください。自己判断で進めないでください。
+# * エラーが発生した場合は、エラーメッセージと関連するログを正確に報告してください。
+
+# --- END OF GUIDELINES ---
