@@ -6,6 +6,7 @@
   # - systemd-boot: Modern UEFI bootloader
   # - xanmod kernel: Optimized for desktop performance with better scheduling and lower latency
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 5;
   boot.loader.efi.canTouchEfiVariables = true;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod;
