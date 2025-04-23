@@ -10,6 +10,9 @@
     firefox.enable = true;
   };
 
+  # Add zen-browser package
+  home.packages = [ pkgs.zen-browser ];
+
   # Removed ineffective brave-flags.conf definition
   # xdg.configFile."brave-flags.conf".text = ''
   #  ...

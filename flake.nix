@@ -36,6 +36,10 @@
       url = "github:natsukium/mcp-servers-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    zen-browser-flake = {
+      url = "github:MarceColl/zen-browser-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     /*
       hyprland = {
       url = "github:hyprwm/Hyprland/v0.48.0";
@@ -56,7 +60,7 @@
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -191,6 +195,9 @@
 
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
+
+          # Add zen-browser overlay
+          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
         };
       };
 
