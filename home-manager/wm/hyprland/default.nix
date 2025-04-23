@@ -129,6 +129,18 @@
         "float,class:^()$,title:^(Playwright Inspector)$"
 
         # rulev2 for foot
+        "opaque, class:(code)"
+        "opaque, class:(Code)"
+        "opaque, class:(thunar)"
+        "opaque, class:(Thunar)"
+        "opaque, class:(pavucontrol)"
+        "opaque, class:(Pavucontrol)"
+        "opaque, class:(org.gnome.Nautilus)"
+        "opaque, class:(nemo)"
+        "opaque, class:(Nemo)"
+        "opaque, class:(zen)"
+        "opaque, class:(firefox)"
+        "opaque, class:(Firefox)"
         "opacity 0.9 0.9, class:^(foot-quick)$"
         "float, class:^(foot-quick)$"
         "size 98% 40%, class:^(foot-quick)$"

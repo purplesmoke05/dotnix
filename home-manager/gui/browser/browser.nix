@@ -7,7 +7,11 @@
     brave.enable = true;
     # Use Home Manager's intended option for command line args
     brave.commandLineArgs = [ "--enable-features=UseOzonePlatform" "--ozone-platform=x11" ];
+    firefox.enable = true;
   };
+
+  # Add zen-browser package
+  home.packages = [ pkgs.zen-browser ];
 
   # Removed ineffective brave-flags.conf definition
   # xdg.configFile."brave-flags.conf".text = ''
