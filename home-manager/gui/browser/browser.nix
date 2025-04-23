@@ -7,6 +7,7 @@
     brave.enable = true;
     # Use Home Manager's intended option for command line args
     brave.commandLineArgs = [ "--enable-features=UseOzonePlatform" "--ozone-platform=x11" ];
+    firefox.enable = true;
   };
 
   # Removed ineffective brave-flags.conf definition
