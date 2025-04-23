@@ -1,15 +1,15 @@
 # Issue に基づく機能実装ワークフロー
 
-このドキュメントは、`check_update` タスクによって作成された Issue を調査し、提案された変更を `purplesmoke05/dotnix` リポジトリに実装する手順を概説します。
+このドキュメントは、`check_update` タスクによって作成された Issue を調査し、提案された変更を `purplesmoke05/dotnix` リポジトリに実装する手順を**説明します**。
 
-**始める前に:** まず、`https://github.com/purplesmoke05/dotnix/issues` で**未クローズ (Open)** かつ **`backlog` ラベルが付いていない Issue** を確認し、実装したいものを **1つ選択**してください。以下の説明では、選択した Issue の番号を `#{issue_number}` として扱います。
+**始める前に:** まず、`https://github.com/purplesmoke05/dotnix/issues` で**未クローズ (Open)** かつ **`backlog` ラベルが付いていない Issue** を確認し、実装したいものを **1つ選択**してください。以下の説明では、選択した Issue の特定の番号を `#{issue_number}` として参照します。
 
 ## 1. Issue の調査
 
-*   **Issue の読解:** GitHub 上の選択した Issue `#{issue_number}` の説明と詳細を注意深く読みます。
+*   **Issue を読む:** GitHub 上の選択した Issue `#{issue_number}` の説明と詳細を注意深く読みます。
 *   **変更内容の理解:** 元のリポジトリ (`${TARGET_OWNER}/${TARGET_REPO}`) から提案された変更と、Issue 本文で提示された実装の詳細を確認します。どの Nix ファイル (`flake.nix`, `home-manager/**/*.nix`, `hosts/**/*.nix`, `pkgs/**/*.nix`) を変更する必要があるかに特に注意を払います。変更の根拠と潜在的な影響を分析します。
 
-## 2. 調査結果の Issue への追記 (New Step)
+## 2. 調査結果の Issue への追記
 
 *   **結果の記録:** 調査した内容（例: 提案されたツールの目的、変更によるメリット、潜在的な懸念点、関連情報など）を明確にまとめます。
 *   **コメント投稿:** GitHub の Issue `#{issue_number}` に、調査結果をコメントとして投稿します。これにより、実装判断の根拠や経緯が Issue 上に記録され、後から参照しやすくなります。
@@ -48,9 +48,17 @@
           fd      # 別の関連パッケージを追加
         ];
         ```
-    *   **(Issue に基づいて、すべてのファイルとその計画された変更をリストアップします)**
+    *   **ファイル:** `home-manager/cli/tools.nix` (または関連するファイル)
+        ```nix
+        # Home Manager 設定の変更例 (例: zoxide の有効化)
+        programs.zoxide = {
+          enable = true;
+          enableZshIntegration = true; # シェルに合わせて変更
+        };
+        ```
+    *   **(Issue に基づいて、変更が必要な *すべて* のファイルとその計画された変更を網羅的にリストアップしてください)**
 
-**計画した変更が正確であり、潜在的な副作用がないかを徹底的にレビューします。**
+**計画した変更が正確であり、潜在的な副作用がないかをよく確認します。**
 
 ## 4. 決定: 変更を実装しますか？
 
@@ -62,7 +70,7 @@
 *   実装しない理由（例: 衝突、変更が望ましくない）を説明するコメントを追加します。
 
 **実装すると決定した場合:**
-*   以下に概説する次のステップに進みます。
+*   以下に説明する次のステップに進みます。
 
 ## 5. 実装手順
 
@@ -80,18 +88,14 @@
 3.  **変更の適用:** ステップ 3 の計画に従って、Nix ファイル (`flake.nix`, `home-manager/**/*.nix`, `hosts/**/*.nix`, `pkgs/**/*.nix` など) を変更します。お好みのテキストエディタまたは IDE を使用します。
 4.  **コードのフォーマット:** 変更した Nix ファイルに一貫したフォーマットを適用します。
     ```bash
-    nix fmt
+    find . -name '*.nix' -print0 | xargs -0 nix fmt
     ```
-    *   **(注意)** もし `nix fmt` コマンドが応答なし（スタック）になる場合は、代わりに以下のコマンドを使用してください:
-        ```bash
-        find . -name '*.nix' -print0 | xargs -0 nix fmt
-        ```
 5.  **ローカルビルドテスト:** 変更が正常にビルドされ、エラーが発生しないことを確認します。
     *   **優先コマンド:** 包括的な flake チェックを実行します。
         ```bash
         nix flake check --no-build --print-build-logs
         ```
-    *   **代替コマンド (特定のターゲットをテストする場合):** `<hostname>` や `<username>` のようなプレースホルダーを実際の値に置き換えます。
+    *   **代替コマンド (特定のターゲットをテストする場合):** `<hostname>` や `<username>` のようなプレースホルダーを、**あなたの実際のホスト名とユーザー名に置き換えてください**。
         ```bash
         # オプション: 特定ホストの NixOS 設定をテスト
         # nix build .#nixosConfigurations.<hostname>.config.system.build.toplevel --no-link --print-out-paths
@@ -100,17 +104,18 @@
         # nix build .#homeConfigurations."<username>@<hostname>".activationPackage --no-link --print-out-paths
         ```
     *   **重要:** ビルド (`nix flake check` を含む) が失敗した場合、エラーメッセージを注意深く確認します。Nix コードをデバッグし、問題を修正し、ビルドが成功するまで **ステップ 4 (フォーマット) と 5 (ビルドテスト)** を繰り返します。
-6.  **変更のステージング:** 変更したファイルを Git のステージングエリアに追加します。追加するファイルを明示的に指定します。
+6.  **変更のステージング:** 変更した **すべての関連** ファイルを Git のステージングエリアに追加します。追加するファイルを明示的に指定します。
     ```bash
     git add flake.nix home-manager/cli/git.nix hosts/common/nixos.nix # 変更したすべてのファイル/ディレクトリを明示的に追加
     ```
     *   *(コミットする前に `git status` と `git diff --staged` を使用してステージングされた変更を確認します。)*
 7.  **変更のコミット:** ステージングされた変更を、明確で説明的なメッセージ（**英語で**）と共にコミットします。
-    *   `@check_update.md` のルールと同様に、メッセージの**先頭に適切な絵文字** (例: ✨ `feat`, 🐛 `fix`, 📝 `docs`, 🔧 `chore`, 🎨 `style`, 🚀 `perf`, 🧪 `test`, ♻️ `refactor`, 📦 `build`, ⚙️ `ci`, ⏪ `revert`, ⬆️ `deps`) を付与してください。
+    *   コミットメッセージのルール (特に**先頭の絵文字**) については、`@check_update.md` を参照してください。
     *   従来のコミットメッセージ形式に従いますが、タイトルの先頭に `feat:` や `fix:` のような接頭辞や `(スコープ):` は含めません。
     *   コミットメッセージの**本文**に Issue 番号を記載します。
     ```bash
     # コミットメッセージの例 (英語で記述、先頭に絵文字、スコープなし)
+    # ${TARGET_OWNER}/${TARGET_REPO} は Issue から取得した情報を挿入します
     git commit -m "✨ Implement git editor and add CLI tools" -m "Updates git core.editor setting based on Issue #{issue_number}. Adds ripgrep and fd packages as suggested by the upstream changes in ${TARGET_OWNER}/${TARGET_REPO}."
     ```
     *   *(行った変更を正確に反映するように、絵文字、コミットメッセージのタイトルと本文をカスタマイズします。)*
@@ -120,8 +125,8 @@
     ```
 9.  **プルリクエストの作成 (AI が実行):**
     *   AI (MCP) がプッシュされた `feature/#{issue_number}` ブランチから `main` ブランチへのプルリクエストを作成します。
-    *   **タイトル:** コミットメッセージを反映した簡潔なタイトルを使用します（例: `✨ Implement git editor and add CLI tools`）。タイトルには絵文字を含めますが、先頭に `feat:` や Issue 番号 `(#{issue_number})` は含めません。
-    *   **本文:** AI が変更の簡単な説明を提供します。重要な点として、説明本文に `Closes #{issue_number}` または `Fixes #{issue_number}` を含めることで元の Issue にリンクします。これにより、PR がマージされたときに Issue が自動的にクローズされます。
+    *   **タイトル:** コミットメッセージのタイトルを反映した簡潔なタイトルを使用します（例: `✨ Implement git editor and add CLI tools`）。**タイトルには絵文字を含めます**が、`feat:` のような接頭辞や Issue 番号 `(#{issue_number})` は含めません。
+    *   **本文:** AI が変更の簡単な説明を提供します。重要な点として、説明本文に **`Closes #{issue_number}`** または **`Fixes #{issue_number}`** を含めることで元の Issue にリンクし、PR マージ時に自動クローズされるようにします。
     *   **レビュー担当者/担当者:** AI が、該当する場合は自分自身または関連するレビュー担当者を割り当てます。
     *   **ラベル:** AI が `enhancement`、`bug`、または関連する場合はソースリポジトリのラベル (`${TARGET_OWNER}/${TARGET_REPO}`) など、適切なラベルを追加します。
 
