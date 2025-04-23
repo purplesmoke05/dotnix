@@ -14,6 +14,7 @@
     power-profiles-daemon # Power management
     btop # System monitor
     hyprpanel # Main panel package
+    gcolor3 # Color picker tool (re-added)
   ];
 
   # Hyprpanel configuration
@@ -121,7 +122,7 @@
         controls.enabled = false; # Disable controls section
         shortcuts = {
           enabled = true; # Enable shortcuts
-          right.shortcut1.command = "gcolor3"; # Color picker shortcut
+          right.shortcut1.command = "${pkgs.gcolor3}/bin/gcolor3"; # Color picker shortcut (corrected path)
         };
       };
 
