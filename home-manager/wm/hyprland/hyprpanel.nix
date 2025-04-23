@@ -1,4 +1,4 @@
-{ pkgs, inputs,... }: {
+{ pkgs, inputs, ... }: {
   # Import Hyprpanel module from flake inputs
   imports = [
     inputs.hyprpanel.homeManagerModules.hyprpanel
@@ -24,7 +24,8 @@
     overwrite.enable = true; # Allow configuration overwrites
 
     # Panel appearance and behavior settings
-    settings = {    # Panel layout configuration
+    settings = {
+      # Panel layout configuration
       layout = {
         "bar.layouts" =
           let

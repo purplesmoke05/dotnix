@@ -31,7 +31,7 @@
   users.users.${username} = {
     isNormalUser = true;
     description = "Yosuke Otosu";
-    extraGroups = [ "networkmanager" "wheel" "docker"];
+    extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
     ];
   };

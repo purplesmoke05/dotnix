@@ -72,10 +72,10 @@
 
       # Hyprspace configuration
       "plugin:hyprspace" = {
-        speed = "0.5";                   # アニメーション速度
-        transition = "wipe";             # トランジションエフェクト (wipe, slide, none)
-        workspaces = "10";              # 仮想デスクトップの数
-        gesture_sensitivity = "1.0";     # ジェスチャー感度
+        speed = "0.5"; # アニメーション速度
+        transition = "wipe"; # トランジションエフェクト (wipe, slide, none)
+        workspaces = "10"; # 仮想デスクトップの数
+        gesture_sensitivity = "1.0"; # ジェスチャー感度
       };
 
       "plugin:hyprsplit:persistent_workspaces" = true;
@@ -111,7 +111,7 @@
       };
 
       # Application-specific window rules
-      windowrule = [];
+      windowrule = [ ];
 
       windowrulev2 = [
         "float,class:^(pavucontrol)$"
@@ -227,25 +227,26 @@
         "CTRL, 3, exec, quick-term"
 
         # Hyprspace controls
-        "$mainMod, bracketleft, exec, hyprspace workspace -1"   # 前のワークスペースへ
-        "$mainMod, bracketright, exec, hyprspace workspace +1"  # 次のワークスペースへ
-        "$mainMod SHIFT, bracketleft, exec, hyprspace move -1"  # ウィンドウを前のワークスペースへ移動
+        "$mainMod, bracketleft, exec, hyprspace workspace -1" # 前のワークスペースへ
+        "$mainMod, bracketright, exec, hyprspace workspace +1" # 次のワークスペースへ
+        "$mainMod SHIFT, bracketleft, exec, hyprspace move -1" # ウィンドウを前のワークスペースへ移動
         "$mainMod SHIFT, bracketright, exec, hyprspace move +1" # ウィンドウを次のワークスペースへ移動
       ] ++ [
-          "$mainMod, 0, split:workspace, 10"
-          "$mainMod SHIFT, 0, split:movetoworkspace, 10"
+        "$mainMod, 0, split:workspace, 10"
+        "$mainMod SHIFT, 0, split:movetoworkspace, 10"
       ] ++ (builtins.concatLists (
-            builtins.genList (
-              x:
-              let
-                ws = builtins.toString (x + 1);
-              in
-                [
-                  "$mainMod, ${ws}, split:workspace, ${ws}"
-                  "$mainMod SHIFT, ${ws}, split:movetoworkspace, ${ws}"
-                ]
-            ) 9
-          ));
+        builtins.genList
+          (
+            x:
+            let
+              ws = builtins.toString (x + 1);
+            in
+            [
+              "$mainMod, ${ws}, split:workspace, ${ws}"
+              "$mainMod SHIFT, ${ws}, split:movetoworkspace, ${ws}"
+            ]
+          ) 9
+      ));
 
       # Animation configuration
       animations = {

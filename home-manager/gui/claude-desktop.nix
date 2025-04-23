@@ -7,7 +7,7 @@ let
   # Waylandフラグ付きでラップする
   claudeWrapped = claudeOriginal.overrideAttrs (oldAttrs: {
     # wrapProgram を使うために makeWrapper をビルド時依存に追加
-    nativeBuildInputs = (oldAttrs.nativeBuildInputs or []) ++ [ pkgs.makeWrapper ];
+    nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
 
     # postFixup フェーズで実行ファイルをラップする
     # (installPhase や fixupPhase の後、最終的な $out が準備される前あたりで実行される)
@@ -17,7 +17,8 @@ let
     '';
   });
 
-in {
+in
+{
   # Allow unfree packages for Claude Desktop
   # nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
   #   "claude-desktop-with-fhs"

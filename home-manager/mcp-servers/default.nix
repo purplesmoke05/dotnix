@@ -56,7 +56,7 @@ in
   home.file.".cursor/mcp.json".source = mcpConfig;
 
   # Ensure the secret directory exists
-  home.activation.secretsDir = lib.hm.dag.entryAfter ["writeBoundary"]
+  home.activation.secretsDir = lib.hm.dag.entryAfter [ "writeBoundary" ]
     ''
       mkdir -p ${config.xdg.configHome}/mcp-secrets
     '';
