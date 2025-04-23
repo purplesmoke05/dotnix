@@ -24,6 +24,44 @@
           "~/Projects"
         ];
       };
+
+      # --- Added based on Issue #31 ---
+      # Recommended UI/Sorting settings
+      column.ui = "auto";
+      branch.sort = "-committerdate";
+      tag.sort = "version:refname";
+
+      # Default push behavior
+      push = {
+        default = "simple";
+        autoSetupRemote = true;
+        followTags = true;
+      };
+
+      # Default fetch behavior
+      fetch = {
+        prune = true;
+        pruneTags = true;
+        all = true; # Consider if this is always desired
+      };
+
+      # Helper settings
+      help.autocorrect = "prompt";
+      commit.verbose = true; # Show diff in commit message editor
+
+      # Rerere (Reuse Recorded Resolution) settings
+      rerere = {
+        enabled = true;
+        autoupdate = true;
+      };
+
+      # Rebase helper settings
+      rebase = {
+        autoSquash = true;
+        autoStash = true;
+        updateRefs = true; # Requires Git >= 2.34
+      };
+      # --- End of added settings ---
     };
   };
 
