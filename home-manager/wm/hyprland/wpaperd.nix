@@ -10,7 +10,7 @@
     nixos-artwork.wallpapers.nineish-solarized-dark
   ];
 
-  home.activation.linkWallpapers = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  home.activation.linkWallpapers = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     wallpaperDir="$HOME/Pictures/Wallpapers"
     mkdir -p "$wallpaperDir"
 

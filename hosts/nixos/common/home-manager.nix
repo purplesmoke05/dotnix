@@ -17,7 +17,7 @@
     fcitx5-configtool
     appimage-run
     awscli2
- ];
+  ];
 
   # Environment Variables
   # Input method integration across different toolkits

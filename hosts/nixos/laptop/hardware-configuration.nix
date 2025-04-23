@@ -5,7 +5,8 @@
 
 {
   imports =
-    [ (modulesPath + "/installer/scan/not-detected.nix")
+    [
+      (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
   # Kernel modules for hardware support
@@ -16,13 +17,15 @@
 
   # Root filesystem configuration
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/ae2a1a64-b014-43bd-a8d3-8709e13ae12c";
+    {
+      device = "/dev/disk/by-uuid/ae2a1a64-b014-43bd-a8d3-8709e13ae12c";
       fsType = "ext4";
     };
 
   # Boot partition configuration
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/9C1E-EFBD";
+    {
+      device = "/dev/disk/by-uuid/9C1E-EFBD";
       fsType = "vfat"; # EFI System Partition
       options = [ "fmask=0077" "dmask=0077" ]; # Secure mount options
     };

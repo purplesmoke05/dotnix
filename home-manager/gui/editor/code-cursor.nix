@@ -1,15 +1,16 @@
-{pkgs, config, lib, ...}: let
+{ pkgs, config, lib, ... }:
+let
   beautifyJson = json:
-    pkgs.runCommand "beautified.json" {
-      buildInputs = [ pkgs.jq ];
-      passAsFile = [ "jsonContent" ];
-      jsonContent = json;
-    } ''
+    pkgs.runCommand "beautified.json"
+      {
+        buildInputs = [ pkgs.jq ];
+        passAsFile = [ "jsonContent" ];
+        jsonContent = json;
+      } ''
       cat $jsonContentPath | jq '.' > $out
     '';
 
-  code-cursor-latest
-  = with pkgs; let
+  code-cursor-latest = with pkgs; let
     pname = "cursor";
     version = "0.48.7";
 
@@ -84,17 +85,18 @@
       '';
     };
   in
-    if stdenv.isLinux then linux
-    else if stdenv.isDarwin then darwin
-    else throw "Unsupported platform";
+  if stdenv.isLinux then linux
+  else if stdenv.isDarwin then darwin
+  else throw "Unsupported platform";
 
-in {
+in
+{
   home.packages = with pkgs; [
     code-cursor
   ];
 
   home.activation = {
-    writeCursorConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    writeCursorConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       $DRY_RUN_CMD mkdir -p ${config.home.homeDirectory}/.config/Cursor/User
       $DRY_RUN_CMD cp ${beautifyJson (builtins.toJSON (import ./vscode/settings.nix))} ${config.home.homeDirectory}/.config/Cursor/User/settings.json
       $DRY_RUN_CMD cp ${beautifyJson (builtins.toJSON (import ./vscode/keybindings.nix))} ${config.home.homeDirectory}/.config/Cursor/User/keybindings.json

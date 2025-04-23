@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   # Command-line interface configurations
   # - Git and GitHub CLI tools
   # - Alacritty terminal emulator

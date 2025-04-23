@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   # Development tools and programming languages
   # - Go: Systems programming and web services
   # - Deno: Modern JavaScript/TypeScript runtime

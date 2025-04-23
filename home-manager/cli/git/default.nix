@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   # Git version control configuration
   # - Basic user identity settings
   # - Global Git configuration
@@ -69,7 +69,7 @@
   # - Using Neovim as default editor
   programs.gh = {
     enable = true;
-    extensions = with pkgs; [gh-markdown-preview];
+    extensions = with pkgs; [ gh-markdown-preview ];
     settings = {
       editor = "nvim";
     };

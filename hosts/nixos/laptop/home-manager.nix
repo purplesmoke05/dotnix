@@ -28,10 +28,10 @@
   programs.home-manager.enable = true;
 
   # Monitor configuration
-  wayland.windowManager.hyprland.settings.monitor =[
+  wayland.windowManager.hyprland.settings.monitor = [
     "eDP-1,1920x1080@60,0x0,1" # Built-in laptop display (1920x1080, 60Hz)
   ];
-    # Workspace monitor assignments
+  # Workspace monitor assignments
   wayland.windowManager.hyprland.settings.workspace = [
     "1,monitor:eDP-1,default:true" # Primary workspace
     "2,monitor:eDP-1"

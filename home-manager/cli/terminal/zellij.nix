@@ -13,24 +13,24 @@
 
       keybinds = {
         normal = {
-            "bind \"Ctrl g\"" = {
-              "SwitchToMode" = "Locked";
-            };
-            "bind \"Alt t\"" = {
-              "NewTab" ={};
-            };
-            "bind \"Ctrl q\"" = { "GoToPreviousTab" = {}; };
-            "bind \"Ctrl [\"" = { "GoToNextTab" = {}; };
-            "bind \"Ctrl ,\"" = { MoveFocus = "Left"; };
-            "bind \"Ctrl .\"" = { MoveFocus = "Right"; };
-            "unbind \"Ctrl p\""= {};
-            "unbind \"Ctrl n\""= {};
-            "unbind \"Ctrl b\""= {};
+          "bind \"Ctrl g\"" = {
+            "SwitchToMode" = "Locked";
+          };
+          "bind \"Alt t\"" = {
+            "NewTab" = { };
+          };
+          "bind \"Ctrl q\"" = { "GoToPreviousTab" = { }; };
+          "bind \"Ctrl [\"" = { "GoToNextTab" = { }; };
+          "bind \"Ctrl ,\"" = { MoveFocus = "Left"; };
+          "bind \"Ctrl .\"" = { MoveFocus = "Right"; };
+          "unbind \"Ctrl p\"" = { };
+          "unbind \"Ctrl n\"" = { };
+          "unbind \"Ctrl b\"" = { };
         };
         locked = {
-            "bind \"Ctrl g\"" = {
-              "SwitchToMode" = "Normal";
-            };
+          "bind \"Ctrl g\"" = {
+            "SwitchToMode" = "Normal";
+          };
         };
       };
 

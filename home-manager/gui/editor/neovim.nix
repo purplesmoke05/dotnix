@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   # Neovim editor configuration
   # - Aliases for vi and vim commands
   # - Plugin management

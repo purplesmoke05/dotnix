@@ -1,15 +1,16 @@
-{pkgs, config, lib, ...}:
+{ pkgs, config, lib, ... }:
 let
   # Create custom discocss package (for discord-ptb)
   customDiscocss = pkgs.discocss.override {
     discordAlias = true;
     discord = pkgs.discord-ptb;
   };
-in {
+in
+{
   # Discord Public Test Build installation
   home.packages = with pkgs; [
     discord-ptb
-    customDiscocss  # Add custom package
+    customDiscocss # Add custom package
   ];
 
   # Discord client settings

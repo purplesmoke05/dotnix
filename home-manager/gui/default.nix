@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{ pkgs, ... }: {
   # GUI application configurations
   # - Web browser settings
   # - Neovim editor configuration

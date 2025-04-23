@@ -79,10 +79,10 @@
     fontDir.enable = true;
     fontconfig = {
       defaultFonts = {
-        serif = ["PlemolJP" "Noto Serif CJK JP" "Noto Color Emoji" "Twitter Color Emoji"];
-        sansSerif = ["PlemolJP" "Noto Sans CJK JP" "Noto Color Emoji" "Twitter Color Emoji"];
-        monospace = ["RictyDiminished-Regular" "PlemolJP Console" "JetBrainsMono Nerd Font" "Noto Color Emoji" "Twitter Color Emoji"];
-        emoji = ["Noto Color Emoji" "Twitter Color Emoji"];
+        serif = [ "PlemolJP" "Noto Serif CJK JP" "Noto Color Emoji" "Twitter Color Emoji" ];
+        sansSerif = [ "PlemolJP" "Noto Sans CJK JP" "Noto Color Emoji" "Twitter Color Emoji" ];
+        monospace = [ "RictyDiminished-Regular" "PlemolJP Console" "JetBrainsMono Nerd Font" "Noto Color Emoji" "Twitter Color Emoji" ];
+        emoji = [ "Noto Color Emoji" "Twitter Color Emoji" ];
       };
       localConf = ''
         <?xml version="1.0"?>
@@ -182,7 +182,7 @@
             C-y = "C-v";
           };
           application = {
-            only = ["obsidian" "Obsidian" "obsidian.Obsidian" "Obsidian.obsidian" "Obsidian.Obsidian"];
+            only = [ "obsidian" "Obsidian" "obsidian.Obsidian" "Obsidian.obsidian" "Obsidian.Obsidian" ];
           };
         }
       ];
@@ -374,12 +374,12 @@
         enable = true;
         setSocketVariable = true;
         daemon.settings = {
-          dns = ["8.8.8.8" "8.8.4.4"];
+          dns = [ "8.8.8.8" "8.8.4.4" ];
         };
       };
       autoPrune.enable = true;
       daemon.settings = {
-        dns = ["8.8.8.8" "8.8.4.4"];
+        dns = [ "8.8.8.8" "8.8.4.4" ];
       };
     };
   };
@@ -531,7 +531,7 @@
   nix = {
     settings = {
       auto-optimise-store = true;
-      experimental-features = ["nix-command" "flakes"];
+      experimental-features = [ "nix-command" "flakes" ];
     };
     gc = {
       automatic = true;
@@ -571,8 +571,8 @@
     };
   };
   environment.variables = {
-    PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
-    LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib";
+    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+    LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
   };
 
   # System Security Configuration

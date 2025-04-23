@@ -1,13 +1,16 @@
-{pkgs, ...}: let
+{ pkgs, ... }:
+let
   beautifyJson = json:
-    pkgs.runCommand "beautified.json" {
-      buildInputs = [ pkgs.jq ];
-      passAsFile = [ "jsonContent" ];
-      jsonContent = json;
-    } ''
+    pkgs.runCommand "beautified.json"
+      {
+        buildInputs = [ pkgs.jq ];
+        passAsFile = [ "jsonContent" ];
+        jsonContent = json;
+      } ''
       cat $jsonContentPath | jq '.' > $out
     '';
-in {
+in
+{
   programs.vscode = {
     enable = true;
     keybindings = import ./keybindings.nix;
