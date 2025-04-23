@@ -38,4 +38,16 @@
       editor = "nvim";
     };
   };
+
+  # Lazygit configuration using the dedicated module
+  programs.lazygit = {
+    enable = true;
+    settings = {
+      git = {
+        # Example setting - adjust as needed
+        overrideGpg = true;
+      };
+      # Add other lazygit settings here if necessary
+    };
+  };
 }
