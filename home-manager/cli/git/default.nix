@@ -25,7 +25,6 @@
         ];
       };
 
-      # --- Added based on Issue #31 ---
       # Recommended UI/Sorting settings
       column.ui = "auto";
       branch.sort = "-committerdate";
@@ -61,7 +60,6 @@
         autoStash = true;
         updateRefs = true; # Requires Git >= 2.34
       };
-      # --- End of added settings ---
     };
   };
 
