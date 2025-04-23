@@ -2,7 +2,7 @@
 
 このドキュメントは、`check_update` タスクによって作成された Issue を調査し、提案された変更を `purplesmoke05/dotnix` リポジトリに実装する手順を概説します。
 
-**始める前に:** まず、`https://github.com/purplesmoke05/dotnix/issues` で**未クローズ (Open) の Issue** を確認し、実装したいものを **1つ選択**してください。以下の説明では、選択した Issue の番号を `#{issue_number}` として扱います。
+**始める前に:** まず、`https://github.com/purplesmoke05/dotnix/issues` で**未クローズ (Open)** かつ **`backlog` ラベルが付いていない Issue** を確認し、実装したいものを **1つ選択**してください。以下の説明では、選択した Issue の番号を `#{issue_number}` として扱います。
 
 ## 1. Issue の調査
 
@@ -103,10 +103,10 @@
     *   *(コミットする前に `git status` と `git diff --staged` を使用してステージングされた変更を確認します。)*
 7.  **変更のコミット:** ステージングされた変更を、明確で説明的なメッセージ（**英語で**）と共にコミットします。
     *   `@check_update.md` のルールと同様に、メッセージの**先頭に適切な絵文字** (例: ✨ `feat`, 🐛 `fix`, 📝 `docs`, 🔧 `chore`, 🎨 `style`, 🚀 `perf`, 🧪 `test`, ♻️ `refactor`, 📦 `build`, ⚙️ `ci`, ⏪ `revert`, ⬆️ `deps`) を付与してください。
-    *   従来のコミットメッセージ形式に従います。
-    *   Issue 番号を記載します。
+    *   従来のコミットメッセージ形式に従いますが、タイトルの先頭に `feat:` や `fix:` のような接頭辞や `(スコープ):` は含めません。
+    *   コミットメッセージの**本文**に Issue 番号を記載します。
     ```bash
-    # コミットメッセージの例 (英語で記述、先頭に絵文字)
+    # コミットメッセージの例 (英語で記述、先頭に絵文字、スコープなし)
     git commit -m "✨ Implement git editor and add CLI tools" -m "Updates git core.editor setting based on Issue #{issue_number}. Adds ripgrep and fd packages as suggested by the upstream changes in ${TARGET_OWNER}/${TARGET_REPO}."
     ```
     *   *(行った変更を正確に反映するように、絵文字、コミットメッセージのタイトルと本文をカスタマイズします。)*
@@ -114,21 +114,16 @@
     ```bash
     git push -u origin feature/#{issue_number}
     ```
-9.  **プルリクエストの作成:**
-    *   Web ブラウザで GitHub の `purplesmoke05/dotnix` リポジトリページに移動します。
-    *   GitHub は、最近プッシュされた `feature/#{issue_number}` ブランチのプルリクエストを作成するプロンプトを表示するはずです。「Compare & pull request」ボタンをクリックします。
-    *   **タイトル:** コミットメッセージを反映した簡潔なタイトルを使用します（例: `✨ feat(#{issue_number}): Implement changes from Issue #{issue_number}`）。タイトルにも絵文字を含めます。
-    *   **本文:** 変更の簡単な説明を提供します。重要な点として、説明本文に `Closes #{issue_number}` または `Fixes #{issue_number}` を含めることで元の Issue にリンクします。これにより、PR がマージされたときに Issue が自動的にクローズされます。
-    *   **レビュー担当者/担当者:** 該当する場合は、自分自身または関連するレビュー担当者を割り当てます。
-    *   **ラベル:** `enhancement`、`bug`、または関連する場合はソースリポジトリのラベル (`${TARGET_OWNER}/${TARGET_REPO}`) など、適切なラベルを追加します。
-    *   「Create pull request」をクリックします。
+9.  **プルリクエストの作成 (AI が実行):**
+    *   AI (MCP) がプッシュされた `feature/#{issue_number}` ブランチから `main` ブランチへのプルリクエストを作成します。
+    *   **タイトル:** コミットメッセージを反映した簡潔なタイトルを使用します（例: `✨ Implement git editor and add CLI tools`）。タイトルには絵文字を含めますが、先頭に `feat:` や Issue 番号 `(#{issue_number})` は含めません。
+    *   **本文:** AI が変更の簡単な説明を提供します。重要な点として、説明本文に `Closes #{issue_number}` または `Fixes #{issue_number}` を含めることで元の Issue にリンクします。これにより、PR がマージされたときに Issue が自動的にクローズされます。
+    *   **レビュー担当者/担当者:** AI が、該当する場合は自分自身または関連するレビュー担当者を割り当てます。
+    *   **ラベル:** AI が `enhancement`、`bug`、または関連する場合はソースリポジトリのラベル (`${TARGET_OWNER}/${TARGET_REPO}`) など、適切なラベルを追加します。
 
 ## 6. レビューとマージ
 
 *   プルリクエストのチェック（自動テスト、ビルド、リンター）を監視し、すべてパスすることを確認します。
-*   レビュー担当者からのフィードバックや変更要求に対応します。必要であれば、同じ `feature/#{issue_number}` ブランチに追加のコミットをプッシュします。
-*   PR が承認され、すべてのチェックがパスしたら、GitHub インターフェースを使用して `main` ブランチにマージします（通常は Squash and merge または Rebase and merge を使用）。
-*   マージ後、オプションでフィーチャーブランチをローカルとリモートの両方から削除できます。
 
 ---
 *このワークフロードキュメントは、監視対象リポジトリの更新に基づいて変更を実装するプロセスを効率化するために、Gemini と Cursor Agent の支援を受けて生成されました。*
