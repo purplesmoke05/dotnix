@@ -1,7 +1,10 @@
-{
+{ pkgs, ... }: {
   programs.starship = {
     enable = true;
     settings = {
+      # Define format as a single-line Nix string without $ escaping
+      format = "$directory$git_branch$git_status$rust$python$nodejs$nix_shell$line_break$character";
+
       # Nerd Font Symbols
       aws.symbol = "  ";
       buf.symbol = " ";
@@ -71,6 +74,22 @@
       rust.symbol = " ";
       scala.symbol = " ";
       spack.symbol = "🅢 ";
+
+      # Optional: Add status symbols for clarity
+      status = {
+        symbol = "✓";
+        error_symbol = "✗";
+        pipestatus = true;
+        disabled = false;
+      };
+
+      # Optional: Configure cmd_duration display threshold (e.g., only show if > 500ms)
+      cmd_duration = {
+         min_time = 500; # milliseconds
+         show_milliseconds = false;
+         disabled = false;
+         style = "bold yellow";
+      };
     };
   };
 }

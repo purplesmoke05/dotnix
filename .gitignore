@@ -2,3 +2,5 @@
 tasks/**
 !tasks/implement_feature.md
 logs/**
+# SpecStory explanation file
+.specstory/.what-is-this.md

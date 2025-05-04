@@ -221,8 +221,6 @@
         update = "uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py && uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py && sudo -E nixos-rebuild switch --flake .#hq";
       };
       shellInit = ''
-        any-nix-shell fish --info-right | source
-
         # Python version auto-switcher function
         function __check_python_version
           if test -e .python-version
@@ -243,21 +241,8 @@
           end
         end
 
-        # Function to check Rust toolchain
-        function __check_rust_toolchain
-          if test -e rust-toolchain.toml
-            set -l toolchain (remarshal -i rust-toolchain.toml -if toml -of json | jq -r .toolchain.channel)
-            if not test -n "$IN_NIX_SHELL"
-              echo "Rustプロジェクトを検出しました（toolchain: $toolchain）"
-              nix develop $HOME/.nix#rust
-            end
-          end
-        end
-
         # Directory change handler
         function __on_pwd_change --on-variable PWD
-          __auto_nix_develop
-          __check_rust_toolchain
           __check_python_version
         end
 
@@ -339,25 +324,12 @@
           end
         end
 
-        # Auto-activate nix develop when entering directory with flake.nix
-        function __auto_nix_develop --on-variable PWD
-          if test -n "$IN_NIX_SHELL"
-            return
-          end
-
-          if test -e flake.nix
-            echo "Found flake.nix, activating development environment..."
-            nix develop
-          end
-        end
-
         # Key binding settings
         bind \cr peco_ghq
         bind \cw peco_kill
 
         # Execute initialization checks
         __check_vscode_and_develop
-        __check_rust_toolchain
       '';
     };
     noisetorch.enable = true;
@@ -424,19 +396,21 @@
     pkg-config
     python3Packages.toml
     jq
-    rustup
     remarshal
     gnum4
     gnumake
-    zstd
-    llvmPackages.libclang.lib
-    clang
     jetbrains.rust-rover
-    libclang
-    libdrm.dev
     libglvnd
     mesa
+    zstd
+    zstd.dev
+    glibc.dev
     libdrm
+    libdrm.dev
+    llvmPackages.libclang
+    llvmPackages.clang
+    zlib.dev
+    direnv
   ];
 
   # Nix-ld Configuration
@@ -503,11 +477,25 @@
       librsvg
       xorg.libXft
       libvdpau
-      zstd
       libiconv
       llvmPackages.libclang.lib
       clang
       libxcrypt
+      libclang
+      stdenv.cc.libc.dev
+      zlib
+      zlib.dev
+      pkg-config
+      llvmPackages.libclang
+      stdenv.cc.cc.lib
+      zlib
+      zstd
+      zstd.dev
+      glibc
+      libdrm.dev
+      stdenv.cc.libc.dev
+      glibc.dev
+      glibc.out
     ];
   };
 
@@ -571,8 +559,6 @@
     };
   };
   environment.variables = {
-    PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-    LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
   };
 
   # System Security Configuration

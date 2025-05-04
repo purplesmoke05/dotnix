@@ -111,6 +111,8 @@
   procMacro = {
   enable = true;
 };
+  restartServerOnConfigChange = true;
+  showSyntaxTree = true;
 };
   scm = {
   alwaysShowRepositories = true;
