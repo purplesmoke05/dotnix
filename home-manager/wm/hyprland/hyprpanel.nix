@@ -136,4 +136,21 @@
       };
     };
   };
+
+  # Systemd user service definition for Hyprpanel
+  systemd.user.services.hyprpanel = {
+    Unit = {
+      Description = "Hyprpanel Status Bar";
+      PartOf = [ "graphical-session.target" ]; # Start with graphical session
+      After = [ "graphical-session-pre.target" ]; # Ensure graphical session is ready
+    };
+    Service = {
+      ExecStart = "${pkgs.hyprpanel}/bin/hyprpanel"; # Path to hyprpanel executable
+      Restart = "on-failure"; # Restart if it crashes
+      RestartSec = "5s"; # Wait 5 seconds before restarting
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ]; # Enable on graphical session start
+    };
+  };
 }

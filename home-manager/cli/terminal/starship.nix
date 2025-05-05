@@ -3,7 +3,7 @@
     enable = true;
     settings = {
       # Define format as a single-line Nix string without $ escaping
-      format = "$directory$git_branch$git_status$rust$python$nodejs$nix_shell$line_break$character";
+      format = "$golang$rust$python$nodejs$nix_shell$cmd_duration$line_break$username@$hostname $directory$git_branch$character";
 
       # Nerd Font Symbols
       aws.symbol = "  ";
@@ -74,6 +74,37 @@
       rust.symbol = " ";
       scala.symbol = " ";
       spack.symbol = "🅢 ";
+
+      # --- Add/Modify module settings for the second line ---
+      username = {
+        show_always = true;
+        format = "[$user]($style)"; # Default format
+        style_user = "bold green";
+      };
+
+      hostname = {
+        ssh_only = false; # Show hostname even if not on SSH
+        format = "[$hostname]($style)"; # Default format
+        style = "bold blue";
+      };
+
+      git_branch = {
+        format = "\\([$symbol$branch]($style)\\)"; # Remove 'on' or other prefixes
+        style = "bold purple";
+      };
+
+      # Directory settings for the second line
+      directory = {
+          # read_only = " "; # Keep existing read_only symbol if defined - REMOVED TO FIX LINTER ERROR
+          home_symbol = "~"; # Use ~ for home directory
+          truncation_length = 1; # Example: show last 3 dirs, adjust as needed
+          truncate_to_repo = false; # Show path relative to repo root if possible
+          format = "[$path]($style)[$read_only]($read_only_style) "; # Add space at the end if needed, or adjust based on surrounding elements
+          style = "bold cyan"; # Example style
+      };
+
+      # Keep existing character settings
+      # character = { ... };
 
       # Optional: Add status symbols for clarity
       status = {

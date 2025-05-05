@@ -3,7 +3,7 @@
 {
   programs.zellij = {
     enable = true;
-    enableFishIntegration = true;
+    enableFishIntegration = false;
     settings = {
       show_banner = false;
       show_startup_tips = false;

@@ -350,10 +350,14 @@
       {
         devShells = {
           default = pkgs.mkShell {
-            packages = [ pythonTools.pythonVersions.py312 ];
+            buildInputs = [ pythonTools.pythonVersions.py312 pkgs.fish ];
             shellHook = ''
               echo "Welcome to Python ${pythonTools.pythonVersions.py312.version} environment"
               export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+              # Execute fish if not already in fish shell
+              if [ -z "$FISH_VERSION" ]; then
+                exec ${pkgs.fish}/bin/fish
+              fi
             '';
           };
 

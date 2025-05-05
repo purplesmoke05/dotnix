@@ -13,9 +13,25 @@
   # Enhanced shell history search
   programs.atuin = {
     enable = true;
-    # Optional: Configure atuin settings if needed
-    # settings = {
-    #   auto_sync = true;
-    # };
+    enableFishIntegration = false; # Explicitly disable fish integration handled by the module
+    # Pass flags to `atuin init fish` command
+    flags = [ "--disable-ctrl-r" ];
+    # Configure atuin settings
+    settings = {
+      # auto_sync = true;
+      # Use attribute set for keybindings instead of configText
+      keymap_mode = "emacs"; # Explicitly set keymap mode
+      keymap = {
+        emacs = { # Assuming default Emacs keymap mode. Change to 'vim' if needed.
+          # Assign Ctrl+R to "no-op" (no operation) to free it up.
+          ctrl_r = "no-op";
+          # Assign Ctrl+I to the search action.
+          ctrl_i = "search";
+          # You can add other keybindings here if needed, for example:
+          # page_up = "page_up";
+          # page_down = "page_down";
+        };
+      };
+    };
   };
 }
