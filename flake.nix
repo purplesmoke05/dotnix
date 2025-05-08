@@ -103,8 +103,8 @@
       # Package Overlays
       # Custom package overlays including node packages and external overlays
       overlays = {
-        default = final: prev: {
-          # Add the code-cursor package definition here
+        common = final: prev: {
+          # Common packages like code-cursor, python, zen-browser
           code-cursor =
             let
               pname = "cursor";
@@ -183,15 +183,7 @@
             else if prev.stdenv.isDarwin then darwin
             else throw "Unsupported platform";
 
-          # Obsidian X11 mode override
-          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
-            installPhase = builtins.replaceStrings
-              [ "--ozone-platform=wayland" ]
-              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
-              oldAttrs.installPhase;
-          });
-
-          # OpenSSH override with custom patch
+          # OpenSSH override with custom patch - assuming this patch is platform-agnostic or handled correctly by nixpkgs for both
           openssh = prev.openssh.overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
             doCheck = false;
@@ -203,6 +195,20 @@
           # Add zen-browser overlay
           zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
         };
+
+        nixos = final: prev: {
+          # NixOS/Linux specific overlays, e.g., Obsidian X11 mode
+          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
+            installPhase = builtins.replaceStrings
+              [ "--ozone-platform=wayland" ]
+              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
+              oldAttrs.installPhase;
+          });
+        };
+
+        # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
+        # or for NixOS configurations that used to refer to 'default'.
+        default = final: prev: (self.overlays.common final prev) // (self.overlays.nixos final prev);
       };
 
       # User Configuration
@@ -264,7 +270,7 @@
         nixpkgs.overlays = [
           (import rust-overlay)
           inputs.hyprpanel.overlay
-          self.overlays.default
+          self.overlays.default # This now correctly includes common and nixos specific parts
         ];
       };
 
@@ -324,7 +330,7 @@
           inherit system;
           # Apply overlays and allow unfree packages for Darwin as well
           config.allowUnfree = true; # Or manage via nixpkgs.config.allowUnfreePredicate if preferred
-          overlays = [ self.overlays.default ];
+          overlays = [ self.overlays.common ]; # Apply ONLY common overlays for Darwin
         };
         modules = [
           ./hosts/darwin/configuration.nix # Adjusted path
