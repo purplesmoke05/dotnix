@@ -40,6 +40,10 @@
       url = "github:MarceColl/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     /*
       hyprland = {
       url = "github:hyprwm/Hyprland/v0.48.0";
@@ -60,7 +64,7 @@
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, nix-darwin, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -310,6 +314,34 @@
             /*inherit (inputs) hyprland hyprland-protocols;*/
           };
         };
+
+      darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default to "user" if not set
+      darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default to "darwin-host" if not set
+
+      mkDarwinSystem = { hostname, username, system ? "aarch64-darwin" }: nix-darwin.lib.darwinSystem {
+        inherit system;
+        pkgs = import nixpkgs {
+          inherit system;
+          # Apply overlays and allow unfree packages for Darwin as well
+          config.allowUnfree = true; # Or manage via nixpkgs.config.allowUnfreePredicate if preferred
+          overlays = [ self.overlays.default ];
+        };
+        modules = [
+          ./hosts/darwin/configuration.nix # Adjusted path
+          home-manager.darwinModules.home-manager
+          {
+            networking.hostName = hostname;
+            # users.users.${username}.home is typically set in ./darwin/configuration.nix
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = false; # As per original darwin/flake.nix
+            home-manager.users.${username} = { pkgs, lib, config, ... }: # pkgs, lib, config are passed by home-manager.darwinModules.home-manager
+              import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and passed args
+          }
+        ];
+        specialArgs = {
+          inherit inputs nixpkgs home-manager username; # Pass necessary inputs and args
+        };
+      };
     in
     (flake-utils.lib.eachDefaultSystem (system:
       let
@@ -386,5 +418,20 @@
           enabledUsers = [ "primary" ];
         };
       };
+
+      # Darwin System Configurations
+      # Define Darwin configurations if DARWIN_HOST and DARWIN_USER are set
+      darwinConfigurations =
+        if darwinHost != "" && darwinUser != "" && darwinHost != "darwin-host" && darwinUser != "user" then {
+          ${darwinHost} = mkDarwinSystem {
+            hostname = darwinHost;
+            username = darwinUser;
+            # You might want to dynamically set the system based on an env var or host, e.g.
+            # system = if darwinHost == "my-m1-mac" then "aarch64-darwin" else "x86_64-darwin";
+          };
+        } else {
+          # Optionally, provide a default or placeholder if env vars are not set
+          # Or simply leave it empty if no Darwin config is intended without env vars
+        };
     };
 }
