@@ -145,6 +145,9 @@
 };
   enableImages = true;
   enableVisualBell = true;
+  fontFamily = "Hack Nerd Font";
+  fontSize = 12;
+  fontWeight = "100";
   profiles = {
   linux = {
   fish = {

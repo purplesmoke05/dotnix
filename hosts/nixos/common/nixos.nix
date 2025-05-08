@@ -157,9 +157,8 @@
         {
           name = "Emacs-style";
           remap = {
-            C-h = "Backspace";
+            C-h = "KEY_BACKSPACE";
           };
-
         }
         {
           name = "Emacs-style basic keybindings for Obsidian";
