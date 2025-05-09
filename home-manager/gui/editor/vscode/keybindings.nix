@@ -5,7 +5,7 @@
     }
     {
       command = "workbench.action.focusActiveEditorGroup";
-      key = "ctrl+]";
+      key = "ctrl+[";
     }
     {
       command = "-workbench.action.files.newUntitledFile";
@@ -890,7 +890,7 @@
     }
     {
       command = "workbench.action.toggleSidebarVisibility";
-      key = "ctrl+q";
+      key = "ctrl+[";
       when = "!config.emacs-mcx.useMetaPrefixMacCmd";
     }
     {
