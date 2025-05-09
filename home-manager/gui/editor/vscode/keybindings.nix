@@ -999,4 +999,12 @@
       command = "composerMode.agent";
       key = "ctrl+i";
     }
+    {
+      command = "-workbench.action.quickOpenNavigateNextInViewPicker";
+      key = "";
+    }
+    {
+      command = "-workbench.action.quickOpenView";
+      key = "";
+    }
   ]
