@@ -104,7 +104,30 @@
       # Custom package overlays including node packages and external overlays
       overlays = {
         common = final: prev: {
-          # Common packages like code-cursor, python, zen-browser
+          # Common packages like python, zen-browser
+          # OpenSSH override with custom patch - assuming this patch is platform-agnostic or handled correctly by nixpkgs for both
+          openssh = prev.openssh.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
+            doCheck = false;
+          });
+
+          # Add Python-related functionality
+          inherit (mkPythonBuilders prev) buildPython pythonVersions;
+
+          # Add zen-browser overlay
+          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
+        };
+
+        nixos = final: prev: {
+          # NixOS/Linux specific overlays, e.g., Obsidian X11 mode
+          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
+            installPhase = builtins.replaceStrings
+              [ "--ozone-platform=wayland" ]
+              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
+              oldAttrs.installPhase;
+          });
+
+          # Add the code-cursor package definition here
           code-cursor =
             let
               pname = "cursor";
@@ -182,28 +205,6 @@
             if prev.stdenv.isLinux then linux
             else if prev.stdenv.isDarwin then darwin
             else throw "Unsupported platform";
-
-          # OpenSSH override with custom patch - assuming this patch is platform-agnostic or handled correctly by nixpkgs for both
-          openssh = prev.openssh.overrideAttrs (old: {
-            patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
-            doCheck = false;
-          });
-
-          # Add Python-related functionality
-          inherit (mkPythonBuilders prev) buildPython pythonVersions;
-
-          # Add zen-browser overlay
-          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
-        };
-
-        nixos = final: prev: {
-          # NixOS/Linux specific overlays, e.g., Obsidian X11 mode
-          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
-            installPhase = builtins.replaceStrings
-              [ "--ozone-platform=wayland" ]
-              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
-              oldAttrs.installPhase;
-          });
         };
 
         # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
