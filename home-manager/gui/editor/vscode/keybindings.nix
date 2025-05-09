@@ -1007,4 +1007,9 @@
       command = "-workbench.action.quickOpenView";
       key = "";
     }
+    {
+      command = "-renameFile";
+      key = "enter";
+      when = "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus";
+    }
   ]
