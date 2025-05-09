@@ -44,6 +44,16 @@
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    brew-nix = {
+      url = "github:BatteredBunny/brew-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nix-darwin.follows = "nix-darwin";
+      inputs.brew-api.follows = "brew-api";
+    };
+    brew-api = {
+      url = "github:BatteredBunny/brew-api";
+      flake = false;
+    };
     /*
       hyprland = {
       url = "github:hyprwm/Hyprland/v0.48.0";
@@ -64,7 +74,7 @@
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, nix-darwin, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -332,10 +342,13 @@
           inherit system;
           # Apply overlays and allow unfree packages for Darwin as well
           config.allowUnfree = true; # Or manage via nixpkgs.config.allowUnfreePredicate if preferred
-          overlays = [ self.overlays.common ]; # Apply ONLY common overlays for Darwin
+          overlays = [
+            self.overlays.common
+            brew-nix.overlays.default
+          ]; # Apply ONLY common overlays for Darwin
         };
         modules = [
-          ./hosts/darwin/configuration.nix # Adjusted path
+          ./hosts/darwin/configuration.nix # Adjusted pag
           home-manager.darwinModules.home-manager
           {
             networking.hostName = hostname;

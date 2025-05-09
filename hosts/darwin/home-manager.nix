@@ -6,6 +6,7 @@
     ./../../home-manager/cli/terminal/alacritty.nix
     ./../../home-manager/cli/terminal/starship.nix
     ./../../home-manager/cli/terminal/zellij.nix
+    # ./../../home-manager/cli/terminal/ghostty.nix
     ./../../home-manager/cli/alternative.nix
     ./../../home-manager/gui/editor/vscode
   ];
