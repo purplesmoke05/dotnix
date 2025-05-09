@@ -325,6 +325,7 @@
       darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default to "user" if not set
       darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default to "darwin-host" if not set
 
+      # Darwin System Builder
       mkDarwinSystem = { hostname, username, system ? "aarch64-darwin" }: nix-darwin.lib.darwinSystem {
         inherit system;
         pkgs = import nixpkgs {
@@ -338,11 +339,12 @@
           home-manager.darwinModules.home-manager
           {
             networking.hostName = hostname;
-            # users.users.${username}.home is typically set in ./darwin/configuration.nix
+            users.users.${username}.home = "/Users/${username}";
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = false; # As per original darwin/flake.nix
             home-manager.users.${username} = { pkgs, lib, config, ... }: # pkgs, lib, config are passed by home-manager.darwinModules.home-manager
               import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and passed args
+            home-manager.backupFileExtension = "backup";
           }
         ];
         specialArgs = {
@@ -428,17 +430,9 @@
 
       # Darwin System Configurations
       # Define Darwin configurations if DARWIN_HOST and DARWIN_USER are set
-      darwinConfigurations =
-        if darwinHost != "" && darwinUser != "" && darwinHost != "darwin-host" && darwinUser != "user" then {
-          ${darwinHost} = mkDarwinSystem {
-            hostname = darwinHost;
-            username = darwinUser;
-            # You might want to dynamically set the system based on an env var or host, e.g.
-            # system = if darwinHost == "my-m1-mac" then "aarch64-darwin" else "x86_64-darwin";
-          };
-        } else {
-          # Optionally, provide a default or placeholder if env vars are not set
-          # Or simply leave it empty if no Darwin config is intended without env vars
-        };
+      darwinConfigurations.${darwinHost} = mkDarwinSystem {
+        hostname = darwinHost;
+        username = darwinUser;
+      };
     };
 }

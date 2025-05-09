@@ -2,8 +2,6 @@
 {
   # Packages to be installed on the system
   environment.systemPackages = with pkgs; [
-    vim
-    git
   ];
 
   # Enable automatic upgrade of the Nix daemon

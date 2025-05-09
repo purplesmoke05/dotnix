@@ -1,6 +1,14 @@
 { pkgs, lib, username, ... }:
 
 {
+  imports = [
+    ./../../home-manager/cli/git
+    ./../../home-manager/cli/terminal/alacritty.nix
+    ./../../home-manager/cli/terminal/starship.nix
+    ./../../home-manager/cli/terminal/zellij.nix
+    ./../../home-manager/cli/alternative.nix
+    ./../../home-manager/gui/editor/vscode
+  ];
   home.packages = with pkgs; [
     ripgrep
     fd
