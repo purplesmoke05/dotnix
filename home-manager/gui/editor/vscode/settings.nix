@@ -194,7 +194,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  terminal.integrated.fontFamily = "Hack Nerd Font";
-  terminal.integrated.fontSize = 12;
-  terminal.integrated.fontWeight = "100";
 }

@@ -40,6 +40,20 @@
       url = "github:MarceColl/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    brew-nix = {
+      url = "github:BatteredBunny/brew-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nix-darwin.follows = "nix-darwin";
+      inputs.brew-api.follows = "brew-api";
+    };
+    brew-api = {
+      url = "github:BatteredBunny/brew-api";
+      flake = false;
+    };
     /*
       hyprland = {
       url = "github:hyprwm/Hyprland/v0.48.0";
@@ -60,7 +74,7 @@
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -99,7 +113,30 @@
       # Package Overlays
       # Custom package overlays including node packages and external overlays
       overlays = {
-        default = final: prev: {
+        common = final: prev: {
+          # Common packages like python, zen-browser
+          # OpenSSH override with custom patch - assuming this patch is platform-agnostic or handled correctly by nixpkgs for both
+          openssh = prev.openssh.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
+            doCheck = false;
+          });
+
+          # Add Python-related functionality
+          inherit (mkPythonBuilders prev) buildPython pythonVersions;
+
+          # Add zen-browser overlay
+          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
+        };
+
+        nixos = final: prev: {
+          # NixOS/Linux specific overlays, e.g., Obsidian X11 mode
+          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
+            installPhase = builtins.replaceStrings
+              [ "--ozone-platform=wayland" ]
+              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
+              oldAttrs.installPhase;
+          });
+
           # Add the code-cursor package definition here
           code-cursor =
             let
@@ -178,27 +215,11 @@
             if prev.stdenv.isLinux then linux
             else if prev.stdenv.isDarwin then darwin
             else throw "Unsupported platform";
-
-          # Obsidian X11 mode override
-          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
-            installPhase = builtins.replaceStrings
-              [ "--ozone-platform=wayland" ]
-              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
-              oldAttrs.installPhase;
-          });
-
-          # OpenSSH override with custom patch
-          openssh = prev.openssh.overrideAttrs (old: {
-            patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
-            doCheck = false;
-          });
-
-          # Add Python-related functionality
-          inherit (mkPythonBuilders prev) buildPython pythonVersions;
-
-          # Add zen-browser overlay
-          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
         };
+
+        # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
+        # or for NixOS configurations that used to refer to 'default'.
+        default = final: prev: (self.overlays.common final prev) // (self.overlays.nixos final prev);
       };
 
       # User Configuration
@@ -260,7 +281,7 @@
         nixpkgs.overlays = [
           (import rust-overlay)
           inputs.hyprpanel.overlay
-          self.overlays.default
+          self.overlays.default # This now correctly includes common and nixos specific parts
         ];
       };
 
@@ -310,6 +331,39 @@
             /*inherit (inputs) hyprland hyprland-protocols;*/
           };
         };
+
+      darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default to "user" if not set
+      darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default to "darwin-host" if not set
+
+      # Darwin System Builder
+      mkDarwinSystem = { hostname, username, system ? "aarch64-darwin" }: nix-darwin.lib.darwinSystem {
+        inherit system;
+        pkgs = import nixpkgs {
+          inherit system;
+          # Apply overlays and allow unfree packages for Darwin as well
+          config.allowUnfree = true; # Or manage via nixpkgs.config.allowUnfreePredicate if preferred
+          overlays = [
+            self.overlays.common
+            brew-nix.overlays.default
+          ]; # Apply ONLY common overlays for Darwin
+        };
+        modules = [
+          ./hosts/darwin/configuration.nix # Adjusted pag
+          home-manager.darwinModules.home-manager
+          {
+            networking.hostName = hostname;
+            users.users.${username}.home = "/Users/${username}";
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = false; # As per original darwin/flake.nix
+            home-manager.users.${username} = { pkgs, lib, config, ... }: # pkgs, lib, config are passed by home-manager.darwinModules.home-manager
+              import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and passed args
+            home-manager.backupFileExtension = "backup";
+          }
+        ];
+        specialArgs = {
+          inherit inputs nixpkgs home-manager username; # Pass necessary inputs and args
+        };
+      };
     in
     (flake-utils.lib.eachDefaultSystem (system:
       let
@@ -385,6 +439,13 @@
           hostname = "hq";
           enabledUsers = [ "primary" ];
         };
+      };
+
+      # Darwin System Configurations
+      # Define Darwin configurations if DARWIN_HOST and DARWIN_USER are set
+      darwinConfigurations.${darwinHost} = mkDarwinSystem {
+        hostname = darwinHost;
+        username = darwinUser;
       };
     };
 }

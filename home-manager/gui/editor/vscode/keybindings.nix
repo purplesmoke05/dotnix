@@ -5,7 +5,7 @@
     }
     {
       command = "workbench.action.focusActiveEditorGroup";
-      key = "ctrl+]";
+      key = "ctrl+[";
     }
     {
       command = "-workbench.action.files.newUntitledFile";
@@ -890,7 +890,7 @@
     }
     {
       command = "workbench.action.toggleSidebarVisibility";
-      key = "ctrl+q";
+      key = "ctrl+[";
       when = "!config.emacs-mcx.useMetaPrefixMacCmd";
     }
     {
@@ -998,5 +998,18 @@
     {
       command = "composerMode.agent";
       key = "ctrl+i";
+    }
+    {
+      command = "-workbench.action.quickOpenNavigateNextInViewPicker";
+      key = "";
+    }
+    {
+      command = "-workbench.action.quickOpenView";
+      key = "";
+    }
+    {
+      command = "-renameFile";
+      key = "enter";
+      when = "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus";
     }
   ]
