@@ -1012,4 +1012,25 @@
       key = "enter";
       when = "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus";
     }
+    {
+      key = "ctrl+shift+n";
+      command = "workbench.action.chat.newChat";
+    }
+    {
+      key = "ctrl+l";
+      command = "-workbench.action.chat.newChat";
+      when = "chatIsEnabled && inChat && chatLocation != 'editing-session'";
+    }
+    {
+      key = "ctrl+shift+n";
+      command = "-workbench.action.newWindow";
+    }
+    {
+      key = "ctrl+shift+n";
+      command = "composer.newAgentChat";
+    }
+    {
+      key = "ctrl+shift+i";
+      command = "-composer.newAgentChat";
+    }
   ]
