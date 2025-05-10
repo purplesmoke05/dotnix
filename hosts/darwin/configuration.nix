@@ -7,6 +7,13 @@
   # Enable automatic upgrade of the Nix daemon
   nix.package = pkgs.nix;
 
+  nix.settings = {
+    substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"  # home-managerのキャッシュ
+    ];
+  };
+
   ids.gids.nixbld = 350;
 
   # zsh configuration
