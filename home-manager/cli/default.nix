@@ -9,6 +9,7 @@
     ./terminal/starship.nix
     ./terminal/zellij.nix
     ./terminal/foot.nix
+    ./terminal/fish.nix
     ./alternative.nix
   ];
 }
