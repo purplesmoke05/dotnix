@@ -16,6 +16,10 @@
       key = "ctrl+\\";
     }
     {
+      command = "workbench.action.openGlobalKeybindings";
+      key = "ctrl+[IntlYen]";
+    }
+    {
       command = "-workbench.action.openGlobalKeybindings";
       key = "ctrl+k ctrl+s";
     }
