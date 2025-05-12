@@ -121,6 +121,9 @@
             doCheck = false;
           });
 
+          # Add gh-iteration package
+          gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
+
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
 

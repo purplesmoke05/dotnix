@@ -71,7 +71,7 @@
     enable = true;
     extensions = with pkgs; [
       gh-markdown-preview
-      tasshi-me/gh-iteration
+      gh-iteration
     ];
     settings = {
       editor = "nvim";
