@@ -27,6 +27,7 @@
     fzf
     zstd
     btop
+    ripgrep
   ];
 
   # User information
