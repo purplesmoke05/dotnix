@@ -35,19 +35,86 @@
         bind \cj _atuin_search
       '';
 
+    # Define aliases for common commands
+    shellAbbrs = {
+      l = "ls -alh";
+      la = "ls -Alh";
+      lss = "ls -hsS";
+      # ls = "ls -alFth --color auto";
+      ld = "du -hs */";
+      ".." = "cd ..";
+      "1" = "cd -";
+      "2" = "cd -2";
+      "3" = "cd -3";
+      "4" = "cd -4";
+      "..." = "cd ...";
+      "...." = "cd ....";
+      "....." = "cd .....";
+      ports = "netstat -tulanp";
+      reboot = "sudo /sbin/reboot";
+      halt = "sudo /sbin/halt";
+      httpdreload = "sudo /usr/sbin/apachectl -k graceful";
+      httpdtest = "sudo /usr/sbin/apachectl -t && /usr/sbin/apachectl -t -D DUMP_VHOSTS";
+      meminfo = "free -m -l -t";
+      psmem = "ps auxf | sort -nr -k 4";
+      psmem10 = "ps auxf | sort -nr -k 4 | head -10";
+      pscpu = "ps auxf | sort -nr -k 3";
+      pscpu10 = "ps auxf | sort -nr -k 3 | head -10";
+
+      # Docker
+      dcl = "docker container ls -a";
+      dc = "docker container";
+      dcr = "docker container rm";
+      dcs = "docker container stop";
+      dcx = "docker container rm";
+      dl = "docker container ps -l -q";
+      dps = "docker container ps";
+      dpa = "docker container ps -a";
+      dls = "docker container ps -a";
+      di = "docker images";
+      dip = "docker container inspect --format '{{ .NetworkSettings.IPAddress }}'";
+      dkd = "docker container run -d -P";
+      dki = "docker container run -i -t -P";
+      dex = "docker container exec -i -t";
+      drmf = "docker container stop (docker container ps -a -q); docker container rm (docker container ps -a -q)";
+      drmv = "docker volume rm (docker volume ls -qf \"dangling=true\")";
+      drmd = "docker rmi (docker container images -q)";
+      drxc = "docker container ps --filter status=dead --filter status=exited -aq | xargs docker container rm -v";
+      drui = "docker images --no-trunc | grep '<none>' | awk '{ print $3 }' | xargs docker container rmi";
+      dprune = "docker container system prune -a";
+    };
+
     # Define functions and key bindings here
     functions = {
       # Python version auto-switcher function
       __check_python_version = ''
         if test -e .python-version
+          set -l arch (uname -m)
+          set -l kernel (uname -s)
+          set -l current_system ""
+
+          if test "$kernel" = "Linux"
+            if test "$arch" = "x86_64"
+              set current_system "x86_64-linux"
+            # else if test "$arch" = "aarch64"
+            #   set current_system "aarch64-linux"
+            end
+          else if test "$kernel" = "Darwin" # macOS
+            if test "$arch" = "arm64" # Apple Silicon (M1, M2, etc.)
+              set current_system "aarch64-darwin"
+            else if test "$arch" = "x86_64" # Intel Mac
+              set current_system "x86_64-darwin"
+            end
+          end
+
           set -l py_version (cat .python-version | string trim)
           set -l version_dots (string join "" (string split "." $py_version))
 
           if not test -n "$IN_NIX_SHELL"
             set -l dev_shell "py$version_dots"
 
-            if nix flake show $HOME/.nix --json | jq -e ".devShells.\\"x86_64-linux\\".$dev_shell" > /dev/null
-              echo "Python $py_version環境を有効化します..."
+            if nix flake show $HOME/.nix --json | jq -e ".devShells[\"$current_system\"][\"$dev_shell\"]" > /dev/null
+              echo "Python $py_version 環境を有効化します..."
               nix develop $HOME/.nix#$dev_shell
             else
               echo "警告: サポートされていないPythonバージョン: $py_version"
@@ -134,6 +201,62 @@
             kill $pid
         end
         set -e proc
+      '';
+
+      dstoprm = ''
+        docker container stop "$argv[1]" && docker container rm "$argv[1]"
+      '';
+
+      dstop = ''
+        color_print $COLOR_B "Docker: Stop all containers\n"
+        if read_confirm
+          set ARG (docker container ps -a -q)
+          if test -n "$ARG"
+            docker container stop $ARG
+          else
+            color_print $COLOR_Y "Docker: Nothing to execute."
+          end
+        end
+        disown
+      '';
+
+      drm = ''
+        color_print $COLOR_B "Docker: Remove all containers\n"
+        if read_confirm
+          set ARG (docker container ps -a -q)
+          if test -n "$ARG"
+            docker container rm $ARG
+          else
+            color_print $COLOR_Y "Docker: Nothing to execute."
+          end
+        end
+      '';
+
+      dri = ''
+        color_print $COLOR_B "Docker: Remove all images\n"
+        if read_confirm
+          set ARG (docker container images -q)
+          if test -n "$ARG"
+            docker container rmi $ARG
+          else
+            color_print $COLOR_Y "Docker: Nothing to execute."
+          end
+        end
+      '';
+
+      dbu = ''
+        color_print $COLOR_B "Docker: Dockerfile build\n"
+        docker build -t=$argv[1] .
+      '';
+
+      dalias = ''
+        color_print $COLOR_B "Docker: Show all abbreviations related to docker.\n"
+        abbr | grep 'docker container' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/"| sed "s/['|\']//g" | sort
+      '';
+
+      dbash = ''
+        color_print $COLOR_B "Docker: Bash into running container.\n"
+        docker container exec -it (docker container ps -aqf "name=$argv[1]") bash
       '';
     };
   };

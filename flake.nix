@@ -101,7 +101,7 @@
         pythonVersions = let self = mkPythonBuilders pkgs; in {
           py312 = pkgs.python312;
           # Custom build for specific patch version
-          py3122 = self.buildPython {
+          py3129 = self.buildPython {
             version = "3.12.9";
             sha256 = "0w6qyfhc912xxav9x9pifwca40b4l49vy52wai9j0gc1mhni2a5y";
           };
@@ -412,6 +412,8 @@
               echo "Welcome to Python ${pythonTools.pythonVersions.py312.version} environment"
               export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
               # Execute fish if not already in fish shell
+              echo "Current shell: $SHELL"
+              echo "Current shell: $FISH_VERSION"
               if [ -z "$FISH_VERSION" ]; then
                 exec ${pkgs.fish}/bin/fish
               fi
@@ -419,7 +421,7 @@
           };
 
           rust = mkRustShell;
-          py3122 = mkPythonShell pythonTools.pythonVersions.py3122;
+          py3129 = mkPythonShell pythonTools.pythonVersions.py3129;
           py312 = mkPythonShell pythonTools.pythonVersions.py312;
           py311 = mkPythonShell pythonTools.pythonVersions.py311;
         };

@@ -18,6 +18,7 @@
 
   # zsh configuration
   programs.zsh.enable = false;
+  programs.fish.enable = true;
 
   # Allow non-free packages
   nixpkgs.config.allowUnfree = true;

@@ -10,6 +10,8 @@
     ./terminal/zellij.nix
     ./terminal/foot.nix
     ./terminal/fish.nix
+    ./terminal/carapace.nix
+    ./terminal/nushell.nix
     ./alternative.nix
   ];
 }
