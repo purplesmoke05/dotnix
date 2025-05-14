@@ -194,4 +194,8 @@
   alwaysShowHeaderActions = true;
 };
 };
+  python.analysis.autoImportCompletions = true;
+  python.analysis.autoFormatStrings = true;
+  python.analysis.typeCheckingMode = "standard";
+  python.analysis.completeFunctionParens = true;
 }
