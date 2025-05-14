@@ -19,6 +19,7 @@
   maxComputationTime = 0;
 };
   editor = {
+  accessibilitySupport = "off";
   bracketPairColorization = {
   enabled = true;
 };
@@ -75,6 +76,14 @@
   formatterPath = [
     "nix" "fmt" "--" "-"
   ];
+};
+  python = {
+  analysis = {
+  autoFormatStrings = true;
+  autoImportCompletions = true;
+  completeFunctionParens = true;
+  typeCheckingMode = "standard";
+};
 };
   roo-cline = {
   allowedCommands = [
@@ -194,8 +203,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  python.analysis.autoImportCompletions = true;
-  python.analysis.autoFormatStrings = true;
-  python.analysis.typeCheckingMode = "standard";
-  python.analysis.completeFunctionParens = true;
 }
