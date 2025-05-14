@@ -728,7 +728,7 @@
   },
   {
     "command": "emacs-mcx.scrollDownCommand",
-    "key": "meta+v",
+    "key": "alt+v",
     "when": "editorTextFocus && !config.emacs-mcx.useMetaPrefixMacCmd && !suggestWidgetVisible"
   },
   {
@@ -738,7 +738,7 @@
   },
   {
     "command": "emacs-mcx.scrollDownCommand",
-    "key": "meta+v",
+    "key": "alt+v",
     "when": "config.emacs-mcx.useMetaPrefixMacCmd && editorTextFocus && !suggestWidgetVisible"
   },
   {
