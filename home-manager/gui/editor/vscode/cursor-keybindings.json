@@ -879,7 +879,7 @@
   },
   {
     "command": "emacs-mcx.forwardWord",
-    "key": "meta+f",
+    "key": "alt+f",
     "when": "editorTextFocus"
   },
   {
