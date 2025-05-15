@@ -258,6 +258,28 @@
         color_print $COLOR_B "Docker: Bash into running container.\n"
         docker container exec -it (docker container ps -aqf "name=$argv[1]") bash
       '';
+
+      # color_print function
+      color_print = ''
+        function color_print
+          printf "%b" "$argv[1]\e0$argv[2]$COLOR_RESET"
+        end
+      '';
+
+      read_confirm = ''
+        function read_confirm
+          while true
+            read -l -P 'Do you want to continue? [y/N] ' confirm
+
+            switch $confirm
+              case Y y
+                return 0
+              case \'\' N n
+                return 1
+            end
+          end
+        end
+      '';
     };
   };
 }

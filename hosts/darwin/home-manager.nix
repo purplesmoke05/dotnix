@@ -14,28 +14,33 @@
     ./../../home-manager/gui/editor/vscode
   ];
   home.packages = with pkgs; [
-    ripgrep
+    # --- Cli ---
     fd
     jq
-    neovim
-    dive
-    ctop
-    htop
-    gh
-    ghq
     peco
-    pulumi
-    postgresql
-    rustup
     fzf
+    ripgrep
     zstd
     btop
-    ripgrep
+    htop
+    ctop
+    dive
     uv
+
+    # -- Font ---
+    nerd-fonts.hack
+
+    # --- Dev ---
+    neovim
+    gh
+    ghq
     go
     deno
     zig
     volta
+    rustup
+    postgresql
+    pulumi
   ];
 
   # User information
