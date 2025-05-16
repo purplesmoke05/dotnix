@@ -4,6 +4,11 @@
   enabled = true;
 };
 };
+  cSpell = {
+  caseSensitive = true;
+  diagnosticLevel = "Error";
+  diagnosticLevelFlaggedWords = "Warning";
+};
   cursor = {
   composer = {
   shouldChimeAfterChatFinishes = true;
@@ -212,7 +217,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  cSpell.caseSensitive = true;
-  cSpell.diagnosticLevel = "Error";
-  cSpell.diagnosticLevelFlaggedWords = "Warning";
 }

@@ -8,10 +8,10 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 5;
   boot.loader.efi.canTouchEfiVariables = true;
-  # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod;
+  boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
+  # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
-  boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
+  boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "split_lock_mitigate=0" ];
 
   # Network Configuration
   # Basic network setup with NetworkManager for connection management
@@ -440,8 +440,7 @@
       OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include";
     };
   };
-  environment.variables = {
-  };
+  environment.variables = { };
 
   # System Security Configuration
   # Security and system integrity settings
