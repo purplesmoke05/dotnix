@@ -5,10 +5,17 @@
 };
 };
   cursor = {
+  composer = {
+  shouldChimeAfterChatFinishes = true;
+  textSizeScale = 0.85;
+};
   cpp = {
   disabledLanguages = [
     "plaintext" "markdown" "scminput"
   ];
+};
+  terminal = {
+  usePreviewBox = true;
 };
 };
   diffEditor = {
@@ -174,6 +181,7 @@
 };
   update = {
   mode = "none";
+  releaseTrack = "prerelease";
 };
   window = {
   commandCenter = 1;
@@ -203,9 +211,5 @@
   alwaysShowHeaderActions = true;
 };
 };
-  update.releaseTrack = "prerelease";
-  cursor.composer.textSizeScale = 0.85;
-  cursor.composer.shouldChimeAfterChatFinishes = true;
-  cursor.terminal.usePreviewBox = true;
-  lldb.suppressUpdateNotifications = true;
+  window.titleBarStyle = "native";
 }

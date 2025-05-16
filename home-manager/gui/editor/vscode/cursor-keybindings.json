@@ -353,13 +353,13 @@
   },
   {
     "command": "closeReferenceSearch",
-    "key": "ctrl+g",
-    "when": "inReferenceSearchEditor && !config.editor.stablePeek"
+    "key": "escape",
+    "when": "inReferenceSearchEditor"
   },
   {
     "command": "closeReferenceSearch",
     "key": "ctrl+g",
-    "when": "referenceSearchVisible && !config.editor.stablePeek"
+    "when": "referenceSearchVisible"
   },
   {
     "command": "closeReplaceInFilesWidget",
@@ -1036,5 +1036,60 @@
   {
     "command": "-composer.newAgentChat",
     "key": "ctrl+shift+i"
+  },
+  {
+    "key": "escape",
+    "command": "-closeReferenceSearch",
+    "when": "inReferenceSearchEditor && !config.editor.stablePeek"
+  },
+  {
+    "key": "shift+escape",
+    "command": "closeReferenceSearch",
+    "when": "inReferenceSearchEditor"
+  },
+  {
+    "key": "shift+escape",
+    "command": "-closeReferenceSearch",
+    "when": "inReferenceSearchEditor && !config.editor.stablePeek"
+  },
+  {
+    "key": "shift+escape",
+    "command": "closeReferenceSearch",
+    "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !inputFocus"
+  },
+  {
+    "key": "shift+escape",
+    "command": "-closeReferenceSearch",
+    "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !config.editor.stablePeek && !inputFocus"
+  },
+  {
+    "key": "escape",
+    "command": "closeReferenceSearch",
+    "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !inputFocus"
+  },
+  {
+    "key": "escape",
+    "command": "-closeReferenceSearch",
+    "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !config.editor.stablePeek && !inputFocus"
+  },
+  {
+    "key": "ctrl+g",
+    "command": "closeReferenceSearch",
+    "when": "inReferenceSearchEditor"
+  },
+  {
+    "key": "ctrl+g",
+    "command": "-closeReferenceSearch",
+    "when": "inReferenceSearchEditor && !config.editor.stablePeek"
+  },
+  {
+    "key": "ctrl+g",
+    "command": "closeReferenceSearch",
+    "when": "referenceSearchVisible"
+  },
+  {
+    "key": "ctrl+g",
+    "command": "-closeReferenceSearch",
+    "when": "referenceSearchVisible && !config.editor.stablePeek"
   }
 ]
