@@ -207,4 +207,5 @@
   cursor.composer.textSizeScale = 0.85;
   cursor.composer.shouldChimeAfterChatFinishes = true;
   cursor.terminal.usePreviewBox = true;
+  lldb.suppressUpdateNotifications = true;
 }
