@@ -187,6 +187,7 @@
   commandCenter = 1;
   customMenuBarAltFocus = false;
   menuBarVisibility = "hidden";
+  titleBarStyle = "native";
 };
   workbench = {
   colorTheme = "Catppuccin Mocha";
@@ -211,5 +212,7 @@
   alwaysShowHeaderActions = true;
 };
 };
-  window.titleBarStyle = "native";
+  cSpell.caseSensitive = true;
+  cSpell.diagnosticLevel = "Error";
+  cSpell.diagnosticLevelFlaggedWords = "Warning";
 }

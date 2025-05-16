@@ -1038,58 +1038,58 @@
     "key": "ctrl+shift+i"
   },
   {
-    "key": "escape",
     "command": "-closeReferenceSearch",
+    "key": "escape",
     "when": "inReferenceSearchEditor && !config.editor.stablePeek"
   },
   {
-    "key": "shift+escape",
     "command": "closeReferenceSearch",
+    "key": "shift+escape",
     "when": "inReferenceSearchEditor"
   },
   {
-    "key": "shift+escape",
     "command": "-closeReferenceSearch",
+    "key": "shift+escape",
     "when": "inReferenceSearchEditor && !config.editor.stablePeek"
   },
   {
-    "key": "shift+escape",
     "command": "closeReferenceSearch",
+    "key": "shift+escape",
     "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !inputFocus"
   },
   {
-    "key": "shift+escape",
     "command": "-closeReferenceSearch",
+    "key": "shift+escape",
     "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !config.editor.stablePeek && !inputFocus"
   },
   {
-    "key": "escape",
     "command": "closeReferenceSearch",
+    "key": "escape",
     "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !inputFocus"
   },
   {
-    "key": "escape",
     "command": "-closeReferenceSearch",
+    "key": "escape",
     "when": "editorTextFocus && referenceSearchVisible && !config.editor.stablePeek || referenceSearchVisible && !config.editor.stablePeek && !inputFocus"
   },
   {
+    "command": "closeReferenceSearch",
     "key": "ctrl+g",
-    "command": "closeReferenceSearch",
     "when": "inReferenceSearchEditor"
   },
   {
-    "key": "ctrl+g",
     "command": "-closeReferenceSearch",
+    "key": "ctrl+g",
     "when": "inReferenceSearchEditor && !config.editor.stablePeek"
   },
   {
-    "key": "ctrl+g",
     "command": "closeReferenceSearch",
+    "key": "ctrl+g",
     "when": "referenceSearchVisible"
   },
   {
-    "key": "ctrl+g",
     "command": "-closeReferenceSearch",
+    "key": "ctrl+g",
     "when": "referenceSearchVisible && !config.editor.stablePeek"
   }
 ]
