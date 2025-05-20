@@ -1092,4 +1092,18 @@
       key = "ctrl+g";
       when = "referenceSearchVisible && !config.editor.stablePeek";
     }
+    {
+      command = "workbench.action.findInFiles";
+      key = "ctrl+shift+f";
+    }
+    {
+      key = "ctrl+v";
+      command = "list.focusPageDown";
+      when = "explorerViewletFocus && !inputFocus";
+    }
+    {
+      key = "alt+v";
+      command = "list.focusPageUp";
+      when = "explorerViewletFocus && !inputFocus";
+    }
   ]

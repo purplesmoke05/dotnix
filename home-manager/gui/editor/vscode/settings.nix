@@ -6,7 +6,7 @@
 };
   cSpell = {
   caseSensitive = true;
-  diagnosticLevel = "Error";
+  diagnosticLevel = "Warning";
   diagnosticLevelFlaggedWords = "Warning";
 };
   cursor = {
@@ -25,7 +25,7 @@
 };
   diffEditor = {
   experimental = {
-  useTrueInlineView = true;
+  useTrueInlineView = false;
 };
   ignoreTrimWhitespace = false;
   maxComputationTime = 0;
