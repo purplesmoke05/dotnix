@@ -1097,13 +1097,13 @@
       key = "ctrl+shift+f";
     }
     {
-      key = "ctrl+v";
       command = "list.focusPageDown";
+      key = "ctrl+v";
       when = "explorerViewletFocus && !inputFocus";
     }
     {
-      key = "alt+v";
       command = "list.focusPageUp";
+      key = "alt+v";
       when = "explorerViewletFocus && !inputFocus";
     }
   ]

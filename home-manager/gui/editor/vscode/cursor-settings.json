@@ -54,7 +54,10 @@
     "renderWhitespace": "all",
     "showFoldingControls": "always",
     "smoothScrolling": true,
-    "wordSegmenterLocales": "ja"
+    "wordSegmenterLocales": "ja",
+    "experimental": {
+      "asyncTokenization": true
+    }
   },
   "explorer": {
     "compactFolders": false,
@@ -228,7 +231,10 @@
     "commandCenter": 1,
     "customMenuBarAltFocus": false,
     "menuBarVisibility": "hidden",
-    "titleBarStyle": "native"
+    "titleBarStyle": "native",
+    "experimental": {
+      "useGpuAcceleration": true
+    }
   },
   "workbench": {
     "colorTheme": "Catppuccin Mocha",
@@ -239,7 +245,8 @@
       "closeOnFileDelete": true,
       "pinnedTabsOnSeparateRow": true,
       "scrollToSwitchTabs": false,
-      "wrapTabs": false
+      "wrapTabs": false,
+      "experimentalAutoLayout": false
     },
     "iconTheme": "ayu",
     "list": {

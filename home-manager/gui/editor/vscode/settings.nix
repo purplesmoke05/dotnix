@@ -53,6 +53,9 @@
   showFoldingControls = "always";
   smoothScrolling = true;
   wordSegmenterLocales = "ja";
+  experimental = {
+  asyncTokenization = true;
+};
 };
   explorer = {
   compactFolders = false;
@@ -193,6 +196,9 @@
   customMenuBarAltFocus = false;
   menuBarVisibility = "hidden";
   titleBarStyle = "native";
+  experimental = {
+  useGpuAcceleration = true;
+};
 };
   workbench = {
   colorTheme = "Catppuccin Mocha";
@@ -204,6 +210,7 @@
   pinnedTabsOnSeparateRow = true;
   scrollToSwitchTabs = false;
   wrapTabs = false;
+  experimentalAutoLayout = false;
 };
   iconTheme = "ayu";
   list = {
