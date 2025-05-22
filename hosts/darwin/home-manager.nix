@@ -39,7 +39,7 @@
     zig
     volta
     rustup
-    postgresql
+    postgresql.dev
     pulumi
   ];
 
