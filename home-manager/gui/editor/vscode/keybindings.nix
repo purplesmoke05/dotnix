@@ -863,6 +863,10 @@
       key = "ctrl+l";
     }
     {
+      command = "workbench.action.chat.newChat";
+      key = "ctrl+shift+l";
+    }
+    {
       command = "-workbench.view.explorer";
       key = "ctrl+shift+e";
       when = "viewContainer.workbench.view.explorer.enabled";
