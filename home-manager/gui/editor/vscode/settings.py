@@ -4,6 +4,7 @@ import shutil
 import platform
 from pathlib import Path
 from typing import Dict, Any, Optional
+import re
 
 def get_cursor_settings_path() -> Optional[Path]:
     """Get the path to Cursor settings.json based on the operating system."""
@@ -49,7 +50,27 @@ class SettingsConverter:
         spaces = " " * indent
         for key, value in d.items():
             formatted_value = self._format_value(value)
-            lines.append(f"{spaces}{key} = {formatted_value};")
+
+            # Revised logic for formatting keys:
+            # If a key does not contain '.', it's a single segment.
+            #   - If valid Nix id, use as is.
+            #   - Else, quote it.
+            # If a key contains '.', it's a path. Use as is; Nix will interpret it.
+            nix_identifier_pattern = r"^[a-zA-Z_][a-zA-Z0-9_'-]*$"
+            if '.' in key:
+                # Key contains dots, treat as a path (e.g., "foo.bar").
+                # Nix handles path segments. Script outputs "foo.bar = value;".
+                formatted_key = key
+            else:
+                # Key is a single segment (e.g., "foo", "foo-bar", "*").
+                if re.fullmatch(nix_identifier_pattern, key):
+                    formatted_key = key  # Valid identifier
+                else:
+                    # Not a valid identifier (e.g., "*", "123"), quote it.
+                    escaped_key = key.replace('\\\\', '\\\\\\\\').replace('"', '\\"').replace('${', '\\\\${')
+                    formatted_key = f'"{escaped_key}"'
+
+            lines.append(f"{spaces}{formatted_key} = {formatted_value};")
         lines.append(f"{' ' * (indent-2)}}}")
         return "\n".join(lines)
 
