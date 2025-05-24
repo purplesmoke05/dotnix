@@ -83,6 +83,19 @@
   pruneOnFetch = true;
   suggestSmartCommit = false;
 };
+  github = {
+  copilot = {
+  enable = {
+  "*" = true;
+  markdown = true;
+  nextEditSuggestions = {
+  enabled = true;
+};
+  plaintext = false;
+  scminput = false;
+};
+};
+};
   motia = {
   autoStartServer = true;
 };
@@ -223,12 +236,5 @@
   view = {
   alwaysShowHeaderActions = true;
 };
-};
-  github.copilot.enable = {
-  "*" = true;
-  plaintext = false;
-  markdown = true;
-  scminput = false;
-  nextEditSuggestions.enabled = true;
 };
 }
