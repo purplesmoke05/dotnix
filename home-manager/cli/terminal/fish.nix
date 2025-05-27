@@ -5,7 +5,6 @@
     enable = true;
     shellAliases = {
       dev = "nix develop $HOME/.nix#";
-      update = "uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py && uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py && sudo -E nixos-rebuild switch --flake .#hq";
     };
     shellInit = ''
       # Activate VSCode shell integration
@@ -13,13 +12,19 @@
           . (code --locate-shell-integration-path fish)
       end
 
+      if string match -q "Darwin" (uname)
+        set -gx DARWIN_USER (whoami)
+        set -gx DARWIN_HOST (string trim (hostname -s))
+        echo "Fish (macOS): DARWIN_USER=$DARWIN_USER, DARWIN_HOST=$DARWIN_HOST"
+      end
+
       # Directory change handler registration
       # The function __on_pwd_change is defined in the functions block below
-      functions -q __on_pwd_change && __on_pwd_change --on-variable PWD
+      # functions -q __on_pwd_change && __on_pwd_change --on-variable PWD
 
       # Execute initialization checks
       # The function __check_vscode_and_develop is defined in the functions block below
-      functions -q __check_vscode_and_develop && __check_vscode_and_develop
+      # functions -q __check_vscode_and_develop && __check_vscode_and_develop
 
       bind \cr peco_ghq
       bind \cw peco_kill
@@ -86,6 +91,34 @@
 
     # Define functions and key bindings here
     functions = {
+      update = ''
+        if string match -q "Darwin" (uname)
+          echo "Detected macOS."
+          if test -z "$DARWIN_HOST"
+            echo "Error: DARWIN_HOST environment variable is not set."
+            echo "Please ensure 'hostname -s' works and shellInit is correctly setting it for macOS."
+            return 1
+          end
+          echo "Running darwin-rebuild for host: $DARWIN_HOST using flake at $HOME/.nix"
+          sudo darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
+        else
+          echo "Detected non-macOS (assuming NixOS/Linux)."
+
+          echo "Updating VSCode settings and keybindings..."
+          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py
+            echo "Error: Failed to update VSCode settings. Aborting."
+            return 1
+          end
+          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py
+            echo "Error: Failed to update VSCode keybindings. Aborting."
+            return 1
+          end
+          echo "VSCode configuration updated successfully."
+          echo "Running nixos-rebuild for host: hq"
+          sudo -E nixos-rebuild switch --flake ".#hq"
+        end
+      '';
+
       # Python version auto-switcher function
       __check_python_version = ''
         if test -e .python-version
@@ -127,7 +160,7 @@
       # Directory change handler function
       __on_pwd_change = ''
         # This function requires __check_python_version to be defined
-        functions -q __check_python_version && __check_python_version
+        # functions -q __check_python_version && __check_python_version
       '';
 
       # Git add, commit, and push function
