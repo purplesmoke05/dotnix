@@ -100,7 +100,7 @@
             return 1
           end
           echo "Running darwin-rebuild for host: $DARWIN_HOST using flake at $HOME/.nix"
-          sudo darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
+          darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
         else
           echo "Detected non-macOS (assuming NixOS/Linux)."
 
