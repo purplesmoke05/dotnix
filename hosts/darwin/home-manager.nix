@@ -39,8 +39,9 @@
     zig
     volta
     rustup
-    postgresql.dev
     pulumi
+    libpq
+    libpq.pg_config
   ];
 
   # User information
