@@ -56,6 +56,7 @@
   showFoldingControls = "always";
   smoothScrolling = true;
   wordSegmenterLocales = "ja";
+  wordWrap = "off";
 };
   explorer = {
   compactFolders = false;

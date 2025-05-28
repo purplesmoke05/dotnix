@@ -57,7 +57,8 @@
     "renderWhitespace": "all",
     "showFoldingControls": "always",
     "smoothScrolling": true,
-    "wordSegmenterLocales": "ja"
+    "wordSegmenterLocales": "ja",
+    "wordWrap": "off"
   },
   "explorer": {
     "compactFolders": false,
