@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import platform
+import argparse
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -16,6 +17,41 @@ def get_cursor_keybindings_path() -> Optional[Path]:
     elif platform.system() == "Linux":
         return home / ".config/Cursor/User/keybindings.json"
     return None
+
+def get_vscode_keybindings_path() -> Optional[Path]:
+    """Get the path to VSCode keybindings.json based on the operating system."""
+    home = Path.home()
+
+    if platform.system() == "Windows":
+        return home / "AppData/Roaming/Code/User/keybindings.json"
+    elif platform.system() == "Darwin":  # macOS
+        return home / "Library/Application Support/Code/User/keybindings.json"
+    elif platform.system() == "Linux":
+        return home / ".config/Code/User/keybindings.json"
+    return None
+
+def get_keybindings_source_path(source: Optional[str] = None) -> Optional[Path]:
+    """Get the appropriate keybindings path based on platform preference or explicit source."""
+    if source == "vscode":
+        return get_vscode_keybindings_path()
+    elif source == "cursor":
+        return get_cursor_keybindings_path()
+    else:
+        # Auto-select based on platform (original behavior)
+        if platform.system() == "Darwin":  # macOS
+            # On macOS, prefer VSCode keybindings
+            vscode_path = get_vscode_keybindings_path()
+            if vscode_path and vscode_path.exists():
+                return vscode_path
+            # Fallback to Cursor if VSCode not found
+            return get_cursor_keybindings_path()
+        else:
+            # On Linux/Windows, prefer Cursor keybindings
+            cursor_path = get_cursor_keybindings_path()
+            if cursor_path and cursor_path.exists():
+                return cursor_path
+            # Fallback to VSCode if Cursor not found
+            return get_vscode_keybindings_path()
 
 class KeybindingsConverter:
     def __init__(self, input_file: str, output_file: str):
@@ -88,22 +124,33 @@ class KeybindingsConverter:
 
 def main():
     """Main entry point."""
+    parser = argparse.ArgumentParser(description='Convert VSCode/Cursor keybindings to Nix format')
+    parser.add_argument('--source', choices=['vscode', 'cursor'],
+                       help='Specify keybindings source (vscode or cursor). If not specified, auto-detect based on platform.')
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     input_file = os.path.join(current_dir, 'cursor-keybindings.json')
     output_file = os.path.join(current_dir, 'keybindings.nix')
 
-    # Copy VSCode keybindings.json to current directory
-    cursor_keybindings = get_cursor_keybindings_path()
-    if cursor_keybindings and cursor_keybindings.exists():
+    # Get appropriate keybindings source
+    keybindings_source = get_keybindings_source_path(args.source)
+    if keybindings_source and keybindings_source.exists():
         try:
-            shutil.copy2(cursor_keybindings, input_file)
+            shutil.copy2(keybindings_source, input_file)
             os.chmod(input_file, 0o644)
-            print(f"Copied keybindings from: {cursor_keybindings}")
+            source_name = "VSCode" if "Code" in str(keybindings_source) else "Cursor"
+            source_specified = f" (--source {args.source})" if args.source else " (auto-detected)"
+            print(f"Copied keybindings from {source_name}{source_specified}: {keybindings_source}")
         except Exception as e:
             print(f"Error copying keybindings file: {e}")
             exit(1)
     else:
-        print("VSCode keybindings.json not found")
+        if args.source:
+            print(f"Specified {args.source} keybindings.json not found")
+        else:
+            print("No VSCode/Cursor keybindings.json found")
+        exit(1)
 
     # Convert to Nix format
     converter = KeybindingsConverter(input_file, output_file)

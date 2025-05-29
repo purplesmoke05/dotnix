@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import platform
+import argparse
 from pathlib import Path
 from typing import Dict, Any, Optional
 import re
@@ -17,6 +18,41 @@ def get_cursor_settings_path() -> Optional[Path]:
     elif platform.system() == "Linux":
         return home / ".config/Cursor/User/settings.json"
     return None
+
+def get_vscode_settings_path() -> Optional[Path]:
+    """Get the path to VSCode settings.json based on the operating system."""
+    home = Path.home()
+
+    if platform.system() == "Windows":
+        return home / "AppData/Roaming/Code/User/settings.json"
+    elif platform.system() == "Darwin":  # macOS
+        return home / "Library/Application Support/Code/User/settings.json"
+    elif platform.system() == "Linux":
+        return home / ".config/Code/User/settings.json"
+    return None
+
+def get_settings_source_path(source: Optional[str] = None) -> Optional[Path]:
+    """Get the appropriate settings path based on platform preference or explicit source."""
+    if source == "vscode":
+        return get_vscode_settings_path()
+    elif source == "cursor":
+        return get_cursor_settings_path()
+    else:
+        # Auto-select based on platform (original behavior)
+        if platform.system() == "Darwin":  # macOS
+            # On macOS, prefer VSCode settings
+            vscode_path = get_vscode_settings_path()
+            if vscode_path and vscode_path.exists():
+                return vscode_path
+            # Fallback to Cursor if VSCode not found
+            return get_cursor_settings_path()
+        else:
+            # On Linux/Windows, prefer Cursor settings
+            cursor_path = get_cursor_settings_path()
+            if cursor_path and cursor_path.exists():
+                return cursor_path
+            # Fallback to VSCode if Cursor not found
+            return get_vscode_settings_path()
 
 class SettingsConverter:
     def __init__(self, input_file: str, output_file: str):
@@ -111,22 +147,33 @@ class SettingsConverter:
 
 def main():
     """Main entry point."""
+    parser = argparse.ArgumentParser(description='Convert VSCode/Cursor settings to Nix format')
+    parser.add_argument('--source', choices=['vscode', 'cursor'],
+                       help='Specify settings source (vscode or cursor). If not specified, auto-detect based on platform.')
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     input_file = os.path.join(current_dir, 'cursor-settings.json')
     output_file = os.path.join(current_dir, 'settings.nix')
 
-    # Copy Cursor settings.json to current directory
-    cursor_settings = get_cursor_settings_path()
-    if cursor_settings and cursor_settings.exists():
+    # Get appropriate settings source
+    settings_source = get_settings_source_path(args.source)
+    if settings_source and settings_source.exists():
         try:
-            shutil.copy2(cursor_settings, input_file)
+            shutil.copy2(settings_source, input_file)
             os.chmod(input_file, 0o644)
-            print(f"Copied settings from: {cursor_settings}")
+            source_name = "VSCode" if "Code" in str(settings_source) else "Cursor"
+            source_specified = f" (--source {args.source})" if args.source else " (auto-detected)"
+            print(f"Copied settings from {source_name}{source_specified}: {settings_source}")
         except Exception as e:
             print(f"Error copying settings file: {e}")
             exit(1)
     else:
-        print("Cursor settings.json not found")
+        if args.source:
+            print(f"Specified {args.source} settings.json not found")
+        else:
+            print("No VSCode/Cursor settings.json found")
+        exit(1)
 
     # Convert to Nix format
     converter = SettingsConverter(input_file, output_file)

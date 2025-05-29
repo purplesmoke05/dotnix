@@ -99,17 +99,29 @@
             echo "Please ensure 'hostname -s' works and shellInit is correctly setting it for macOS."
             return 1
           end
+
+          echo "Updating VSCode settings and keybindings from VSCode configuration..."
+          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py --source vscode
+            echo "Error: Failed to update VSCode settings. Aborting."
+            return 1
+          end
+          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source vscode
+            echo "Error: Failed to update VSCode keybindings. Aborting."
+            return 1
+          end
+          echo "VSCode configuration updated successfully."
+
           echo "Running darwin-rebuild for host: $DARWIN_HOST using flake at $HOME/.nix"
           darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
         else
           echo "Detected non-macOS (assuming NixOS/Linux)."
 
-          echo "Updating VSCode settings and keybindings..."
-          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py
+          echo "Updating VSCode settings and keybindings from Cursor configuration..."
+          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py --source cursor
             echo "Error: Failed to update VSCode settings. Aborting."
             return 1
           end
-          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py
+          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source cursor
             echo "Error: Failed to update VSCode keybindings. Aborting."
             return 1
           end

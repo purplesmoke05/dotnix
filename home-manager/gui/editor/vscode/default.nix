@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, lib, ... }:
 let
   beautifyJson = json:
     pkgs.runCommand "beautified.json"
@@ -9,12 +9,23 @@ let
       } ''
       cat $jsonContentPath | jq '.' > $out
     '';
+
+  # Platform detection
+  isDarwin = pkgs.stdenv.isDarwin;
+  isLinux = pkgs.stdenv.isLinux;
+
+  # VS Code configuration directory path based on platform
+  vscodeConfigDir =
+    if isDarwin then
+      "${config.home.homeDirectory}/Library/Application Support/Code/User"
+    else
+      "${config.home.homeDirectory}/.config/Code/User";
 in
 {
   programs.vscode = {
     enable = true;
     profiles.default = {
-      keybindings = import ./keybindings.nix;
+      keybindings = if isLinux then import ./keybindings.nix else [ ];
       extensions = with pkgs.vscode-extensions; [
         bbenoist.nix
         tuttieee.emacs-mcx
@@ -68,13 +79,25 @@ in
           sha256 = "0abbgg0mjgfy5495ah4iiqf2jck9wjbflvbfwhwll23g0wdazlr5";
         }
       ];
-      userSettings = import ./settings.nix;
+      # Only set userSettings for Linux
+      userSettings = if isLinux then import ./settings.nix else { };
     };
   };
 
   home.packages = with pkgs; [
     vscode
   ];
+
+  # For macOS: Use home.activation to copy configuration files directly
+  home.activation = lib.mkIf isDarwin {
+    writeVSCodeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD mkdir -p ${vscodeConfigDir}
+      $DRY_RUN_CMD cp ${beautifyJson (builtins.toJSON (import ./settings.nix))} ${vscodeConfigDir}/settings.json
+      $DRY_RUN_CMD cp ${beautifyJson (builtins.toJSON (import ./keybindings.nix))} ${vscodeConfigDir}/keybindings.json
+      $DRY_RUN_CMD chmod 644 ${vscodeConfigDir}/settings.json
+      $DRY_RUN_CMD chmod 644 ${vscodeConfigDir}/keybindings.json
+    '';
+  };
 
   # xdg.configFile."Code/User/settings.json".text = builtins.toJSON (import ./settings.nix);
 }

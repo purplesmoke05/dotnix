@@ -1,18 +1,30 @@
 {
   "[markdown]": {
-    "editor.unicodeHighlight.ambiguousCharacters": false,
-    "editor.unicodeHighlight.invisibleCharacters": false,
-    "diffEditor.ignoreTrimWhitespace": false,
-    "editor.wordWrap": "on",
-    "editor.quickSuggestions": {
-      "comments": "off",
-      "strings": "off",
-      "other": "off"
+    "cSpell": {
+      "advanced": {
+        "feature": {
+          "useReferenceProviderRemove": "/^#+\\s/",
+          "useReferenceProviderWithRename": true
+        }
+      },
+      "fixSpellingWithRenameProvider": true
     },
-    "cSpell.fixSpellingWithRenameProvider": true,
-    "cSpell.advanced.feature.useReferenceProviderWithRename": true,
-    "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/",
-    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+    "diffEditor": {
+      "ignoreTrimWhitespace": false
+    },
+    "editor": {
+      "defaultFormatter": "DavidAnson.vscode-markdownlint",
+      "quickSuggestions": {
+        "comments": "off",
+        "other": "off",
+        "strings": "off"
+      },
+      "unicodeHighlight": {
+        "ambiguousCharacters": false,
+        "invisibleCharacters": false
+      },
+      "wordWrap": "on"
+    }
   },
   "accessibility": {
     "dimUnfocused": {
