@@ -14,7 +14,7 @@ def get_cursor_settings_path() -> Optional[Path]:
     if platform.system() == "Windows":
         return home / "AppData/Roaming/Cursor/User/settings.json"
     elif platform.system() == "Darwin":  # macOS
-        return home / "Library/Application Support/Cursor/User/settings.json"
+        return home / "Library/Application\ Support/Cursor/User/settings.json"
     elif platform.system() == "Linux":
         return home / ".config/Cursor/User/settings.json"
     return None
@@ -26,7 +26,7 @@ def get_vscode_settings_path() -> Optional[Path]:
     if platform.system() == "Windows":
         return home / "AppData/Roaming/Code/User/settings.json"
     elif platform.system() == "Darwin":  # macOS
-        return home / "Library/Application Support/Code/User/settings.json"
+        return home / "Library/Application\ Support/Code/User/settings.json"
     elif platform.system() == "Linux":
         return home / ".config/Code/User/settings.json"
     return None
@@ -158,6 +158,7 @@ def main():
 
     # Get appropriate settings source
     settings_source = get_settings_source_path(args.source)
+    print(settings_source)
     if settings_source and settings_source.exists():
         try:
             shutil.copy2(settings_source, input_file)

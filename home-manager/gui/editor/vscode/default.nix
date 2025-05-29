@@ -17,7 +17,7 @@ let
   # VS Code configuration directory path based on platform
   vscodeConfigDir =
     if isDarwin then
-      "${config.home.homeDirectory}/Library/Application Support/Code/User"
+      "${config.home.homeDirectory}/Library/Application\\ Support/Code/User"
     else
       "${config.home.homeDirectory}/.config/Code/User";
 in
