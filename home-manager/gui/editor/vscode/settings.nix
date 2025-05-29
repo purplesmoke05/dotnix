@@ -1,4 +1,19 @@
 {
+  "[markdown]" = {
+  editor.unicodeHighlight.ambiguousCharacters = false;
+  editor.unicodeHighlight.invisibleCharacters = false;
+  diffEditor.ignoreTrimWhitespace = false;
+  editor.wordWrap = "on";
+  editor.quickSuggestions = {
+  comments = "off";
+  strings = "off";
+  other = "off";
+};
+  cSpell.fixSpellingWithRenameProvider = true;
+  cSpell.advanced.feature.useReferenceProviderWithRename = true;
+  cSpell.advanced.feature.useReferenceProviderRemove = "/^#+\\s/";
+  editor.defaultFormatter = "DavidAnson.vscode-markdownlint";
+};
   accessibility = {
   dimUnfocused = {
   enabled = true;
@@ -96,6 +111,9 @@
   scminput = false;
 };
 };
+};
+  markdownlint = {
+  run = "onSave";
 };
   motia = {
   autoStartServer = true;
@@ -238,5 +256,4 @@
   alwaysShowHeaderActions = true;
 };
 };
-  markdownlint.run = "onSave";
 }
