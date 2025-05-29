@@ -212,7 +212,7 @@
   useGpuAcceleration = true;
 };
   menuBarVisibility = "hidden";
-  titleBarStyle = "native";
+  titleBarStyle = "custom";
 };
   workbench = {
   colorTheme = "Catppuccin Mocha";
