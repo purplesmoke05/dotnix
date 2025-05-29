@@ -238,4 +238,5 @@
   alwaysShowHeaderActions = true;
 };
 };
+  markdownlint.run = "onSave";
 }
