@@ -110,6 +110,11 @@
         border_size = 2; # Window border width
       };
 
+      # Misc settings
+      misc = {
+        enable_anr_dialog = false; # Disable Application Not Responding dialog
+      };
+
       # Application-specific window rules
       windowrule = [ ];
 

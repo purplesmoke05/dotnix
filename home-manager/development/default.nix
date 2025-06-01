@@ -16,6 +16,7 @@
     volta
     claude-code
     ctop
+    iftop
     grim
     slurp
     wl-clipboard
