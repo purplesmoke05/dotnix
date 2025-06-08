@@ -9,7 +9,9 @@ let
         # Requires API Key -> envFile/passwordCommand
         envFile = config.xdg.configHome + "/mcp-secrets/brave.env";
       };
-      everart = { enable = true; };
+      everart = {
+        enable = false;
+      };
       everything = { enable = true; };
       fetch = { enable = true; };
       filesystem = {
@@ -39,7 +41,7 @@ let
       sequential-thinking = { enable = true; };
       slack = { enable = false; /* Add envFile/passwordCommand if needed */ };
       sqlite = { enable = false; /* args = [ "/path/to/db.sqlite" ]; */ };
-      time = { enable = true; };
+      time = { enable = false; };
     };
 
     # --- Security Note ---
@@ -52,12 +54,17 @@ let
 in
 {
   # --- Place the generated config file ---
-  # !! Verify the correct path for Cursor MCP config !!
+  # Configuration for Cursor editor
   home.file.".cursor/mcp.json".source = mcpConfig;
+
+  # Configuration for Claude Code (global)
+  # Claude Code supports global MCP configuration in ~/.claude/config.json
+  home.file.".claude/config.json".source = mcpConfig;
 
   # Ensure the secret directory exists
   home.activation.secretsDir = lib.hm.dag.entryAfter [ "writeBoundary" ]
     ''
       mkdir -p ${config.xdg.configHome}/mcp-secrets
+      mkdir -p ${config.home.homeDirectory}/.claude
     '';
 }

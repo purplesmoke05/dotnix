@@ -22,6 +22,7 @@
     wl-clipboard
     wl-screenrec
     killall
+    ripgrep
   ];
 
   # Environment variables for Volta
