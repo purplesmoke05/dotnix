@@ -13,7 +13,7 @@ let
         enable = false;
       };
       everything = { enable = true; };
-      fetch = { enable = true; };
+      fetch = { enable = false; };
       filesystem = {
         enable = true; # Enable Filesystem
         # Requires allowed paths -> args

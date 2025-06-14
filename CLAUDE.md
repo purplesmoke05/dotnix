@@ -33,6 +33,7 @@ This is a NixOS and Home Manager configuration repository (dotnix) that manages 
 
 - **Update Cursor editor**: `./pkgs/code-cursor/update.sh`
 - **Format Nix files**: `nix fmt`
+- **Convert VSCode/Cursor settings to Nix**: `cd home-manager/gui/editor/vscode && uv run python settings.py`
 
 ## Architecture and Structure
 

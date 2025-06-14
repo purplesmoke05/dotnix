@@ -110,6 +110,41 @@ class SettingsConverter:
         lines.append(f"{' ' * (indent-2)}}}")
         return "\n".join(lines)
 
+    def _merge_dotted_keys(self, settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge dotted keys (e.g., 'foo.bar': value) into nested structure."""
+        result = {}
+        
+        # First, add all non-dotted keys
+        for key, value in settings.items():
+            if '.' not in key:
+                result[key] = value
+        
+        # Then process dotted keys
+        for key, value in settings.items():
+            if '.' in key:
+                parts = key.split('.')
+                current = result
+                
+                # Navigate to the parent of the final key
+                for i, part in enumerate(parts[:-1]):
+                    if part not in current:
+                        current[part] = {}
+                    elif not isinstance(current[part], dict):
+                        print(f"Warning: Cannot merge '{key}' - '{'.'.join(parts[:i+1])}' is not a dictionary")
+                        break
+                    current = current[part]
+                
+                # Set the final value
+                final_key = parts[-1]
+                if isinstance(current, dict):
+                    if final_key in current and isinstance(current[final_key], dict) and isinstance(value, dict):
+                        # Merge dictionaries
+                        current[final_key] = {**current[final_key], **value}
+                    else:
+                        current[final_key] = value
+        
+        return result
+
     def _read_json(self) -> Optional[Dict[str, Any]]:
         """Read and parse JSON file."""
         try:
@@ -139,8 +174,11 @@ class SettingsConverter:
         if settings is None:
             return False
 
+        # Merge dotted keys to prevent duplicates
+        merged_settings = self._merge_dotted_keys(settings)
+
         # Convert to Nix format
-        nix_content = self._format_dict(settings)
+        nix_content = self._format_dict(merged_settings)
 
         # Write to file
         return self._write_nix(nix_content)
