@@ -303,6 +303,5 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  },
-  "cSpell.diagnosticLevel": "Warning"
+  }
 }

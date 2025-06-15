@@ -293,6 +293,7 @@
     llvmPackages.clang
     zlib.dev
     direnv
+    ccmanager
   ];
 
   # Nix-ld Configuration

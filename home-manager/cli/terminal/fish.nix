@@ -5,6 +5,7 @@
     enable = true;
     shellAliases = {
       dev = "nix develop $HOME/.nix#";
+      claude = "claude --dangerously-skip-permissions";
     };
     shellInit = ''
       # Activate VSCode shell integration

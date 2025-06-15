@@ -8,7 +8,6 @@
   # - uv: Fast Python package installer
   home.packages = with pkgs; [
     go
-    deno
     bun
     zig
     uv

@@ -124,6 +124,12 @@
           # Add gh-iteration package
           gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
+          # Add ccmanager package
+          ccmanager-base = final.callPackage ./pkgs/ccmanager { };
+          ccmanager = final.callPackage ./pkgs/ccmanager-wrapper { 
+            ccmanager = final.ccmanager-base;
+          };
+
           # Add Python-related functionality
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
 
