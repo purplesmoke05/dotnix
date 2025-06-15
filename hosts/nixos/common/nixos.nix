@@ -391,6 +391,30 @@
     # package = hyprland.packages.${pkgs.system}.hyprland;
   };
 
+  # XDG Portal Configuration
+  # Configures desktop portals for Wayland/Hyprland
+  # - Ensures proper file picker and screen sharing functionality
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-hyprland
+      xdg-desktop-portal-gtk
+    ];
+    config = {
+      common = {
+        default = [
+          "gtk"
+        ];
+      };
+      hyprland = {
+        default = [
+          "hyprland"
+          "gtk"
+        ];
+      };
+    };
+  };
+
   # System State Version
   # NixOS release version for maintaining compatibility
   system.stateVersion = "24.11";
