@@ -57,9 +57,9 @@
       nvidiaSettings = true;
       package = config.boot.kernelPackages.nvidiaPackages.beta;
     };
-    graphics = {
+    opengl = {
       enable = true;
-      enable32Bit = true;
+      driSupport32Bit = true;
       extraPackages = with pkgs; [
         vaapiVdpau
         libvdpau-va-gl

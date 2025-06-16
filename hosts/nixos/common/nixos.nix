@@ -111,30 +111,12 @@
   # - GDM: Wayland-native display manager
   # - Hyprland: Modern Wayland compositor
   services.xserver.enable = false;
-  services.displayManager.gdm = {
+  services.xserver.displayManager.gdm = {
     enable = true;
     wayland = true;
   };
   services.displayManager.defaultSession = "hyprland";
-  services.desktopManager.gnome.enable = false;
-
-  # XDG Desktop Portal Configuration
-  # Provides desktop integration for file pickers, screen sharing, etc.
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-hyprland
-      xdg-desktop-portal-gtk
-    ];
-    config = {
-      common = {
-        default = [ "gtk" ];
-      };
-      hyprland = {
-        default = [ "hyprland" "gtk" ];
-      };
-    };
-  };
+  services.xserver.desktopManager.gnome.enable = false;
 
   # Keyboard Configuration
   # Japanese layout with custom key remapping
