@@ -44,6 +44,11 @@
         all = true; # Consider if this is always desired
       };
 
+      # Pull behavior
+      pull = {
+        rebase = true;
+      };
+
       # Helper settings
       help.autocorrect = "prompt";
       commit.verbose = true; # Show diff in commit message editor

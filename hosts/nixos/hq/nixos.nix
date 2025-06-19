@@ -34,6 +34,9 @@
     extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
     ];
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEnLxrW1BOyt8CREqoEzBaH86LEh6+4rE27Kv+Zl6vU9"
+    ];
   };
 
   # Firewall Configuration

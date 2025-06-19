@@ -496,6 +496,40 @@
     };
   };
 
+  # SSH Server Configuration
+  # Secure SSH access restricted to specific network
+  # - Public key authentication only (no password auth)
+  # - Access limited to Hotspot network (192.168.XXX.0/24)
+  # - Replace XXX with your actual network address
+  services.openssh = {
+    enable = true;
+    settings = {
+      # Disable password authentication
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+      # Only allow public key authentication
+      PubkeyAuthentication = true;
+      # Disable other authentication methods
+      KbdInteractiveAuthentication = false;
+      ChallengeResponseAuthentication = false;
+    };
+    # Restrict SSH access to specific network
+    # NetworkManager Hotspot default network: 10.42.0.0/24
+    extraConfig = ''
+      # Default: deny all
+      Match Address *,!10.42.0.0/24
+        DenyUsers *
+      
+      # Allow from Hotspot network only
+      Match Address 10.42.0.0/24
+        AllowUsers ${username}
+        PubkeyAuthentication yes
+    '';
+  };
+
+  # Firewall configuration for SSH
+  networking.firewall.allowedTCPPorts = [ 22 ];
+
   # Bluetooth Configuration
   # Wireless device support
   # - Auto-power on boot

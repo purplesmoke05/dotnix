@@ -6,16 +6,16 @@
 
 buildNpmPackage rec {
   pname = "ccmanager";
-  version = "0.1.2";
+  version = "0.1.9";
 
   src = fetchFromGitHub {
     owner = "kbwo";
     repo = "ccmanager";
-    rev = "${version}";
-    hash = "sha256-JYD0Ft0PhDN2Yauh6+pHwXoiYo+p9KCq3kWKFTtu8Xk=";
+    rev = "v0.1.9";
+    hash = "sha256-U8BOlZLkvJjlkm7IfkkhhfnXSytKEgmRoCCrPPZJvAc=";
   };
 
-  npmDepsHash = "sha256-iutcS6950cy8Op+LKdby90sEEtNaGLGb+MgxjV+c1Kg=";
+  npmDepsHash = "sha256-YhX6H5E4N4lgukYiuOx8jTxsizS0OMjXJnGXjYKmKVU=";
 
   # Build configuration
   npmBuildScript = "build";

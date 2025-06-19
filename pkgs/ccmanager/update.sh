@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -i bash -p curl jq common-updater-scripts coreutils gnused nix gh
+#!nix-shell -i bash -p curl jq common-updater-scripts coreutils gnused nix gh nix-prefetch-github
 
 set -euo pipefail
 
@@ -60,28 +60,35 @@ echo "This will fail, but we'll get the correct hash from the error message"
 tmpfile=$(mktemp)
 
 # Try to build and capture the error
-if nix build .#ccmanager-base 2>&1 | tee "$tmpfile"; then
+# Build the package directly using nix-build
+if nix-build '<nixpkgs>' -A buildNpmPackage --arg src "$DEFAULT_NIX_FILE" -o result-ccmanager 2>&1 | tee "$tmpfile"; then
   echo "Build succeeded unexpectedly. The npmDepsHash might already be correct."
 else
-  # Extract the correct hash from the error message
-  correctHash=$(grep -o 'got:[[:space:]]*sha256-[^[:space:]]*' "$tmpfile" | sed 's/got:[[:space:]]*//')
-  
-  if [[ -n "$correctHash" ]]; then
-    echo "Updating npmDepsHash to: $correctHash"
-    sed -i 's/npmDepsHash = "[^"]*";/npmDepsHash = "'${correctHash}'";/' "$DEFAULT_NIX_FILE"
+  # Try a simpler approach - build with callPackage
+  echo "Trying direct build with callPackage..."
+  if nix-build --expr "with import <nixpkgs> {}; callPackage $DEFAULT_NIX_FILE {}" 2>&1 | tee "$tmpfile"; then
+    echo "Build succeeded unexpectedly. The npmDepsHash might already be correct."
+  else
+    # Extract the correct hash from the error message
+    correctHash=$(grep -o 'got:[[:space:]]*sha256-[^[:space:]]*' "$tmpfile" | sed 's/got:[[:space:]]*//')
     
-    # Try building again to verify
-    echo "Verifying the update..."
-    if nix build .#ccmanager-base; then
-      echo "Successfully updated ccmanager to version $latestVersion!"
+    if [[ -n "$correctHash" ]]; then
+      echo "Updating npmDepsHash to: $correctHash"
+      sed -i 's/npmDepsHash = "[^"]*";/npmDepsHash = "'${correctHash}'";/' "$DEFAULT_NIX_FILE"
+      
+      # Try building again to verify
+      echo "Verifying the update..."
+      if nix-build --expr "with import <nixpkgs> {}; callPackage $DEFAULT_NIX_FILE {}"; then
+        echo "Successfully updated ccmanager to version $latestVersion!"
+      else
+        echo "Error: Build still failing after hash update. Please check manually."
+        exit 1
+      fi
     else
-      echo "Error: Build still failing after hash update. Please check manually."
+      echo "Error: Could not extract correct npmDepsHash from error message."
+      echo "Please update it manually."
       exit 1
     fi
-  else
-    echo "Error: Could not extract correct npmDepsHash from error message."
-    echo "Please update it manually."
-    exit 1
   fi
 fi
 

@@ -35,7 +35,7 @@
       };
 
       pane_frames = false;
-      copy_commandd = "wl-copy";
+      copy_command = "wl-copy";
     };
   };
 
