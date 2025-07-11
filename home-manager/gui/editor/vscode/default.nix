@@ -67,12 +67,6 @@ in
           sha256 = "1j668ias08jkkz3v1fnljxphhkpgy0imbii2s9i0db390c07j1qf";
         }
         {
-          name = "roo-cline";
-          publisher = "rooveterinaryinc";
-          version = "3.1.6";
-          sha256 = "19v27pispwqnsfjiimyka1gfqlxmpwl05ja3iv3c035wwj0v985c";
-        }
-        {
           name = "zenkaku";
           publisher = "mosapride";
           version = "0.0.3";

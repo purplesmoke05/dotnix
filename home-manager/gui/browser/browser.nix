@@ -10,8 +10,11 @@
     firefox.enable = true;
   };
 
-  # Add zen-browser package
-  home.packages = [ pkgs.zen-browser ];
+  # Add zen-browser package and vdhcoapp (Video DownloadHelper companion app)
+  home.packages = with pkgs; [ 
+    zen-browser 
+    vdhcoapp
+  ];
 
   # Removed ineffective brave-flags.conf definition
   # xdg.configFile."brave-flags.conf".text = ''

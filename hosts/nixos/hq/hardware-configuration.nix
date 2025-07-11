@@ -47,9 +47,6 @@
   # - Optimized for Wayland compatibility
   # - Power management disabled to prevent issues
   hardware = {
-    graphics = {
-      enable = true;
-    };
     nvidia = {
       modesetting.enable = true;
       powerManagement.enable = true;
@@ -57,9 +54,8 @@
       nvidiaSettings = true;
       package = config.boot.kernelPackages.nvidiaPackages.beta;
     };
-    opengl = {
-      enable = true;
-      driSupport32Bit = true;
+    graphics = {
+      enable32Bit = true;
       extraPackages = with pkgs; [
         vaapiVdpau
         libvdpau-va-gl

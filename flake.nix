@@ -135,6 +135,9 @@
 
           # Add zen-browser overlay
           zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
+
+          # Add sui package
+          sui = final.callPackage ./pkgs/sui { };
         };
 
         nixos = final: prev: {

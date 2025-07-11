@@ -11,16 +11,52 @@
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
-  boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "split_lock_mitigate=0" ];
+  boot.kernelParams = [ 
+    "nvidia.NVreg_PreserveVideoMemoryAllocations=1" 
+    "split_lock_mitigate=0"
+    # ゲームコントローラー用低レイテンシー設定
+    "usbhid.jspoll=1"        # ゲームパッドのポーリングレートを1ms（1000Hz）に設定
+    "usbcore.usbfs_memory_mb=256"  # USB転送バッファサイズ増加
+    "threadirqs"             # 割り込みをスレッド化してレイテンシー改善
+    "preempt=full"           # 完全プリエンプション有効化
+    "mitigations=off"        # CPU脆弱性緩和機能無効化（パフォーマンス向上）
+  ];
 
   # Network Configuration
   # Basic network setup with NetworkManager for connection management
   # - NetworkManager: Handles both wireless and wired connections
   # - Static hostname configuration
   networking.hostName = "nixos";
-  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    dns = "default";  # Hotspotのためにデフォルト設定を使用
+    settings = {
+      main = {
+        rc-manager = "symlink";
+      };
+    };
+  };
   networking.wireless.userControlled.enable = true;
   hardware.wirelessRegulatoryDatabase = true;
+  
+  # Configure DNS to use AdGuard Home
+  networking.nameservers = [ "127.0.0.1" ];
+  
+  # NetworkManager shared (Hotspot) mode configuration
+  environment.etc."NetworkManager/dnsmasq-shared.d/00-hotspot.conf".text = ''
+    # Hotspot用の設定
+    interface=wlp5s0
+    bind-interfaces
+    listen-address=10.42.0.1
+    # DNSポートを変更（AdGuard Homeとの競合回避）
+    port=0
+    # DHCPのみ提供（DNSはクライアント側で設定）
+    dhcp-range=10.42.0.10,10.42.0.254,255.255.255.0,12h
+    dhcp-option=option:router,10.42.0.1
+    dhcp-option=option:dns-server,10.42.0.1,1.1.1.1,8.8.8.8
+  '';
+  
+  
 
   # Localization Settings
   # Complete Japanese language support configuration
@@ -111,12 +147,12 @@
   # - GDM: Wayland-native display manager
   # - Hyprland: Modern Wayland compositor
   services.xserver.enable = false;
-  services.xserver.displayManager.gdm = {
+  services.displayManager.gdm = {
     enable = true;
     wayland = true;
   };
   services.displayManager.defaultSession = "hyprland";
-  services.xserver.desktopManager.gnome.enable = false;
+  services.desktopManager.gnome.enable = false;
 
   # Keyboard Configuration
   # Japanese layout with custom key remapping
@@ -152,6 +188,12 @@
           name = "Remap RO to Shift_L-RO";
           remap = {
             KEY_RO = "KEY_LEFTSHIFT-KEY_RO";
+          };
+        }
+        {
+          name = "Fix underscore/backslash key (JIS keyboard)";
+          remap = {
+            KEY_102ND = "KEY_BACKSLASH";
           };
         }
         {
@@ -294,6 +336,9 @@
     zlib.dev
     direnv
     ccmanager
+    tailscale
+    sui
+    dnsmasq  # NetworkManager Hotspot用
   ];
 
   # Nix-ld Configuration
@@ -456,6 +501,7 @@
       FCITX_ADDON_DIRS = "${pkgs.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
       DISABLE_KWALLET = "1";
       FCITX_LOG_LEVEL = "debug";
+      GTK_IM_MODULE = "fcitx";
       QT_IM_MODULE = "fcitx";
       GLFW_IM_MODULE = "fcitx";
       SDL_IM_MODULE = "fcitx";
@@ -472,11 +518,73 @@
   # - DNSSEC: Secure DNS resolution
   # - Hardware clock: Dual-boot compatibility
   services.resolved = {
-    enable = true;
-    dnssec = "true";
+    enable = false;  # Disabled to avoid conflicts with NetworkManager
   };
   security.protectKernelImage = false;
   time.hardwareClockInLocalTime = true;
+
+  # AdGuard Home Configuration
+  # Network-wide ad blocking and privacy protection
+  # - DNS filtering and ad blocking
+  # - Web interface on port 3000
+  # - DNS service on port 53
+  services.adguardhome = {
+    enable = true;
+    host = "0.0.0.0";
+    port = 3000;
+    openFirewall = true;
+    settings = {
+      users = [
+        # Default username: admin
+        # Default password: changeme (you should change this after first login)
+      ];
+      dns = {
+        bind_hosts = [ "0.0.0.0" ];
+        port = 53;
+        protection_enabled = true;
+        filtering_enabled = true;
+        # Upstream DNS servers
+        upstream_dns = [
+          "https://dns.cloudflare.com/dns-query"
+          "https://dns.google/dns-query"
+          "1.1.1.1"
+          "8.8.8.8"
+        ];
+        # Bootstrap DNS servers for resolving DoH endpoints
+        bootstrap_dns = [
+          "1.1.1.1"
+          "8.8.8.8"
+        ];
+      };
+      filtering = {
+        rewrites = [];
+        # Claude API domains whitelist
+        whitelist_filters = [
+          # Claude API domains
+          "@@||anthropic.com^"
+          "@@||claude.ai^"
+          "@@||api.anthropic.com^"
+          "@@||console.anthropic.com^"
+          # AWS domains that Claude might use
+          "@@||amazonaws.com^"
+          "@@||cloudfront.net^"
+          # Allow all subdomains
+          "@@||*.anthropic.com^"
+          "@@||*.claude.ai^"
+          
+          # Cursor API domains
+          "@@||cursor.sh^"
+          "@@||*.cursor.sh^"
+          "@@||api2.cursor.sh^"
+          "@@||cursor.com^"
+          "@@||*.cursor.com^"
+          "@@||downloads.cursor.com^"
+          # GitHub for Cursor updates
+          "@@||raw.githubusercontent.com^"
+        ];
+      };
+    };
+  };
 
   # Gaming Support
   # Steam gaming platform configuration
@@ -513,22 +621,44 @@
       KbdInteractiveAuthentication = false;
       ChallengeResponseAuthentication = false;
     };
-    # Restrict SSH access to specific network
+    # Restrict SSH access to specific networks
     # NetworkManager Hotspot default network: 10.42.0.0/24
+    # Tailscale network: 100.64.0.0/10
     extraConfig = ''
       # Default: deny all
-      Match Address *,!10.42.0.0/24
+      Match Address *,!10.42.0.0/24,!100.64.0.0/10
         DenyUsers *
       
-      # Allow from Hotspot network only
+      # Allow from Hotspot network
       Match Address 10.42.0.0/24
+        AllowUsers ${username}
+        PubkeyAuthentication yes
+      
+      # Allow from Tailscale network
+      Match Address 100.64.0.0/10
         AllowUsers ${username}
         PubkeyAuthentication yes
     '';
   };
 
-  # Firewall configuration for SSH
-  networking.firewall.allowedTCPPorts = [ 22 ];
+  # Firewall configuration for SSH and AdGuard Home
+  networking.firewall.allowedTCPPorts = [ 
+    22     # SSH
+    53     # DNS (AdGuard Home)
+    3000   # AdGuard Home Web UI
+  ];
+  networking.firewall.allowedUDPPorts = [ 
+    53     # DNS (AdGuard Home)
+  ];
+
+  # Tailscale Configuration
+  # Zero-config VPN for secure network access
+  services.tailscale = {
+    enable = true;
+    useRoutingFeatures = "client";
+    # ユーザーがsudoなしでtailscaleコマンドを使えるようにする
+    permitCertUid = username;
+  };
 
   # Bluetooth Configuration
   # Wireless device support
@@ -545,6 +675,47 @@
       };
     };
   };
+
+  # Gaming Performance Optimizations
+  # ゲームコントローラーのレスポンス性能向上設定
+  
+  # CPUパフォーマンス設定
+  powerManagement.cpuFreqGovernor = "performance";  # CPU常時最高クロック
+  
+  # ゲームモード（自動的にゲームのパフォーマンスを最適化）
+  programs.gamemode = {
+    enable = true;
+    settings = {
+      general = {
+        renice = 10;              # ゲームプロセスの優先度を上げる
+        inhibit_screensaver = 1;   # スクリーンセーバー無効化
+      };
+      custom = {
+        start = "${pkgs.bash}/bin/bash -c 'echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor'";
+        end = "${pkgs.bash}/bin/bash -c 'echo powersave | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor'";
+      };
+    };
+  };
+  
+  # リアルタイムカーネルの設定（オーディオとUSB入力のレイテンシー削減）
+  security.pam.loginLimits = [
+    { domain = "@audio"; item = "memlock"; type = "-"; value = "unlimited"; }
+    { domain = "@audio"; item = "rtprio"; type = "-"; value = "99"; }
+    { domain = "@audio"; item = "nofile"; type = "soft"; value = "99999"; }
+    { domain = "@audio"; item = "nofile"; type = "hard"; value = "99999"; }
+    # ユーザーにリアルタイム優先度を許可
+    { domain = username; item = "rtprio"; type = "-"; value = "99"; }
+    { domain = username; item = "nice"; type = "-"; value = "-20"; }
+  ];
+  
+  # udevルール：コントローラー接続時の最適化
+  services.udev.extraRules = ''
+    # Victrix Pro BFG Controller (Performance Designed Products)
+    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess"
+    
+    # Victrix Pro BFG特定の電源管理無効化（レイテンシー改善）
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", ATTR{power/autosuspend}="-1"
+  '';
 
   # File Management
   # File manager and support services
