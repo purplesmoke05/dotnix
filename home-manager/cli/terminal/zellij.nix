@@ -8,7 +8,6 @@
       show_banner = false;
       show_startup_tips = false;
       default_layout = "compact";
-      session_serialization = false;
       default_shell = "fish";
 
       keybinds = {
