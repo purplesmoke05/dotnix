@@ -291,7 +291,7 @@
     # Hyprland plugins
     plugins = [
       # inputs.Hyprspace.packages.${pkgs.system}.Hyprspace
-      pkgs.hyprlandPlugins.hyprsplit
+      pkgs.hyprlandPlugins.hyprsplit # Use nixpkgs version which is compatible with Hyprland 0.49.0
     ];
   };
 }
