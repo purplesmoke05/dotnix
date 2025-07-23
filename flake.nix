@@ -28,12 +28,18 @@
     };
     hyprpanel = {
       url = "github:Jas-SinghFSU/HyprPanel";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprsplit = {
-      url = "github:shezdy/hyprsplit";
+      url = "github:shezdy/hyprsplit?ref=v0.49.0";
+      inputs.hyprland.follows = "hyprland";
     };
     mcp-servers-nix = {
       url = "github:natsukium/mcp-servers-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    hyprland = {
+      url = "github:hyprwm/Hyprland/v0.49.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     zen-browser-flake = {
@@ -54,27 +60,11 @@
       url = "github:BatteredBunny/brew-api";
       flake = false;
     };
-    /*
-      hyprland = {
-      url = "github:hyprwm/Hyprland/v0.48.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.hyprland-protocols.follows = "hyprland-protocols";
-      };
-      hyprland-protocols = {
-      url = "github:hyprwm/hyprland-protocols/v0.6.2";
-      inputs.nixpkgs.follows = "nixpkgs";
-      };
-      xdg-desktop-portal-hyprland = {
-      url = "github:hyprwm/xdg-desktop-portal-hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.hyprland-protocols.follows = "hyprland-protocols";
-      inputs.hyprland.follows = "hyprland";
-    };*/
   };
 
   # System Configuration
   # Main outputs section defining system configurations, overlays, and home-manager setups
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
     let
       # Python builder utilities
       mkPythonBuilders = pkgs: {
@@ -126,7 +116,7 @@
 
           # Add ccmanager package
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
-          ccmanager = final.callPackage ./pkgs/ccmanager-wrapper { 
+          ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
             ccmanager = final.ccmanager-base;
           };
 
@@ -197,6 +187,7 @@
           backupFileExtension = "backup";
           extraSpecialArgs = {
             inherit inputs nixpkgs hostname username mcp-servers-nix;
+            inherit (inputs) hyprsplit;
             userConfig = {
               desktop = true;
               dev = true;
@@ -216,7 +207,6 @@
       mkSystemOverlays = {
         nixpkgs.overlays = [
           (import rust-overlay)
-          inputs.hyprpanel.overlay
           self.overlays.default # This now correctly includes common and nixos specific parts
         ];
       };
@@ -264,7 +254,7 @@
           ];
           specialArgs = {
             inherit nixpkgs inputs hostname username;
-            /*inherit (inputs) hyprland hyprland-protocols;*/
+            inherit (inputs) hyprland hyprsplit;
           };
         };
 

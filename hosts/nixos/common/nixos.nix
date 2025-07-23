@@ -1,4 +1,4 @@
-{ inputs, config, pkgs, hostname, username, /*hyprland, hyprland-protocols,*/ ... }:
+{ inputs, config, pkgs, hostname, username, hyprland, ... }:
 
 {
   # System Boot Configuration
@@ -11,8 +11,8 @@
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
-  boot.kernelParams = [ 
-    "nvidia.NVreg_PreserveVideoMemoryAllocations=1" 
+  boot.kernelParams = [
+    "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
     # ゲームコントローラー用低レイテンシー設定
     "usbhid.jspoll=1"        # ゲームパッドのポーリングレートを1ms（1000Hz）に設定
@@ -38,10 +38,10 @@
   };
   networking.wireless.userControlled.enable = true;
   hardware.wirelessRegulatoryDatabase = true;
-  
+
   # Configure DNS to use AdGuard Home
   networking.nameservers = [ "127.0.0.1" ];
-  
+
   # NetworkManager shared (Hotspot) mode configuration
   environment.etc."NetworkManager/dnsmasq-shared.d/00-hotspot.conf".text = ''
     # Hotspot用の設定
@@ -55,8 +55,8 @@
     dhcp-option=option:router,10.42.0.1
     dhcp-option=option:dns-server,10.42.0.1,1.1.1.1,8.8.8.8
   '';
-  
-  
+
+
 
   # Localization Settings
   # Complete Japanese language support configuration
@@ -310,7 +310,7 @@
     unrar
     rar
     file-roller
-    playwright.browsers
+    # playwright.browsers # Temporarily disabled - libjxl build failure
     ghq
     peco
     obsidian
@@ -323,7 +323,7 @@
     remarshal
     gnum4
     gnumake
-    jetbrains.rust-rover
+    # jetbrains.rust-rover # Temporarily disabled - build failure with jetbrains-jdk-jcef
     libglvnd
     mesa
     zstd
@@ -433,7 +433,7 @@
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
-    # package = hyprland.packages.${pkgs.system}.hyprland;
+    package = hyprland.packages.${pkgs.system}.hyprland;
   };
 
   # System State Version
@@ -558,31 +558,52 @@
       };
       filtering = {
         rewrites = [];
-        # Claude API domains whitelist
-        whitelist_filters = [
-          # Claude API domains
-          "@@||anthropic.com^"
-          "@@||claude.ai^"
-          "@@||api.anthropic.com^"
-          "@@||console.anthropic.com^"
-          # AWS domains that Claude might use
-          "@@||amazonaws.com^"
-          "@@||cloudfront.net^"
-          # Allow all subdomains
-          "@@||*.anthropic.com^"
-          "@@||*.claude.ai^"
-          
-          # Cursor API domains
-          "@@||cursor.sh^"
-          "@@||*.cursor.sh^"
-          "@@||api2.cursor.sh^"
-          "@@||cursor.com^"
-          "@@||*.cursor.com^"
-          "@@||downloads.cursor.com^"
-          # GitHub for Cursor updates
-          "@@||raw.githubusercontent.com^"
-        ];
       };
+      # Filter lists (at settings level, not under filtering)
+      filters = [
+        {
+          enabled = true;
+          url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt";
+          name = "AdGuard DNS filter";
+          id = 1;
+        }
+        {
+          enabled = true;
+          url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt";
+          name = "AdGuard Japanese filter";
+          id = 7;
+        }
+        {
+          enabled = true;
+          url = "https://raw.githubusercontent.com/eEIi0A5L/adblock_filter/master/tamago_filter.txt";
+          name = "たまごフィルタ (Tamago Filter)";
+          id = 100;
+        }
+      ];
+      # User rules for whitelist
+      user_rules = [
+        # Claude API domains
+        "@@||anthropic.com^"
+        "@@||claude.ai^"
+        "@@||api.anthropic.com^"
+        "@@||console.anthropic.com^"
+        # AWS domains that Claude might use
+        "@@||amazonaws.com^"
+        "@@||cloudfront.net^"
+        # Allow all subdomains
+        "@@||*.anthropic.com^"
+        "@@||*.claude.ai^"
+
+        # Cursor API domains
+        "@@||cursor.sh^"
+        "@@||*.cursor.sh^"
+        "@@||api2.cursor.sh^"
+        "@@||cursor.com^"
+        "@@||*.cursor.com^"
+        "@@||downloads.cursor.com^"
+        # GitHub for Cursor updates
+        "@@||raw.githubusercontent.com^"
+      ];
     };
   };
 
@@ -628,12 +649,12 @@
       # Default: deny all
       Match Address *,!10.42.0.0/24,!100.64.0.0/10
         DenyUsers *
-      
+
       # Allow from Hotspot network
       Match Address 10.42.0.0/24
         AllowUsers ${username}
         PubkeyAuthentication yes
-      
+
       # Allow from Tailscale network
       Match Address 100.64.0.0/10
         AllowUsers ${username}
@@ -642,12 +663,12 @@
   };
 
   # Firewall configuration for SSH and AdGuard Home
-  networking.firewall.allowedTCPPorts = [ 
+  networking.firewall.allowedTCPPorts = [
     22     # SSH
     53     # DNS (AdGuard Home)
     3000   # AdGuard Home Web UI
   ];
-  networking.firewall.allowedUDPPorts = [ 
+  networking.firewall.allowedUDPPorts = [
     53     # DNS (AdGuard Home)
   ];
 
@@ -672,16 +693,22 @@
       General = {
         Enable = "Source,Sink,Media,Socket";
         Experimental = true;
+        # A2DPプロファイルを優先
+        AutoConnect = true;
+      };
+      Policy = {
+        # 自動的にA2DPプロファイルに切り替える
+        AutoEnable = true;
       };
     };
   };
 
   # Gaming Performance Optimizations
   # ゲームコントローラーのレスポンス性能向上設定
-  
+
   # CPUパフォーマンス設定
   powerManagement.cpuFreqGovernor = "performance";  # CPU常時最高クロック
-  
+
   # ゲームモード（自動的にゲームのパフォーマンスを最適化）
   programs.gamemode = {
     enable = true;
@@ -696,7 +723,7 @@
       };
     };
   };
-  
+
   # リアルタイムカーネルの設定（オーディオとUSB入力のレイテンシー削減）
   security.pam.loginLimits = [
     { domain = "@audio"; item = "memlock"; type = "-"; value = "unlimited"; }
@@ -707,12 +734,12 @@
     { domain = username; item = "rtprio"; type = "-"; value = "99"; }
     { domain = username; item = "nice"; type = "-"; value = "-20"; }
   ];
-  
+
   # udevルール：コントローラー接続時の最適化
   services.udev.extraRules = ''
     # Victrix Pro BFG Controller (Performance Designed Products)
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess"
-    
+
     # Victrix Pro BFG特定の電源管理無効化（レイテンシー改善）
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", ATTR{power/autosuspend}="-1"
   '';

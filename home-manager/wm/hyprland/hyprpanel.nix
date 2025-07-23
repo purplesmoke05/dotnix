@@ -1,8 +1,6 @@
 { pkgs, inputs, ... }: {
-  # Import Hyprpanel module from flake inputs
-  imports = [
-    inputs.hyprpanel.homeManagerModules.hyprpanel
-  ];
+  # Note: Hyprpanel module is now included in home-manager itself
+  # No need to import from flake inputs anymore
 
   # Required packages for Hyprpanel functionality
   home.packages = with pkgs; [
@@ -14,21 +12,20 @@
     power-profiles-daemon # Power management
     btop # System monitor
     hyprpanel # Main panel package
-    gcolor3 # Color picker tool (re-added)
+    gcolor3 # Color picker tool
   ];
 
   # Hyprpanel configuration
   programs.hyprpanel = {
-    overlay.enable = true; # Enable overlay features
     enable = true; # Enable Hyprpanel
-    systemd.enable = true; # Enable systemd integration
-    overwrite.enable = true; # Allow configuration overwrites
+    systemd.enable = true; # Enable systemd integration (default is true)
+    # Note: overlay.enable has been removed - hyprpanel is now in nixpkgs
+    # Note: overwrite.enable option doesn't exist in the module
 
     # Panel appearance and behavior settings
     settings = {
       # Panel layout configuration
-      layout = {
-        "bar.layouts" =
+      "bar.layouts" =
           let
             # Define standard layout with optional battery indicator
             layout = { showBattery ? true }: {
@@ -66,91 +63,54 @@
             "2" = layout { showBattery = false; }; # Layout without battery
             "3" = layout { showBattery = false; }; # Layout without battery
           };
-      };
 
-      theme.name = "catppuccin_mocha";
+      "theme.name" = "catppuccin_mocha";
 
       # Updates module configuration
-      bar.customModules.updates = {
-        pollingInterval = 1440000; # Check updates every 24 hours
-        updateCommand = "jq '[.[].cvssv3_basescore | to_entries | add | select(.value > 5)] | length' <<< $(vulnix -S --json)";
-        icon = {
-          updated = "󰋼"; # Icon for up-to-date system
-          pending = "󰋼"; # Icon for pending updates
-        };
-      };
+      "bar.customModules.updates.pollingInterval" = 1440000; # Check updates every 24 hours
+      "bar.customModules.updates.updateCommand" = "jq '[.[].cvssv3_basescore | to_entries | add | select(.value > 5)] | length' <<< $(vulnix -S --json)";
+      "bar.customModules.updates.icon.updated" = "󰋼"; # Icon for up-to-date system
+      "bar.customModules.updates.icon.pending" = "󰋼"; # Icon for pending updates
 
       # Theme settings
-      theme = {
-        bar = {
-          floating = false; # Dock to screen edge
-          buttons.enableBorders = true; # Show button borders
-          transparent = true; # Enable transparency
-          buttons.modules.ram.enableBorder = false; # Disable RAM module border
-        };
-        font.size = "14px"; # Font size
-      };
+      "theme.bar.floating" = false; # Dock to screen edge
+      "theme.bar.buttons.enableBorders" = true; # Show button borders
+      "theme.bar.transparent" = true; # Enable transparency
+      "theme.bar.buttons.modules.ram.enableBorder" = false; # Disable RAM module border
+      "theme.font.size" = "14px"; # Font size
 
       # Clock settings
-      menus.clock = {
-        time = {
-          military = true; # 24-hour format
-          hideSeconds = false; # Show seconds
-        };
-        weather.enabled = false; # Disable weather
-      };
-      bar.clock.format = "%y/%m/%d  %H:%M"; # Clock format
+      "menus.clock.time.military" = true; # 24-hour format
+      "menus.clock.time.hideSeconds" = false; # Show seconds
+      "menus.clock.weather.enabled" = false; # Disable weather
+      "bar.clock.format" = "%y/%m/%d  %H:%M"; # Clock format
 
       # Media player settings
-      bar.media = {
-        show_active_only = true; # Only show active media
-        format = "{title}"; # Display format
-      };
-      menus.media.displayTime = true; # Show playback time
+      "bar.media.show_active_only" = true; # Only show active media
+      "bar.media.format" = "{title}"; # Display format
+      "menus.media.displayTime" = true; # Show playback time
 
       # Notification settings
-      bar.notifications.show_total = false; # Hide notification count
+      "bar.notifications.show_total" = false; # Hide notification count
 
       # Launcher settings
-      bar.launcher.autoDetectIcon = true; # Auto-detect application icons
+      "bar.launcher.autoDetectIcon" = true; # Auto-detect application icons
 
       # Battery settings
-      bar.battery.hideLabelWhenFull = true; # Hide label when fully charged
+      "bar.battery.hideLabelWhenFull" = true; # Hide label when fully charged
 
       # Dashboard settings
-      menus.dashboard = {
-        controls.enabled = false; # Disable controls section
-        shortcuts = {
-          enabled = true; # Enable shortcuts
-          right.shortcut1.command = "${pkgs.gcolor3}/bin/gcolor3"; # Color picker shortcut (corrected path)
-        };
-      };
+      "menus.dashboard.controls.enabled" = false; # Disable controls section
+      "menus.dashboard.shortcuts.enabled" = true; # Enable shortcuts
+      "menus.dashboard.shortcuts.right.shortcut1.command" = "${pkgs.gcolor3}/bin/gcolor3"; # Color picker shortcut
 
       # Power settings
-      menus.power.lowBatteryNotification = true; # Enable low battery alerts
+      "menus.power.lowBatteryNotification" = true; # Enable low battery alerts
 
       # Volume control settings
-      bar.volume = {
-        rightClick = "pactl set-sink-mute @DEFAULT_SINK@ toggle"; # Toggle mute
-        middleClick = "pavucontrol"; # Open volume control
-      };
+      "bar.volume.rightClick" = "pactl set-sink-mute @DEFAULT_SINK@ toggle"; # Toggle mute
+      "bar.volume.middleClick" = "pavucontrol"; # Open volume control
     };
   };
 
-  # Systemd user service definition for Hyprpanel
-  systemd.user.services.hyprpanel = {
-    Unit = {
-      Description = "Hyprpanel Status Bar";
-      PartOf = [ "graphical-session.target" ]; # Start with graphical session
-      After = [ "graphical-session-pre.target" ]; # Ensure graphical session is ready
-    };
-    Service = {
-      ExecStart = "${pkgs.hyprpanel}/bin/hyprpanel"; # Path to hyprpanel executable
-      Restart = "on-failure"; # Restart if it crashes
-      RestartSec = "5s"; # Wait 5 seconds before restarting
-    };
-    Install = {
-      WantedBy = [ "graphical-session.target" ]; # Enable on graphical session start
-    };
-  };
 }

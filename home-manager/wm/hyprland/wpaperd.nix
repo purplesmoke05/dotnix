@@ -28,7 +28,7 @@
     done
   '';
 
-  programs.wpaperd = {
+  services.wpaperd = {
     enable = true;
     settings = {
       default = {

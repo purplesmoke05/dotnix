@@ -54,7 +54,7 @@ let
       mv $out/bin/${pname} $out/bin/${pname}.bin
       cat > $out/bin/${pname} <<EOF
       #!/bin/sh
-      exec $out/bin/${pname}.bin --ozone-platform-hint=auto --enable-wayland-ime=true --disable-gpu --no-update "$@"
+      exec $out/bin/${pname}.bin --ozone-platform=x11 --enable-wayland-ime=true --disable-gpu --no-update "$@"
       EOF
       chmod +x $out/bin/${pname}
     '';

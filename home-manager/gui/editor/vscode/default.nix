@@ -46,7 +46,7 @@ in
         pkief.material-icon-theme
         jnoortheen.nix-ide
         christian-kohler.path-intellisense
-        ms-python.python
+        # ms-python.python # Moved to marketplace extensions due to hash mismatch
         ms-python.vscode-pylance
         ms-python.debugpy
         mechatroner.rainbow-csv
@@ -71,6 +71,12 @@ in
           publisher = "mosapride";
           version = "0.0.3";
           sha256 = "0abbgg0mjgfy5495ah4iiqf2jck9wjbflvbfwhwll23g0wdazlr5";
+        }
+        {
+          name = "python";
+          publisher = "ms-python";
+          version = "2025.1.2025012401";
+          sha256 = "sha256-uD6NWGD5GyYwd7SeoGsgYEH26NI+hDxCx3f2EhqoOXk=";
         }
       ];
       # Only set userSettings for Linux

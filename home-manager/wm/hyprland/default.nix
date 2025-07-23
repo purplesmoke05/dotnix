@@ -1,4 +1,4 @@
-{ pkgs, inputs, lib, ... }: {
+{ pkgs, inputs, lib, hyprsplit, ... }: {
   imports = [
     ./rofi.nix
     ./hyprpanel.nix
@@ -60,7 +60,7 @@
     systemd.enableXdgAutostart = true;
 
     settings = {
-      render.explicit_sync = 0;
+      # render.explicit_sync = 0; # Not available in Hyprland 0.49.0
       xwayland = {
         use_nearest_neighbor = false;
         force_zero_scaling = true;
@@ -70,14 +70,7 @@
       "$mainMod" = "ALT"; # Main modifier key
       "$term" = "foot -e zellij"; # Default terminal
 
-      # Hyprspace configuration
-      "plugin:hyprspace" = {
-        speed = "0.5"; # アニメーション速度
-        transition = "wipe"; # トランジションエフェクト (wipe, slide, none)
-        workspaces = "10"; # 仮想デスクトップの数
-        gesture_sensitivity = "1.0"; # ジェスチャー感度
-      };
-
+      # Hyprsplit configuration
       "plugin:hyprsplit:persistent_workspaces" = true;
       "plugin:hyprsplit:num_workspaces" = 10;
 
@@ -243,11 +236,6 @@
         # "SUPER SHIFT,tab,workspace,e-1"
         "CTRL, 3, exec, quick-term"
 
-        # Hyprspace controls
-        "$mainMod, bracketleft, exec, hyprspace workspace -1" # 前のワークスペースへ
-        "$mainMod, bracketright, exec, hyprspace workspace +1" # 次のワークスペースへ
-        "$mainMod SHIFT, bracketleft, exec, hyprspace move -1" # ウィンドウを前のワークスペースへ移動
-        "$mainMod SHIFT, bracketright, exec, hyprspace move +1" # ウィンドウを次のワークスペースへ移動
       ] ++ [
         "$mainMod, 0, split:workspace, 10"
         "$mainMod SHIFT, 0, split:movetoworkspace, 10"
@@ -290,8 +278,7 @@
 
     # Hyprland plugins
     plugins = [
-      # inputs.Hyprspace.packages.${pkgs.system}.Hyprspace
-      pkgs.hyprlandPlugins.hyprsplit # Use nixpkgs version which is compatible with Hyprland 0.49.0
+      hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces plugin (using flake input for 0.49.0 compatibility)
     ];
   };
 }

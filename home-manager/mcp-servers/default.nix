@@ -33,7 +33,7 @@ let
       grafana = { enable = false; /* Add envFile/passwordCommand if needed */ };
       memory = { enable = true; };
       notion = { enable = false; /* Add envFile/passwordCommand if needed */ };
-      playwright = { enable = true; };
+      playwright = { enable = false; }; # Temporarily disabled - libjxl build failure
       postgres = { enable = false; /* Add envFile/passwordCommand if needed */ };
       puppeteer = { enable = false; };
       redis = { enable = false; /* Add envFile/passwordCommand if needed */ };
