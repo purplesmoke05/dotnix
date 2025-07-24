@@ -6,6 +6,8 @@
   # - Zig: Systems programming language
   # - Rust: Systems programming with memory safety
   # - uv: Fast Python package installer
+  # - Foundry: Ethereum development toolkit (forge, cast, anvil, chisel)
+  # - Solc: Solidity compiler
   home.packages = with pkgs; [
     go
     bun
@@ -22,6 +24,9 @@
     wl-screenrec
     killall
     ripgrep
+    foundry
+    solc
+    slither-analyzer
   ];
 
   # Environment variables for Volta

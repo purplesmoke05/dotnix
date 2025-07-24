@@ -23,9 +23,11 @@
     zstd
     btop
     htop
+    iftop
     ctop
     dive
     uv
+    foundry
 
     # -- Font ---
     nerd-fonts.hack

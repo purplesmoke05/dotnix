@@ -310,6 +310,25 @@
           '';
         };
 
+        mkSolidityShell = pkgs.mkShell {
+          packages = with pkgs; [
+            foundry
+            solc
+            slither-analyzer
+          ];
+
+          shellHook = ''
+            echo "Welcome to Solidity/Ethereum development environment"
+            echo "Available tools:"
+            echo "  - forge: Build, test, fuzz, debug and deploy Solidity contracts"
+            echo "  - cast: Perform Ethereum RPC calls from the command line"
+            echo "  - anvil: Local Ethereum node for development"
+            echo "  - chisel: Fast, utilitarian, and verbose Solidity REPL"
+            echo "  - solc: Solidity compiler"
+            echo "  - slither: Solidity static analyzer"
+          '';
+        };
+
         pythonPackages = pythonVersion: with pythonVersion.pkgs; [
           playwright
         ];
@@ -344,6 +363,7 @@
           };
 
           rust = mkRustShell;
+          solidity = mkSolidityShell;
           py3129 = mkPythonShell pythonTools.pythonVersions.py3129;
           py312 = mkPythonShell pythonTools.pythonVersions.py312;
           py311 = mkPythonShell pythonTools.pythonVersions.py311;
