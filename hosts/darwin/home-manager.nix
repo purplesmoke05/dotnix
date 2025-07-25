@@ -42,6 +42,7 @@
     volta
     rustup
     pulumi
+    postgresql
     libpq
     libpq.pg_config
   ];

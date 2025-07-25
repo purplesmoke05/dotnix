@@ -23,7 +23,7 @@
   ambiguousCharacters = false;
   invisibleCharacters = false;
 };
-  wordWrap = "on";
+  wordWrap = "off";
 };
 };
   accessibility = {
@@ -35,6 +35,9 @@
   caseSensitive = true;
   diagnosticLevel = "Warning";
   diagnosticLevelFlaggedWords = "Warning";
+  userWords = [
+    "survlink"
+  ];
 };
   cursor = {
   composer = {
@@ -268,4 +271,7 @@
   alwaysShowHeaderActions = true;
 };
 };
+  python.analysis.diagnosticMode = "workspace";
+  python.analysis.displayEnglishDiagnostics = true;
+  docker.extension.enableComposeLanguageServer = false;
 }

@@ -23,7 +23,7 @@
         "ambiguousCharacters": false,
         "invisibleCharacters": false
       },
-      "wordWrap": "on"
+      "wordWrap": "off"
     }
   },
   "accessibility": {
@@ -34,7 +34,10 @@
   "cSpell": {
     "caseSensitive": true,
     "diagnosticLevel": "Warning",
-    "diagnosticLevelFlaggedWords": "Warning"
+    "diagnosticLevelFlaggedWords": "Warning",
+    "userWords": [
+      "survlink"
+    ]
   },
   "cursor": {
     "composer": {
@@ -303,5 +306,8 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  }
+  },
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.displayEnglishDiagnostics": true,
+  "docker.extension.enableComposeLanguageServer": false
 }
