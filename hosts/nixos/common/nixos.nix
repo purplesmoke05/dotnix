@@ -242,6 +242,87 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
+    
+    # High-quality Bluetooth audio configuration
+    config.pipewire = {
+      "context.properties" = {
+        # Increase default sample rate for better quality
+        "default.clock.rate" = 48000;
+        "default.clock.allowed-rates" = [ 44100 48000 88200 96000 ];
+      };
+    };
+    
+    # WirePlumber configuration for Bluetooth
+    wireplumber.enable = true;
+    wireplumber.configPackages = [
+      (pkgs.writeTextDir "share/wireplumber/bluetooth.lua.d/51-bluez-config.lua" ''
+        bluez_monitor.properties = {
+          ["bluez5.enable-sbc-xq"] = true,
+          ["bluez5.enable-msbc"] = true,
+          ["bluez5.enable-hw-volume"] = true,
+          ["bluez5.codecs"] = "[ sbc sbc_xq aac ldac aptx aptx_hd aptx_ll aptx_ll_duplex faststream faststream_duplex ]",
+        }
+
+        bluez_monitor.rules = {
+          {
+            matches = {
+              {
+                -- This matches all Bluetooth devices
+                { "device.name", "matches", "bluez_card.*" },
+              },
+            },
+            apply_properties = {
+              -- Bluetooth audio quality settings
+              ["bluez5.auto-connect"] = "[ a2dp_sink ]",
+              ["bluez5.hw-volume"] = "[ a2dp_sink ]",
+              
+              -- Force high quality codec if available
+              ["bluez5.a2dp.codec"] = "auto",
+              
+              -- SBC codec quality (bitpool)
+              ["bluez5.a2dp.sbc.min_bitpool"] = 48,
+              ["bluez5.a2dp.sbc.max_bitpool"] = 53,
+              
+              -- Disable switching to HSP/HFP
+              ["bluez5.headset-roles"] = "[ ]",
+              ["bluez5.profile"] = "a2dp_sink",
+              ["bluez5.autoswitch-profile"] = false,
+              
+              -- Force 48kHz sample rate (prevent 16kHz telephone quality)
+              ["audio.rate"] = 48000,
+              ["audio.allowed-rates"] = "[ 44100 48000 ]",
+              
+              -- Session settings
+              ["node.pause-on-idle"] = false,
+              ["session.suspend-timeout-seconds"] = 0,
+            },
+          },
+          {
+            matches = {
+              {
+                -- OpenRun by Shokz専用設定
+                { "device.name", "matches", "bluez_card.A8_F5_E1_4C_7B_20" },
+              },
+            },
+            apply_properties = {
+              -- 必ずA2DPを使用
+              ["bluez5.profile"] = "a2dp_sink",
+              ["bluez5.autoswitch-profile"] = false,
+              ["device.profile"] = "a2dp-sink",
+              
+              -- マイクロフォンロールを無効化
+              ["bluez5.headset-roles"] = "[ ]",
+              ["bluez5.hfp-enable"] = false,
+              ["bluez5.hsp-enable"] = false,
+              
+              -- 音質設定
+              ["audio.rate"] = 48000,
+              ["node.pause-on-idle"] = false,
+            },
+          },
+        }
+      '')
+    ];
   };
 
   # Auto-login Configuration
@@ -695,6 +776,10 @@
         Experimental = true;
         # A2DPプロファイルを優先
         AutoConnect = true;
+        # マルチプロファイル接続を無効化（音質向上のため）
+        MultiProfile = "off";
+        # 接続の安定性向上
+        FastConnectable = true;
       };
       Policy = {
         # 自動的にA2DPプロファイルに切り替える
@@ -702,6 +787,21 @@
       };
     };
   };
+  
+  # Bluetooth USB autosuspendを無効化（接続安定性のため）
+  boot.extraModprobeConfig = ''
+    options btusb enable_autosuspend=N
+  '';
+  
+  # USB autosuspendを無効化
+  powerManagement.powertop.enable = false;
+  services.udev.extraRules = ''
+    # Disable USB autosuspend for Intel Bluetooth
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
+    
+    # Force A2DP profile for Bluetooth audio devices
+    ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
+  '';
 
   # Gaming Performance Optimizations
   # ゲームコントローラーのレスポンス性能向上設定

@@ -31,7 +31,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprsplit = {
-      url = "github:shezdy/hyprsplit?ref=v0.49.0";
+      url = "github:shezdy/hyprsplit?ref=v0.50.1";
       inputs.hyprland.follows = "hyprland";
     };
     mcp-servers-nix = {
@@ -39,7 +39,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.49.0";
+      url = "github:hyprwm/Hyprland/v0.50.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     zen-browser-flake = {
@@ -141,6 +141,15 @@
 
           # Add code-cursor package
           code-cursor = final.callPackage ./pkgs/code-cursor { inherit (final) substituteInPlace; };
+
+          # Pin Claude Code to version 1.0.38
+          claude-code = prev.claude-code.overrideAttrs (oldAttrs: rec {
+            version = "1.0.38";
+            src = prev.fetchurl {
+              url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${version}.tgz";
+              sha256 = "0wwl3fqra260p70wjqcy9igigrh42p3cvizmyzmhd47hkj4pm8z3";
+            };
+          });
         };
 
         # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
@@ -352,7 +361,6 @@
             buildInputs = [ pythonTools.pythonVersions.py312 pkgs.fish ];
             shellHook = ''
               echo "Welcome to Python ${pythonTools.pythonVersions.py312.version} environment"
-              export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
               # Execute fish if not already in fish shell
               echo "Current shell: $SHELL"
               echo "Current shell: $FISH_VERSION"

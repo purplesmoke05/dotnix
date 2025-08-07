@@ -148,6 +148,7 @@
         "animation slideDown,class:^(foot-quick)$"
 
         "workspace 10 silent:split:0:0,class:^(discord)$"
+        "workspace 20 silent,class:^(steam_app_1364780)$"
       ];
 
       # Keybindings
@@ -156,7 +157,6 @@
         "$mainMod,Return,exec,$term" # Launch terminal
         "$mainMod SHIFT,Q,killactive," # Close window
         "$mainMod SHIFT, E, exec, ${pkgs.hyprpanel}/bin/hyprpanel -t powerdropdownmenu" # Power menu
-        "$mainMod,M,exit," # Exit Hyprland
         "$mainMod SHIFT, F,fullscreen," # Toggle fullscreen
         "$mainMod SHIFT, P, pin" # Pin window
         "$mainMod,E,exec,nautilus" # File manager
