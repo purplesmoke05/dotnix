@@ -17,6 +17,7 @@
     # ゲームコントローラー用低レイテンシー設定
     "usbhid.jspoll=1"        # ゲームパッドのポーリングレートを1ms（1000Hz）に設定
     "usbcore.usbfs_memory_mb=256"  # USB転送バッファサイズ増加
+    "usbcore.autosuspend=-1"  # USB autosuspendを完全に無効化
     "threadirqs"             # 割り込みをスレッド化してレイテンシー改善
     "preempt=full"           # 完全プリエンプション有効化
     "mitigations=off"        # CPU脆弱性緩和機能無効化（パフォーマンス向上）
@@ -244,7 +245,7 @@
     pulse.enable = true;
     
     # High-quality Bluetooth audio configuration
-    config.pipewire = {
+    extraConfig.pipewire."99-quality" = {
       "context.properties" = {
         # Increase default sample rate for better quality
         "default.clock.rate" = 48000;
@@ -793,15 +794,8 @@
     options btusb enable_autosuspend=N
   '';
   
-  # USB autosuspendを無効化
+  # USB autosuspendを完全に無効化
   powerManagement.powertop.enable = false;
-  services.udev.extraRules = ''
-    # Disable USB autosuspend for Intel Bluetooth
-    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
-    
-    # Force A2DP profile for Bluetooth audio devices
-    ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
-  '';
 
   # Gaming Performance Optimizations
   # ゲームコントローラーのレスポンス性能向上設定
@@ -835,13 +829,31 @@
     { domain = username; item = "nice"; type = "-"; value = "-20"; }
   ];
 
-  # udevルール：コントローラー接続時の最適化
+  # udevルール：コントローラー接続時の最適化とBluetooth設定
   services.udev.extraRules = ''
+    # 全USBデバイスのautosuspendを無効化
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend}="-1"
+    
+    # Disable USB autosuspend for Intel Bluetooth
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
+    
+    # Force A2DP profile for Bluetooth audio devices
+    ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
+    
     # Victrix Pro BFG Controller (Performance Designed Products)
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", TAG+="uaccess"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="0217", TAG+="uaccess"
 
-    # Victrix Pro BFG特定の電源管理無効化（レイテンシー改善）
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", ATTR{power/autosuspend}="-1"
+    # Victrix Pro BFG特定の設定（レイテンシー改善）
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/wakeup}="enabled"
+    
+    # Xbox互換コントローラー全般の最適化
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/control}="on"
   '';
 
   # File Management
