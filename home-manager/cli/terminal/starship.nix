@@ -95,12 +95,12 @@
 
       # Directory settings for the second line
       directory = {
-          # read_only = " "; # Keep existing read_only symbol if defined - REMOVED TO FIX LINTER ERROR
-          home_symbol = "~"; # Use ~ for home directory
-          truncation_length = 1; # Example: show last 3 dirs, adjust as needed
-          truncate_to_repo = false; # Show path relative to repo root if possible
-          format = "[$path]($style)[$read_only]($read_only_style) "; # Add space at the end if needed, or adjust based on surrounding elements
-          style = "bold cyan"; # Example style
+        # read_only = " "; # Keep existing read_only symbol if defined - REMOVED TO FIX LINTER ERROR
+        home_symbol = "~"; # Use ~ for home directory
+        truncation_length = 1; # Example: show last 3 dirs, adjust as needed
+        truncate_to_repo = false; # Show path relative to repo root if possible
+        format = "[$path]($style)[$read_only]($read_only_style) "; # Add space at the end if needed, or adjust based on surrounding elements
+        style = "bold cyan"; # Example style
       };
 
       # Keep existing character settings
@@ -116,10 +116,10 @@
 
       # Optional: Configure cmd_duration display threshold (e.g., only show if > 500ms)
       cmd_duration = {
-         min_time = 500; # milliseconds
-         show_milliseconds = false;
-         disabled = false;
-         style = "bold yellow";
+        min_time = 500; # milliseconds
+        show_milliseconds = false;
+        disabled = false;
+        style = "bold yellow";
       };
     };
   };

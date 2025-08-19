@@ -22,7 +22,8 @@
       # Use attribute set for keybindings instead of configText
       keymap_mode = "emacs"; # Explicitly set keymap mode
       keymap = {
-        emacs = { # Assuming default Emacs keymap mode. Change to 'vim' if needed.
+        emacs = {
+          # Assuming default Emacs keymap mode. Change to 'vim' if needed.
           # Assign Ctrl+R to "no-op" (no operation) to free it up.
           ctrl_r = "no-op";
           # Assign Ctrl+I to the search action.

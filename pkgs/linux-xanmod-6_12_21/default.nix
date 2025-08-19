@@ -29,7 +29,7 @@ in
   # Optionally, define an option to customize patches for this specific kernel module
   options.boot.customXanmodKernelPatches = lib.mkOption {
     type = lib.types.listOf lib.types.package;
-    default = [];
+    default = [ ];
     description = "Additional kernel patches to apply to the custom XanMod 6.12.21 kernel.";
   };
 

@@ -1,277 +1,323 @@
 {
   "[markdown]" = {
-  cSpell = {
-  advanced = {
-  feature = {
-  useReferenceProviderRemove = "/^#+\\s/";
-  useReferenceProviderWithRename = true;
-};
-};
-  fixSpellingWithRenameProvider = true;
-};
-  diffEditor = {
-  ignoreTrimWhitespace = false;
-};
-  editor = {
-  defaultFormatter = "DavidAnson.vscode-markdownlint";
-  quickSuggestions = {
-  comments = "off";
-  other = "off";
-  strings = "off";
-};
-  unicodeHighlight = {
-  ambiguousCharacters = false;
-  invisibleCharacters = false;
-};
-  wordWrap = "off";
-};
-};
+    cSpell = {
+      advanced = {
+        feature = {
+          useReferenceProviderRemove = "/^#+\\s/";
+          useReferenceProviderWithRename = true;
+        };
+      };
+      fixSpellingWithRenameProvider = true;
+    };
+    diffEditor = {
+      ignoreTrimWhitespace = false;
+    };
+    editor = {
+      defaultFormatter = "DavidAnson.vscode-markdownlint";
+      quickSuggestions = {
+        comments = "off";
+        other = "off";
+        strings = "off";
+      };
+      unicodeHighlight = {
+        ambiguousCharacters = false;
+        invisibleCharacters = false;
+      };
+      wordWrap = "on";
+    };
+  };
   accessibility = {
-  dimUnfocused = {
-  enabled = true;
-};
-};
+    dimUnfocused = {
+      enabled = true;
+    };
+  };
   cSpell = {
-  caseSensitive = true;
-  diagnosticLevel = "Warning";
-  diagnosticLevelFlaggedWords = "Warning";
-  userWords = [
-    "survlink"
-  ];
-};
+    caseSensitive = true;
+    diagnosticLevel = "Warning";
+    diagnosticLevelFlaggedWords = "Warning";
+  };
   cursor = {
-  composer = {
-  shouldChimeAfterChatFinishes = true;
-  textSizeScale = 0.85;
-};
-  cpp = {
-  disabledLanguages = [
-    "plaintext" "markdown" "scminput"
-  ];
-};
-  terminal = {
-  usePreviewBox = true;
-};
-};
+    composer = {
+      shouldChimeAfterChatFinishes = true;
+      textSizeScale = 0.85;
+    };
+    cpp = {
+      disabledLanguages = [
+        "plaintext"
+        "markdown"
+        "scminput"
+      ];
+    };
+    terminal = {
+      usePreviewBox = true;
+    };
+  };
   diffEditor = {
-  experimental = {
-  useTrueInlineView = false;
-};
-  ignoreTrimWhitespace = false;
-  maxComputationTime = 0;
-};
+    experimental = {
+      useTrueInlineView = false;
+    };
+    ignoreTrimWhitespace = false;
+    maxComputationTime = 0;
+  };
   editor = {
-  accessibilitySupport = "off";
-  bracketPairColorization = {
-  enabled = true;
-};
-  cursorBlinking = "expand";
-  cursorSmoothCaretAnimation = "on";
-  cursorStyle = "line-thin";
-  dragAndDrop = false;
-  experimental = {
-  asyncTokenization = true;
-};
-  formatOnSave = true;
-  guides = {
-  bracketPairs = true;
-};
-  minimap = {
-  maxColumn = 80;
-  showSlider = "always";
-};
-  renderLineHighlight = "all";
-  renderLineHighlightOnlyWhenFocus = true;
-  renderWhitespace = "all";
-  showFoldingControls = "always";
-  smoothScrolling = true;
-  wordSegmenterLocales = "ja";
-  wordWrap = "off";
-};
+    accessibilitySupport = "off";
+    bracketPairColorization = {
+      enabled = true;
+    };
+    cursorBlinking = "expand";
+    cursorSmoothCaretAnimation = "on";
+    cursorStyle = "line-thin";
+    dragAndDrop = false;
+    experimental = {
+      asyncTokenization = true;
+    };
+    formatOnSave = true;
+    guides = {
+      bracketPairs = true;
+    };
+    minimap = {
+      maxColumn = 80;
+      showSlider = "always";
+    };
+    renderLineHighlight = "all";
+    renderLineHighlightOnlyWhenFocus = true;
+    renderWhitespace = "all";
+    showFoldingControls = "always";
+    smoothScrolling = true;
+    wordSegmenterLocales = "ja";
+    wordWrap = "off";
+  };
   explorer = {
-  compactFolders = false;
-  confirmDelete = false;
-  confirmDragAndDrop = false;
-  excludeGitIgnore = false;
-  focusFirstFile = true;
-};
+    compactFolders = false;
+    confirmDelete = false;
+    confirmDragAndDrop = false;
+    excludeGitIgnore = false;
+    focusFirstFile = true;
+  };
   extensions = {
-  ignoreRecommendations = true;
-};
+    ignoreRecommendations = true;
+  };
   files = {
-  autoGuessEncoding = true;
-  autoSave = "afterDelay";
-  candidateGuessEncodings = [
-    "utf8" "shiftjis" "eucjp"
-  ];
-  insertFinalNewline = false;
-  trimFinalNewlines = true;
-  trimTrailingWhitespace = true;
-};
+    autoGuessEncoding = true;
+    autoSave = "afterDelay";
+    candidateGuessEncodings = [
+      "utf8"
+      "shiftjis"
+      "eucjp"
+    ];
+    insertFinalNewline = false;
+    trimFinalNewlines = true;
+    trimTrailingWhitespace = true;
+  };
   git = {
-  autofetch = "all";
-  confirmSync = false;
-  pruneOnFetch = true;
-  suggestSmartCommit = false;
-};
+    autofetch = "all";
+    confirmSync = false;
+    pruneOnFetch = true;
+    suggestSmartCommit = false;
+  };
   github = {
-  copilot = {
-  enable = {
-  "*" = true;
-  markdown = true;
-  nextEditSuggestions = {
-  enabled = true;
-};
-  plaintext = false;
-  scminput = false;
-};
-};
-};
+    copilot = {
+      enable = {
+        "*" = true;
+        markdown = true;
+        nextEditSuggestions = {
+          enabled = true;
+        };
+        plaintext = false;
+        scminput = false;
+      };
+    };
+  };
   markdownlint = {
-  run = "onSave";
-};
+    run = "onSave";
+  };
   motia = {
-  autoStartServer = true;
-};
+    autoStartServer = true;
+  };
   nix = {
-  enableLanguageServer = false;
-  formatterPath = [
-    "nix" "fmt" "--" "-"
-  ];
-};
+    enableLanguageServer = false;
+    formatterPath = [
+      "nix"
+      "fmt"
+      "--"
+      "-"
+    ];
+  };
   python = {
-  analysis = {
-  autoFormatStrings = true;
-  autoImportCompletions = true;
-  completeFunctionParens = true;
-  typeCheckingMode = "standard";
-};
-};
+    analysis = {
+      autoFormatStrings = true;
+      autoImportCompletions = true;
+      completeFunctionParens = true;
+      typeCheckingMode = "standard";
+    };
+  };
   roo-cline = {
-  allowedCommands = [
-    "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make" "cargo" "grep"
-  ];
-};
+    allowedCommands = [
+      "npm test"
+      "npm install"
+      "tsc"
+      "git log"
+      "git diff"
+      "git show"
+      "nix-shell"
+      "cd"
+      "go"
+      "git"
+      "make"
+      "cargo"
+      "grep"
+    ];
+  };
   rust-analyzer = {
-  cargo = {
-  buildScripts = {
-  overrideCommand = [
-    "cargo" "check" "--all-targets" "--quiet" "--workspace" "--all-features" "--message-format=json" "--jobs" "4"
-  ];
-};
-};
-  check = {
-  overrideCommand = [
-    "cargo" "check" "--all-targets" "--quiet" "--workspace" "--all-features" "--message-format=json" "--jobs" "4"
-  ];
-};
-  checkOnSave = true;
-  diagnostics = {
-  disabled = [
-    "unresolved-proc-macro" "inactive-code"
-  ];
-};
-  inlayHints = {
-  bindingModeHints = {
-  enable = false;
-};
-  chainingHints = {
-  enable = false;
-};
-};
-  procMacro = {
-  enable = true;
-};
-  restartServerOnConfigChange = true;
-  showSyntaxTree = true;
-};
+    cargo = {
+      buildScripts = {
+        overrideCommand = [
+          "cargo"
+          "check"
+          "--all-targets"
+          "--quiet"
+          "--workspace"
+          "--all-features"
+          "--message-format=json"
+          "--jobs"
+          "4"
+        ];
+      };
+    };
+    check = {
+      overrideCommand = [
+        "cargo"
+        "check"
+        "--all-targets"
+        "--quiet"
+        "--workspace"
+        "--all-features"
+        "--message-format=json"
+        "--jobs"
+        "4"
+      ];
+    };
+    checkOnSave = true;
+    diagnostics = {
+      disabled = [
+        "unresolved-proc-macro"
+        "inactive-code"
+      ];
+    };
+    inlayHints = {
+      bindingModeHints = {
+        enable = false;
+      };
+      chainingHints = {
+        enable = false;
+      };
+    };
+    procMacro = {
+      enable = true;
+    };
+    restartServerOnConfigChange = true;
+    showSyntaxTree = true;
+  };
   scm = {
-  alwaysShowRepositories = true;
-  compactFolders = false;
-  defaultViewMode = "tree";
-  diffDecorationsGutterWidth = 5;
-  graph = {
-  badges = "all";
-};
-  inputFontFamily = "editor";
-  inputFontSize = 14;
-};
+    alwaysShowRepositories = true;
+    compactFolders = false;
+    defaultViewMode = "tree";
+    diffDecorationsGutterWidth = 5;
+    graph = {
+      badges = "all";
+    };
+    inputFontFamily = "editor";
+    inputFontSize = 14;
+  };
   search = {
-  searchEditor = {
-  focusResultsOnSearch = true;
-};
-  seedOnFocus = true;
-  showLineNumbers = true;
-};
+    searchEditor = {
+      focusResultsOnSearch = true;
+    };
+    seedOnFocus = true;
+    showLineNumbers = true;
+  };
   terminal = {
-  external = {
-  linuxExec = "foot";
-};
-  integrated = {
-  copyOnSelection = true;
-  cursorBlinking = true;
-  cursorStyle = "line";
-  defaultProfile = {
-  linux = "fish";
-};
-  enableImages = true;
-  enableVisualBell = true;
-  fontFamily = "Hack Nerd Font";
-  fontSize = 12;
-  fontWeight = "100";
-  profiles = {
-  linux = {
-  fish = {
-  args = [
-    "--login"
-  ];
-  path = "fish";
-};
-};
-};
-  rightClickBehavior = "paste";
-  scrollback = 10000;
-  smoothScrolling = true;
-};
-};
+    external = {
+      linuxExec = "foot";
+    };
+    integrated = {
+      copyOnSelection = true;
+      cursorBlinking = true;
+      cursorStyle = "line";
+      defaultProfile = {
+        linux = "fish";
+      };
+      enableImages = true;
+      enableVisualBell = true;
+      fontFamily = "Hack Nerd Font";
+      fontSize = 12;
+      fontWeight = "100";
+      profiles = {
+        linux = {
+          fish = {
+            args = [
+              "--login"
+            ];
+            path = "fish";
+          };
+        };
+      };
+      rightClickBehavior = "paste";
+      scrollback = 10000;
+      shellIntegration = {
+        enabled = false;
+      };
+      smoothScrolling = true;
+    };
+  };
   update = {
-  mode = "none";
-  releaseTrack = "prerelease";
-};
+    mode = "none";
+    releaseTrack = "prerelease";
+  };
   window = {
-  commandCenter = 1;
-  customMenuBarAltFocus = false;
-  experimental = {
-  useGpuAcceleration = true;
-};
-  menuBarVisibility = "hidden";
-  titleBarStyle = "custom";
-};
+    commandCenter = 1;
+    customMenuBarAltFocus = false;
+    experimental = {
+      useGpuAcceleration = true;
+    };
+    menuBarVisibility = "hidden";
+    titleBarStyle = "custom";
+  };
   workbench = {
-  colorTheme = "Catppuccin Mocha";
-  editor = {
-  autoLockGroups = {
-  terminalEditor = false;
-};
-  closeOnFileDelete = true;
-  experimentalAutoLayout = false;
-  pinnedTabsOnSeparateRow = true;
-  scrollToSwitchTabs = false;
-  wrapTabs = false;
-};
-  iconTheme = "ayu";
-  list = {
-  smoothScrolling = true;
-};
-  tree = {
-  expandMode = "doubleClick";
-  indent = 24;
-};
-  view = {
-  alwaysShowHeaderActions = true;
-};
-};
-  python.analysis.diagnosticMode = "workspace";
-  python.analysis.displayEnglishDiagnostics = true;
-  docker.extension.enableComposeLanguageServer = false;
+    colorTheme = "Catppuccin Mocha";
+    editor = {
+      autoLockGroups = {
+        terminalEditor = false;
+      };
+      closeOnFileDelete = true;
+      experimentalAutoLayout = false;
+      pinnedTabsOnSeparateRow = true;
+      scrollToSwitchTabs = false;
+      wrapTabs = false;
+    };
+    iconTheme = "ayu";
+    list = {
+      smoothScrolling = true;
+    };
+    tree = {
+      expandMode = "doubleClick";
+      indent = 24;
+    };
+    view = {
+      alwaysShowHeaderActions = true;
+    };
+  };
+  kilo-code = {
+    allowedCommands = [
+      "npm test"
+      "npm install"
+      "tsc"
+      "git log"
+      "git diff"
+      "git show"
+    ];
+    deniedCommands = [
+
+    ];
+  };
 }

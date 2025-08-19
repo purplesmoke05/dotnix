@@ -9,7 +9,7 @@
 
 let
   version = "1.50.1";
-  
+
   sources = {
     x86_64-linux = {
       url = "https://github.com/MystenLabs/sui/releases/download/testnet-v${version}/sui-testnet-v${version}-ubuntu-x86_64.tgz";
@@ -20,7 +20,7 @@ let
       hash = "sha256-0000000000000000000000000000000000000000000="; # TODO: get proper hash
     };
   };
-  
+
   source = sources.${stdenv.hostPlatform.system} or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
 in
 

@@ -9,7 +9,11 @@
   # - hyprland utilities: hyprpanel, hyprspace, hyprsplit for window management
   # - flake-utils: Utility functions for flake-based systems
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # TEMP: Pin nixpkgs to a specific commit that includes the 'kiro' editor package.
+    # Intention: revert back to the regular 'nixpkgs-unstable' channel once 'kiro' is available there,
+    #            then run: `nix flake lock --update-input nixpkgs`.
+    # Reference: https://github.com/NixOS/nixpkgs/blob/5f20293476b594398cbf6476891d7c352515577a/pkgs/by-name/ki/kiro/package.nix
+    nixpkgs.url = "github:NixOS/nixpkgs/5f20293476b594398cbf6476891d7c352515577a";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap.url = "github:xremap/nix-flake";
     rust-overlay = {

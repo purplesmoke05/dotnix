@@ -23,7 +23,7 @@
         "ambiguousCharacters": false,
         "invisibleCharacters": false
       },
-      "wordWrap": "off"
+      "wordWrap": "on"
     }
   },
   "accessibility": {
@@ -34,10 +34,7 @@
   "cSpell": {
     "caseSensitive": true,
     "diagnosticLevel": "Warning",
-    "diagnosticLevelFlaggedWords": "Warning",
-    "userWords": [
-      "survlink"
-    ]
+    "diagnosticLevelFlaggedWords": "Warning"
   },
   "cursor": {
     "composer": {
@@ -267,6 +264,9 @@
       },
       "rightClickBehavior": "paste",
       "scrollback": 10000,
+      "shellIntegration": {
+        "enabled": false
+      },
       "smoothScrolling": true
     }
   },
@@ -307,7 +307,13 @@
       "alwaysShowHeaderActions": true
     }
   },
-  "python.analysis.diagnosticMode": "workspace",
-  "python.analysis.displayEnglishDiagnostics": true,
-  "docker.extension.enableComposeLanguageServer": false
+  "kilo-code.allowedCommands": [
+    "npm test",
+    "npm install",
+    "tsc",
+    "git log",
+    "git diff",
+    "git show"
+  ],
+  "kilo-code.deniedCommands": []
 }

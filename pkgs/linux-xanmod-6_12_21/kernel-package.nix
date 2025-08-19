@@ -9,12 +9,14 @@ let
     suffix = "xanmod1"; # Default suffix
   };
 in
-pkgs.buildLinux { # buildLinux is now accessed via pkgs
+pkgs.buildLinux {
+  # buildLinux is now accessed via pkgs
   inherit (xanmod_lts_6_12_21) version suffix; # hash is used in src directly
   pname = "linux-xanmod-lts-6.12.21"; # Custom pname
   modDirVersion = lib.versions.pad 3 "${xanmod_lts_6_12_21.version}-${xanmod_lts_6_12_21.suffix}";
 
-  src = pkgs.fetchFromGitLab { # fetchFromGitLab is now accessed via pkgs
+  src = pkgs.fetchFromGitLab {
+    # fetchFromGitLab is now accessed via pkgs
     owner = "xanmod";
     repo = "linux";
     rev = lib.versions.pad 3 "${xanmod_lts_6_12_21.version}-${xanmod_lts_6_12_21.suffix}";
@@ -47,5 +49,5 @@ pkgs.buildLinux { # buildLinux is now accessed via pkgs
     broken = pkgs.stdenv.hostPlatform.isAarch64; # stdenv is now accessed via pkgs
   };
 
-  argsOverride = {};
+  argsOverride = { };
 }

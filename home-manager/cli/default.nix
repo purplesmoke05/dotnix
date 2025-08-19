@@ -13,5 +13,6 @@
     ./terminal/carapace.nix
     ./terminal/nushell.nix
     ./alternative.nix
+    ./voice-input.nix
   ];
 }

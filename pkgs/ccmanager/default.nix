@@ -19,7 +19,7 @@ buildNpmPackage rec {
 
   # Build configuration
   npmBuildScript = "build";
-  
+
   # Let buildNpmPackage handle installation automatically
   dontNpmInstall = false;
 

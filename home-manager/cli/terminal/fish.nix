@@ -19,6 +19,13 @@
         echo "Fish (macOS): DARWIN_USER=$DARWIN_USER, DARWIN_HOST=$DARWIN_HOST"
       end
 
+      # Set AGENT_MODE based on environment and interactivity
+      if test -n "$npm_config_yes"; or test -n "$CI"; or not status is-interactive
+        set -gx AGENT_MODE true
+      else
+        set -gx AGENT_MODE false
+      end
+
       # Directory change handler registration
       # The function __on_pwd_change is defined in the functions block below
       # functions -q __on_pwd_change && __on_pwd_change --on-variable PWD
@@ -178,32 +185,32 @@
 
       # Git add, commit, and push function
       gish = ''
-          # Stage all changes
-          git add -A
-          # Show status
-          git status
+        # Stage all changes
+        git add -A
+        # Show status
+        git status
 
-          read -l -P "Commit with this content. OK? (y/N): " confirm
-          switch $confirm
-              case y Y yes Yes YES
-                  read -l -P "Input Commit Message: " msg
-                  git commit -m "$msg"
-                  set -l current_branch (git rev-parse --abbrev-ref HEAD)
-                  git push origin $current_branch --force
-              case '*'
-                  echo "Quit."
-          end
+        read -l -P "Commit with this content. OK? (y/N): " confirm
+        switch $confirm
+            case y Y yes Yes YES
+                read -l -P "Input Commit Message: " msg
+                git commit -m "$msg"
+                set -l current_branch (git rev-parse --abbrev-ref HEAD)
+                git push origin $current_branch --force
+            case '*'
+                echo "Quit."
+        end
       '';
 
       # Create new feature branch from develop
       girk = ''
-          # Switch to develop branch
-          git checkout develop
-          # Pull latest changes
-          git pull origin develop
-          # Create and switch to new feature branch
-          read -l -P "Input feature branch name: " branch_name
-          git checkout -b $branch_name
+        # Switch to develop branch
+        git checkout develop
+        # Pull latest changes
+        git pull origin develop
+        # Create and switch to new feature branch
+        read -l -P "Input feature branch name: " branch_name
+        git checkout -b $branch_name
       '';
 
       # Function to check VSCode and activate development environment

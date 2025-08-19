@@ -15,12 +15,12 @@
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
     # ゲームコントローラー用低レイテンシー設定
-    "usbhid.jspoll=1"        # ゲームパッドのポーリングレートを1ms（1000Hz）に設定
-    "usbcore.usbfs_memory_mb=256"  # USB転送バッファサイズ増加
-    "usbcore.autosuspend=-1"  # USB autosuspendを完全に無効化
-    "threadirqs"             # 割り込みをスレッド化してレイテンシー改善
-    "preempt=full"           # 完全プリエンプション有効化
-    "mitigations=off"        # CPU脆弱性緩和機能無効化（パフォーマンス向上）
+    "usbhid.jspoll=1" # ゲームパッドのポーリングレートを1ms（1000Hz）に設定
+    "usbcore.usbfs_memory_mb=256" # USB転送バッファサイズ増加
+    "usbcore.autosuspend=-1" # USB autosuspendを完全に無効化
+    "threadirqs" # 割り込みをスレッド化してレイテンシー改善
+    "preempt=full" # 完全プリエンプション有効化
+    "mitigations=off" # CPU脆弱性緩和機能無効化（パフォーマンス向上）
   ];
 
   # Network Configuration
@@ -30,7 +30,7 @@
   networking.hostName = "nixos";
   networking.networkmanager = {
     enable = true;
-    dns = "default";  # Hotspotのためにデフォルト設定を使用
+    dns = "default"; # Hotspotのためにデフォルト設定を使用
     settings = {
       main = {
         rc-manager = "symlink";
@@ -243,7 +243,7 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    
+
     # High-quality Bluetooth audio configuration
     extraConfig.pipewire."99-quality" = {
       "context.properties" = {
@@ -252,7 +252,7 @@
         "default.clock.allowed-rates" = [ 44100 48000 88200 96000 ];
       };
     };
-    
+
     # WirePlumber configuration for Bluetooth
     wireplumber.enable = true;
     wireplumber.configPackages = [
@@ -420,7 +420,7 @@
     ccmanager
     tailscale
     sui
-    dnsmasq  # NetworkManager Hotspot用
+    dnsmasq # NetworkManager Hotspot用
   ];
 
   # Nix-ld Configuration
@@ -600,7 +600,7 @@
   # - DNSSEC: Secure DNS resolution
   # - Hardware clock: Dual-boot compatibility
   services.resolved = {
-    enable = false;  # Disabled to avoid conflicts with NetworkManager
+    enable = false; # Disabled to avoid conflicts with NetworkManager
   };
   security.protectKernelImage = false;
   time.hardwareClockInLocalTime = true;
@@ -639,7 +639,7 @@
         ];
       };
       filtering = {
-        rewrites = [];
+        rewrites = [ ];
       };
       # Filter lists (at settings level, not under filtering)
       filters = [
@@ -746,12 +746,12 @@
 
   # Firewall configuration for SSH and AdGuard Home
   networking.firewall.allowedTCPPorts = [
-    22     # SSH
-    53     # DNS (AdGuard Home)
-    3000   # AdGuard Home Web UI
+    22 # SSH
+    53 # DNS (AdGuard Home)
+    3000 # AdGuard Home Web UI
   ];
   networking.firewall.allowedUDPPorts = [
-    53     # DNS (AdGuard Home)
+    53 # DNS (AdGuard Home)
   ];
 
   # Tailscale Configuration
@@ -788,12 +788,12 @@
       };
     };
   };
-  
+
   # Bluetooth USB autosuspendを無効化（接続安定性のため）
   boot.extraModprobeConfig = ''
     options btusb enable_autosuspend=N
   '';
-  
+
   # USB autosuspendを完全に無効化
   powerManagement.powertop.enable = false;
 
@@ -801,15 +801,15 @@
   # ゲームコントローラーのレスポンス性能向上設定
 
   # CPUパフォーマンス設定
-  powerManagement.cpuFreqGovernor = "performance";  # CPU常時最高クロック
+  powerManagement.cpuFreqGovernor = "performance"; # CPU常時最高クロック
 
   # ゲームモード（自動的にゲームのパフォーマンスを最適化）
   programs.gamemode = {
     enable = true;
     settings = {
       general = {
-        renice = 10;              # ゲームプロセスの優先度を上げる
-        inhibit_screensaver = 1;   # スクリーンセーバー無効化
+        renice = 10; # ゲームプロセスの優先度を上げる
+        inhibit_screensaver = 1; # スクリーンセーバー無効化
       };
       custom = {
         start = "${pkgs.bash}/bin/bash -c 'echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor'";

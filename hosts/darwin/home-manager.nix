@@ -49,7 +49,7 @@
 
   # User information
   home.username = username;
-# Using lib.mkForce to address a known bug in nix-darwin (Issue #682).
+  # Using lib.mkForce to address a known bug in nix-darwin (Issue #682).
   # https://github.com/LnL7/nix-darwin/issues/682
   # Once this bug is fixed, it may be possible to simply set "/Users/${username}".
   home.homeDirectory = lib.mkForce "/Users/${username}";

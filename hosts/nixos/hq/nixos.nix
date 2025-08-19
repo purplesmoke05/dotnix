@@ -37,6 +37,7 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEnLxrW1BOyt8CREqoEzBaH86LEh6+4rE27Kv+Zl6vU9"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzfuIp5GmSgUAJFlRxHtCFPwhZ/1Zo3ItoeMgbfIaLw"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDo31UyrkM48T7kLYXfYCIZD0MNNT+bDtKi9Wm1cpvoA thehand@nixos"
     ];
   };
 
@@ -59,6 +60,11 @@
     allowedUDPPorts = [ ]; # Nothing opened globally
     allowedTCPPorts = [ ]; # Nothing opened globally
   };
+
+  # USB Controller Polling Rate Configuration
+  # Set maximum polling rate (1000Hz) for gaming controllers
+  # This reduces input latency for Victrix Pro BFG and other gaming devices
+  boot.kernelParams = [ "usbhid.jspoll=1" ]; # 1ms interval = 1000Hz
 
   # NVIDIA Driver Configuration
   # Enable NVIDIA driver

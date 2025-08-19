@@ -1,8 +1,8 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 
 pkgs.mkShell {
   name = "node-dev";
-  
+
   buildInputs = with pkgs; [
     nodejs
     nodePackages.npm
