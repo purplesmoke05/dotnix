@@ -128,6 +128,17 @@
       }
     }
   },
+  "kilo-code": {
+    "allowedCommands": [
+      "npm test",
+      "npm install",
+      "tsc",
+      "git log",
+      "git diff",
+      "git show"
+    ],
+    "deniedCommands": []
+  },
   "markdownlint": {
     "run": "onSave"
   },
@@ -306,14 +317,5 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  },
-  "kilo-code.allowedCommands": [
-    "npm test",
-    "npm install",
-    "tsc",
-    "git log",
-    "git diff",
-    "git show"
-  ],
-  "kilo-code.deniedCommands": []
+  }
 }
