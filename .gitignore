@@ -4,3 +4,6 @@ tasks/**
 logs/**
 # SpecStory explanation file
 .specstory/.what-is-this.md
+
+# Nix build output
+result/
