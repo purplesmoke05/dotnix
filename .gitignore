@@ -6,4 +6,6 @@ logs/**
 .specstory/.what-is-this.md
 
 # Nix build output
+result
 result/
+result-*
