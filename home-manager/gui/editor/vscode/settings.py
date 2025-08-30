@@ -61,7 +61,9 @@ class SettingsConverter:
 
     def _escape_string(self, value: str) -> str:
         """Escape special characters in string values."""
-        return value.replace('\\', '\\\\').replace('"', '\\"')
+        # Escape backslashes first, then quotes
+        # Also escape ${ to prevent Nix string interpolation
+        return value.replace('\\', '\\\\').replace('"', '\\"').replace('${', '\\${')
 
     def _format_value(self, value: Any) -> str:
         """Format value based on its type."""
@@ -88,17 +90,22 @@ class SettingsConverter:
             formatted_value = self._format_value(value)
 
             # Revised logic for formatting keys:
-            # If a key does not contain '.', it's a single segment.
-            #   - If valid Nix id, use as is.
-            #   - Else, quote it.
-            # If a key contains '.', it's a path. Use as is; Nix will interpret it.
+            # Check if the key is a valid Nix identifier or valid dotted path
             nix_identifier_pattern = r"^[a-zA-Z_][a-zA-Z0-9_'-]*$"
+            
             if '.' in key:
-                # Key contains dots, treat as a path (e.g., "foo.bar").
-                # Nix handles path segments. Script outputs "foo.bar = value;".
-                formatted_key = key
+                # For dotted keys, check if all segments are valid identifiers
+                segments = key.split('.')
+                all_valid = all(re.fullmatch(nix_identifier_pattern, seg) for seg in segments)
+                if all_valid:
+                    # All segments are valid identifiers (e.g., "foo.bar")
+                    formatted_key = key
+                else:
+                    # At least one segment is invalid (e.g., "*.ts", "123.foo")
+                    escaped_key = key.replace('\\\\', '\\\\\\\\').replace('"', '\\"').replace('${', '\\\\${')
+                    formatted_key = f'"{escaped_key}"'
             else:
-                # Key is a single segment (e.g., "foo", "foo-bar", "*").
+                # Single segment key
                 if re.fullmatch(nix_identifier_pattern, key):
                     formatted_key = key  # Valid identifier
                 else:

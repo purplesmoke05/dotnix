@@ -276,23 +276,23 @@
               -- Bluetooth audio quality settings
               ["bluez5.auto-connect"] = "[ a2dp_sink ]",
               ["bluez5.hw-volume"] = "[ a2dp_sink ]",
-              
+
               -- Force high quality codec if available
               ["bluez5.a2dp.codec"] = "auto",
-              
+
               -- SBC codec quality (bitpool)
               ["bluez5.a2dp.sbc.min_bitpool"] = 48,
               ["bluez5.a2dp.sbc.max_bitpool"] = 53,
-              
+
               -- Disable switching to HSP/HFP
               ["bluez5.headset-roles"] = "[ ]",
               ["bluez5.profile"] = "a2dp_sink",
               ["bluez5.autoswitch-profile"] = false,
-              
+
               -- Force 48kHz sample rate (prevent 16kHz telephone quality)
               ["audio.rate"] = 48000,
               ["audio.allowed-rates"] = "[ 44100 48000 ]",
-              
+
               -- Session settings
               ["node.pause-on-idle"] = false,
               ["session.suspend-timeout-seconds"] = 0,
@@ -310,12 +310,12 @@
               ["bluez5.profile"] = "a2dp_sink",
               ["bluez5.autoswitch-profile"] = false,
               ["device.profile"] = "a2dp-sink",
-              
+
               -- マイクロフォンロールを無効化
               ["bluez5.headset-roles"] = "[ ]",
               ["bluez5.hfp-enable"] = false,
               ["bluez5.hsp-enable"] = false,
-              
+
               -- 音質設定
               ["audio.rate"] = 48000,
               ["node.pause-on-idle"] = false,
@@ -792,7 +792,12 @@
   # Bluetooth USB autosuspendを無効化（接続安定性のため）
   boot.extraModprobeConfig = ''
     options btusb enable_autosuspend=N
+    # Force xpad driver for better polling rate support
+    options xpad quirks=0x0e6f:0x021a:0x100
   '';
+
+  # Force load xpad driver before usbhid for Victrix Pro BFG
+  boot.kernelModules = [ "xpad" ];
 
   # USB autosuspendを完全に無効化
   powerManagement.powertop.enable = false;
@@ -834,13 +839,13 @@
     # 全USBデバイスのautosuspendを無効化
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend}="-1"
-    
+
     # Disable USB autosuspend for Intel Bluetooth
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
-    
+
     # Force A2DP profile for Bluetooth audio devices
     ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
-    
+
     # Victrix Pro BFG Controller (Performance Designed Products)
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess"
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", TAG+="uaccess"
@@ -850,7 +855,7 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/wakeup}="enabled"
-    
+
     # Xbox互換コントローラー全般の最適化
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/control}="on"

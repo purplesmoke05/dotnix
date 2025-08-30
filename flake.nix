@@ -9,11 +9,7 @@
   # - hyprland utilities: hyprpanel, hyprspace, hyprsplit for window management
   # - flake-utils: Utility functions for flake-based systems
   inputs = {
-    # TEMP: Pin nixpkgs to a specific commit that includes the 'kiro' editor package.
-    # Intention: revert back to the regular 'nixpkgs-unstable' channel once 'kiro' is available there,
-    #            then run: `nix flake lock --update-input nixpkgs`.
-    # Reference: https://github.com/NixOS/nixpkgs/blob/5f20293476b594398cbf6476891d7c352515577a/pkgs/by-name/ki/kiro/package.nix
-    nixpkgs.url = "github:NixOS/nixpkgs/5f20293476b594398cbf6476891d7c352515577a";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap.url = "github:xremap/nix-flake";
     rust-overlay = {
@@ -114,6 +110,11 @@
             patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
             doCheck = false;
           });
+
+          # Alias missing fcitx5-with-addons under libsForQt5 to kdePackages variant on unstable
+          libsForQt5 = prev.libsForQt5 // {
+            fcitx5-with-addons = final.kdePackages.fcitx5-with-addons;
+          };
 
           # Add gh-iteration package
           gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
@@ -381,7 +382,11 @@
           py311 = mkPythonShell pythonTools.pythonVersions.py311;
         };
 
-        packages = pythonTools.pythonVersions;
+        packages = pythonTools.pythonVersions // {
+          linux-xanmod-lts-6_12_32 = pkgs.callPackage ./pkgs/linux-xanmod-6_12_32/kernel-package.nix {
+            kernelPatches = with pkgs.kernelPatches; [ bridge_stp_helper request_key_helper ];
+          };
+        };
         formatter = pkgs.nixpkgs-fmt;
       }
     )) // {

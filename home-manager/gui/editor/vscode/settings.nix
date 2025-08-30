@@ -90,6 +90,29 @@
   confirmDelete = false;
   confirmDragAndDrop = false;
   excludeGitIgnore = false;
+  fileNesting = {
+  patterns = {
+  "*.db" = "\${capture}.\${extname}-*";
+  "*.db3" = "\${capture}.\${extname}-*";
+  "*.js" = "\${capture}.js.map, \${capture}.min.js, \${capture}.d.ts";
+  "*.jsx" = "\${capture}.js";
+  "*.s3db" = "\${capture}.\${extname}-*";
+  "*.sdb" = "\${capture}.\${extname}-*";
+  "*.sqlite" = "\${capture}.\${extname}-*";
+  "*.sqlite3" = "\${capture}.\${extname}-*";
+  "*.ts" = "\${capture}.js";
+  "*.tsx" = "\${capture}.ts";
+  Cargo = {
+  toml = "Cargo.lock";
+};
+  package = {
+  json = "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock";
+};
+  tsconfig = {
+  json = "tsconfig.*.json";
+};
+};
+};
   focusFirstFile = true;
 };
   extensions = {
@@ -114,7 +137,7 @@
   github = {
   copilot = {
   enable = {
-  "*" = true;
+  "*" = false;
   markdown = true;
   nextEditSuggestions = {
   enabled = true;
@@ -220,6 +243,7 @@
   linux = "fish";
 };
   enableImages = true;
+  enableMultiLinePasteWarning = "never";
   enableVisualBell = true;
   fontFamily = "Hack Nerd Font";
   fontSize = 12;

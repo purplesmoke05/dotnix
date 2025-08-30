@@ -8,6 +8,7 @@
     ./editor/neovim.nix
     ./editor/code-cursor.nix
     ./editor/kiro.nix
+    ./editor/zed.nix
     ./editor/vscode/default.nix
     ./chat/discord.nix
     ./music
