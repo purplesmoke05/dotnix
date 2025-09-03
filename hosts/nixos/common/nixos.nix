@@ -14,14 +14,18 @@
   boot.kernelParams = [
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
-    # ゲームコントローラー用低レイテンシー設定
-    "usbhid.jspoll=1" # ゲームパッドのポーリングレートを1ms（1000Hz）に設定
-    "usbcore.usbfs_memory_mb=256" # USB転送バッファサイズ増加
-    "usbcore.autosuspend=-1" # USB autosuspendを完全に無効化
-    "threadirqs" # 割り込みをスレッド化してレイテンシー改善
-    "preempt=full" # 完全プリエンプション有効化
-    "mitigations=off" # CPU脆弱性緩和機能無効化（パフォーマンス向上）
+    # For gameing
+    "usbhid.jspoll=1"
+    "usbcore.usbfs_memory_mb=256"
+    "usbcore.autosuspend=-1"
+    "xhci_hcd.quirks=262144"
+    "threadirqs"
   ];
+
+  # Sysctl settings
+  boot.kernel.sysctl = {
+    "kernel.split_lock_mitigate" = 0;
+  };
 
   # Network Configuration
   # Basic network setup with NetworkManager for connection management
@@ -421,6 +425,11 @@
     tailscale
     sui
     dnsmasq # NetworkManager Hotspot用
+    # For gameing
+    evtest
+    jstest-gtk
+    antimicrox
+    linuxConsoleTools
   ];
 
   # Nix-ld Configuration
@@ -840,6 +849,10 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend}="-1"
 
+    # Generic HID Gamepad/Joystick - 全ゲーミングデバイスに適用
+    ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_JOYSTICK}=="1", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
+    ACTION=="add", SUBSYSTEM=="input", KERNEL=="js*", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
+
     # Disable USB autosuspend for Intel Bluetooth
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
 
@@ -847,14 +860,15 @@
     ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
 
     # Victrix Pro BFG Controller (Performance Designed Products)
-    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess"
-    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", TAG+="uaccess"
-    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="0217", TAG+="uaccess"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess", ATTR{power/autosuspend}="-1"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", TAG+="uaccess", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="0217", TAG+="uaccess", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
 
     # Victrix Pro BFG特定の設定（レイテンシー改善）
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/wakeup}="enabled"
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{bInterval}="1"
 
     # Xbox互換コントローラー全般の最適化
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"

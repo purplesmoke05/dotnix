@@ -2,24 +2,24 @@
 
 let
   pname = "cursor";
-  version = "1.5.5";
+  version = "1.5.8";
 
   sources = {
     x86_64-linux = fetchurl {
-      url = "https://downloads.cursor.com/production/823f58d4f60b795a6aefb9955933f3a2f0331d7b/linux/x64/Cursor-1.5.5-x86_64.AppImage";
-      hash = "sha256-eq/AQcAONs6HBpRdx2yf4MFTQ1cm/rOeaZZTq8YUF8s=";
+      url = "https://downloads.cursor.com/production/6aa7b3af0d578b9a3aa3ab443571e1a51ebb4e83/linux/x64/Cursor-1.5.7-x86_64.AppImage";
+      hash = "sha256-1bSndTGH8C4VanZ86MBsk5PXWPs6cwjnFvfuACODCvM=";
     };
     aarch64-linux = fetchurl {
-      url = "https://downloads.cursor.com/production/823f58d4f60b795a6aefb9955933f3a2f0331d7b/linux/arm64/Cursor-1.5.5-aarch64.AppImage";
-      hash = "sha256-709MYaAnoYI+k1CPkfVzL0PvrJ4zw4wSHZvbuqLlXMQ=";
+      url = "https://downloads.cursor.com/production/6aa7b3af0d578b9a3aa3ab443571e1a51ebb4e83/linux/arm64/Cursor-1.5.7-aarch64.AppImage";
+      hash = "sha256-3NRRFUOgCacnetPJyZ0Pw/GqYR16WyZcP7tPCbBPC+E=";
     };
     x86_64-darwin = fetchurl {
-      url = "https://downloads.cursor.com/production/823f58d4f60b795a6aefb9955933f3a2f0331d7b/darwin/x64/Cursor-darwin-x64.dmg";
-      hash = "sha256-A13mVAw8mgjGlGegAzkeUi536keZwcJZkbO4ZzfMmXs=";
+      url = "https://downloads.cursor.com/production/d1893fd7f5de2b705e0c040fb710b08f6afd4239/darwin/x64/Cursor-darwin-x64.dmg";
+      hash = "sha256-2JcHGu6QS2xTnKCzNrVrpSVL6qdMlu2krxRiIpAEFVw=";
     };
     aarch64-darwin = fetchurl {
-      url = "https://downloads.cursor.com/production/823f58d4f60b795a6aefb9955933f3a2f0331d7b/darwin/arm64/Cursor-darwin-arm64.dmg";
-      hash = "sha256-Pc1pG1Vj9bf8H6Gt2bR8JANo/6oZza+L3Zlrihpg1dk=";
+      url = "https://downloads.cursor.com/production/d1893fd7f5de2b705e0c040fb710b08f6afd4239/darwin/arm64/Cursor-darwin-arm64.dmg";
+      hash = "sha256-71HXIh664dErXzqaC+3aAw0b/QytkDYVx1mPXQeQbVg=";
     };
   };
 
@@ -55,7 +55,7 @@ let
       cat > $out/bin/${pname} <<EOF
       #!/bin/sh
       # exec $out/bin/${pname}.bin --ozone-platform=x11 --enable-wayland-ime=true --disable-gpu --no-update "$@"
-      exec $out/bin/${pname}.bin --enable-wayland-ime=true --disable-gpu --no-update "$@"
+      exec $out/bin/${pname}.bin --enable-wayland-ime=true --no-update "$@"
       EOF
       chmod +x $out/bin/${pname}
     '';
