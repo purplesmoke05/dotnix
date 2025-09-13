@@ -26,7 +26,6 @@
       "wordWrap": "off"
     }
   },
-  "explorer.openEditors.visible": 0,
   "accessibility": {
     "dimUnfocused": {
       "enabled": true
@@ -39,6 +38,11 @@
     "userWords": [
       "survlink"
     ]
+  },
+  "chat": {
+    "editing": {
+      "confirmEditRequestRemoval": false
+    }
   },
   "cursor": {
     "composer": {
@@ -85,6 +89,7 @@
       "bracketPairs": true
     },
     "minimap": {
+      "enabled": false,
       "maxColumn": 80,
       "showSlider": "always"
     },
@@ -97,12 +102,15 @@
     "wordWrap": "off"
   },
   "explorer": {
+    "autoReveal": false,
     "compactFolders": false,
     "confirmDelete": false,
     "confirmDragAndDrop": false,
     "excludeGitIgnore": false,
     "focusFirstFile": false,
-    "autoReveal": false
+    "openEditors": {
+      "visible": 0
+    }
   },
   "extensions": {
     "ignoreRecommendations": true
@@ -119,9 +127,9 @@
     "trimFinalNewlines": true,
     "trimTrailingWhitespace": true,
     "watcherExclude": {
+      "**/node_modules/**": true,
       ".git/objects/**": true,
-      ".git/subtree-cache/**": true,
-      "**/node_modules/**": true
+      ".git/subtree-cache/**": true
     }
   },
   "git": {
@@ -146,6 +154,11 @@
       }
     }
   },
+  "go": {
+    "toolsManagement": {
+      "autoUpdate": true
+    }
+  },
   "markdownlint": {
     "run": "onSave"
   },
@@ -168,7 +181,7 @@
       "completeFunctionParens": true,
       "diagnosticMode": "workspace",
       "displayEnglishDiagnostics": true,
-      "typeCheckingMode": "standard"
+      "typeCheckingMode": "strict"
     }
   },
   "roo-cline": {
@@ -298,7 +311,8 @@
       "useGpuAcceleration": true
     },
     "menuBarVisibility": "hidden",
-    "titleBarStyle": "custom"
+    "titleBarStyle": "custom",
+    "zoomLevel": -1
   },
   "workbench": {
     "colorTheme": "Catppuccin Mocha",
@@ -312,10 +326,14 @@
       "scrollToSwitchTabs": false,
       "wrapTabs": false
     },
+    "editorUnnecessaryCode": {
+      "border": "#f0f",
+      "opacity": "#000c"
+    },
     "iconTheme": "ayu",
     "list": {
-      "smoothScrolling": true,
-      "openMode": "doubleClick"
+      "openMode": "doubleClick",
+      "smoothScrolling": true
     },
     "tree": {
       "expandMode": "doubleClick",
@@ -323,13 +341,6 @@
     },
     "view": {
       "alwaysShowHeaderActions": true
-    },
-    "editorUnnecessaryCode.border": "#f0f",
-    "editorUnnecessaryCode.opacity": "#000c"
-  },
-  "python.analysis.typeCheckingMode": "strict",
-  "window.zoomLevel": -1,
-  "go.toolsManagement.autoUpdate": true,
-  "chat.editing.confirmEditRequestRemoval": false,
-  "editor.minimap.enabled": false
+    }
+  }
 }

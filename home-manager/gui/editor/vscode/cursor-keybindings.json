@@ -953,18 +953,18 @@
     "when": "textInputFocus"
   },
   {
-    "key": "ctrl+q",
-    "command": "runCommands",
     "args": {
       "commands": [
         "workbench.view.explorer",
         "workbench.files.action.focusFilesExplorer"
       ]
-    }
+    },
+    "command": "runCommands",
+    "key": "ctrl+q"
   },
   {
-    "key": "ctrl+q",
-    "command": "-workbench.action.quit"
+    "command": "-workbench.action.quit",
+    "key": "ctrl+q"
   },
   {
     "command": "roo-cline.SidebarProvider.focus",
@@ -1096,17 +1096,17 @@
     "when": "explorerViewletFocus && !inputFocus"
   },
   {
-    "key": "ctrl+.",
     "command": "editor.action.quickFix",
+    "key": "ctrl+.",
     "when": "editorHasCodeActionsProvider && textInputFocus && !editorReadonly"
   },
   {
-    "key": "cmd+.",
     "command": "-editor.action.quickFix",
+    "key": "cmd+.",
     "when": "editorHasCodeActionsProvider && textInputFocus && !editorReadonly"
   },
   {
-    "key": "ctrl+]",
-    "command": "workbench.action.chat.openInSidebar"
+    "command": "workbench.action.chat.openInSidebar",
+    "key": "ctrl+]"
   }
 ]
