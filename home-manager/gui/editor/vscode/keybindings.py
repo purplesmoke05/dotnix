@@ -3,6 +3,7 @@ import os
 import shutil
 import platform
 import argparse
+import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -67,11 +68,30 @@ class KeybindingsConverter:
         return value.replace('\\', '\\\\').replace('"', '\\"')
 
     def _format_value(self, value: Any) -> str:
-        """Format value based on its type."""
+        """Format Python value as Nix literal (recursively)."""
         if isinstance(value, str):
             return f'"{self._escape_string(value)}"'
-        elif value is None:
+        if value is None:
             return '""'
+        if isinstance(value, bool):
+            return 'true' if value else 'false'
+        if isinstance(value, (int, float)):
+            return str(value)
+        if isinstance(value, list):
+            inner = ' '.join(self._format_value(v) for v in value)
+            return f'[ {inner} ]'
+        if isinstance(value, dict):
+            parts: List[str] = []
+            for k, v in value.items():
+                # Quote keys that are not simple Nix identifiers
+                if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', k):
+                    key_repr = k
+                else:
+                    key_repr = f'"{self._escape_string(k)}"'
+                parts.append(f'{key_repr} = {self._format_value(v)};')
+            inner = ' '.join(parts)
+            return f'{{ {inner} }}'
+        # Fallback to JSON (should be rare)
         return json.dumps(value)
 
     def _format_binding(self, binding: Dict[str, Any], is_last: bool = False) -> str:

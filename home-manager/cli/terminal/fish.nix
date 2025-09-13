@@ -100,6 +100,19 @@
     # Define functions and key bindings here
     functions = {
       update = ''
+        # Parse flags
+        set -l skip_vscode 0
+        for arg in $argv
+          switch $arg
+            case '--skip-vscode' '--no-vscode'
+              set skip_vscode 1
+            case '--help' '-h'
+              echo "Usage: update [--skip-vscode|--no-vscode]"
+              echo "  --skip-vscode/--no-vscode  Skip syncing VSCode settings/keybindings"
+              return 0
+          end
+        end
+
         if string match -q "Darwin" (uname)
           echo "Detected macOS."
           if test -z "$DARWIN_HOST"
@@ -108,32 +121,41 @@
             return 1
           end
 
-          echo "Updating VSCode settings and keybindings from VSCode configuration..."
-          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py --source vscode
-            echo "Error: Failed to update VSCode settings. Aborting."
-            return 1
+          if test $skip_vscode -ne 1
+            echo "Updating VSCode settings and keybindings from VSCode configuration..."
+            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py --source vscode
+              echo "Error: Failed to update VSCode settings. Aborting."
+              return 1
+            end
+            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source vscode
+              echo "Error: Failed to update VSCode keybindings. Aborting."
+              return 1
+            end
+            echo "VSCode configuration updated successfully."
+          else
+            echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
-          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source vscode
-            echo "Error: Failed to update VSCode keybindings. Aborting."
-            return 1
-          end
-          echo "VSCode configuration updated successfully."
 
           echo "Running darwin-rebuild for host: $DARWIN_HOST using flake at $HOME/.nix"
           sudo -E darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
         else
           echo "Detected non-macOS (assuming NixOS/Linux)."
 
-          echo "Updating VSCode settings and keybindings from Cursor configuration..."
-          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py --source cursor
-            echo "Error: Failed to update VSCode settings. Aborting."
-            return 1
+          if test $skip_vscode -ne 1
+            echo "Updating VSCode settings and keybindings from Cursor configuration..."
+            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py --source cursor
+              echo "Error: Failed to update VSCode settings. Aborting."
+              return 1
+            end
+            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source cursor
+              echo "Error: Failed to update VSCode keybindings. Aborting."
+              return 1
+            end
+            echo "VSCode configuration updated successfully."
+          else
+            echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
-          if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source cursor
-            echo "Error: Failed to update VSCode keybindings. Aborting."
-            return 1
-          end
-          echo "VSCode configuration updated successfully."
+
           # Determine target host for NixOS
           set -l target_host
           if test -n "$NIXOS_HOSTNAME"

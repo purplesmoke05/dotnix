@@ -39,6 +39,11 @@
     "survlink"
   ];
 };
+  chat = {
+  editing = {
+  confirmEditRequestRemoval = false;
+};
+};
   cursor = {
   composer = {
   shouldChimeAfterChatFinishes = true;
@@ -82,9 +87,9 @@
   bracketPairs = true;
 };
   minimap = {
+  enabled = false;
   maxColumn = 80;
   showSlider = "always";
-  enabled = false;
 };
   renderLineHighlight = "all";
   renderLineHighlightOnlyWhenFocus = true;
@@ -95,12 +100,12 @@
   wordWrap = "off";
 };
   explorer = {
+  autoReveal = false;
   compactFolders = false;
   confirmDelete = false;
   confirmDragAndDrop = false;
   excludeGitIgnore = false;
   focusFirstFile = false;
-  autoReveal = false;
   openEditors = {
   visible = 0;
 };
@@ -118,9 +123,9 @@
   trimFinalNewlines = true;
   trimTrailingWhitespace = true;
   watcherExclude = {
+  "**/node_modules/**" = true;
   ".git/objects/**" = true;
   ".git/subtree-cache/**" = true;
-  "**/node_modules/**" = true;
 };
 };
   git = {
@@ -143,6 +148,11 @@
   nextEditSuggestions = {
   enabled = true;
 };
+};
+};
+  go = {
+  toolsManagement = {
+  autoUpdate = true;
 };
 };
   markdownlint = {
@@ -280,10 +290,14 @@
   scrollToSwitchTabs = false;
   wrapTabs = false;
 };
+  editorUnnecessaryCode = {
+  border = "#f0f";
+  opacity = "#000c";
+};
   iconTheme = "ayu";
   list = {
-  smoothScrolling = true;
   openMode = "doubleClick";
+  smoothScrolling = true;
 };
   tree = {
   expandMode = "doubleClick";
@@ -291,18 +305,6 @@
 };
   view = {
   alwaysShowHeaderActions = true;
-};
-  editorUnnecessaryCode.border = "#f0f";
-  editorUnnecessaryCode.opacity = "#000c";
-};
-  go = {
-  toolsManagement = {
-  autoUpdate = true;
-};
-};
-  chat = {
-  editing = {
-  confirmEditRequestRemoval = false;
 };
 };
 }
