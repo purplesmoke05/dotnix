@@ -18,7 +18,7 @@
   # Root filesystem configuration
   fileSystems."/" =
     {
-      device = "/dev/disk/by-uuid/ae2a1a64-b014-43bd-a8d3-8709e13ae12c";
+      device = "/dev/disk/by-uuid/13f14e5b-acc1-4170-8a3c-20f06a8dbe62";
       fsType = "ext4";
     };
 

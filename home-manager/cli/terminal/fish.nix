@@ -134,8 +134,24 @@
             return 1
           end
           echo "VSCode configuration updated successfully."
-          echo "Running nixos-rebuild for host: hq"
-          sudo -E nixos-rebuild switch --flake ".#hq"
+          # Determine target host for NixOS
+          set -l target_host
+          if test -n "$NIXOS_HOSTNAME"
+            set target_host $NIXOS_HOSTNAME
+          else
+            set target_host (string trim (hostname -s))
+          end
+
+          # Validate that target host exists in the flake by checking a realizable path
+          # NOTE: Accessing 'config.system.build.toplevel' succeeds iff the host exists
+          if not nix eval --raw "$HOME/.nix#nixosConfigurations.$target_host.config.system.build.toplevel" >/dev/null 2>&1
+            echo "Error: target host '$target_host' is not defined in the flake or failed evaluation."
+            echo "Hint: set NIXOS_HOSTNAME=<host> to override detection, or run with DISABLE_HOST_GUARD=1 for cross-host."
+            return 1
+          end
+
+          echo "Running nixos-rebuild for host: $target_host"
+          sudo -E nixos-rebuild switch --flake "$HOME/.nix#$target_host"
         end
       '';
 

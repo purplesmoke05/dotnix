@@ -30,8 +30,8 @@
   # Network Configuration
   # Basic network setup with NetworkManager for connection management
   # - NetworkManager: Handles both wireless and wired connections
-  # - Static hostname configuration
-  networking.hostName = "nixos";
+  # - Hostname is forced to the flake target hostname to avoid cross-host switches
+  networking.hostName = pkgs.lib.mkForce hostname;
   networking.networkmanager = {
     enable = true;
     dns = "default"; # Hotspotのためにデフォルト設定を使用
