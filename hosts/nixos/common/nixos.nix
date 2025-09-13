@@ -399,6 +399,7 @@
     # playwright.browsers # Temporarily disabled - libjxl build failure
     ghq
     peco
+    htop
     obsidian
     gcc
     openssl
