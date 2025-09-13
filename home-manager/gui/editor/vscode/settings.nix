@@ -23,7 +23,7 @@
   ambiguousCharacters = false;
   invisibleCharacters = false;
 };
-  wordWrap = "on";
+  wordWrap = "off";
 };
 };
   accessibility = {
@@ -35,6 +35,9 @@
   caseSensitive = true;
   diagnosticLevel = "Warning";
   diagnosticLevelFlaggedWords = "Warning";
+  userWords = [
+    "survlink"
+  ];
 };
   cursor = {
   composer = {
@@ -57,17 +60,22 @@
   ignoreTrimWhitespace = false;
   maxComputationTime = 0;
 };
+  docker = {
+  extension = {
+  enableComposeLanguageServer = false;
+};
+};
   editor = {
   accessibilitySupport = "off";
   bracketPairColorization = {
   enabled = true;
 };
   cursorBlinking = "expand";
-  cursorSmoothCaretAnimation = "on";
+  cursorSmoothCaretAnimation = "off";
   cursorStyle = "line-thin";
   dragAndDrop = false;
   experimental = {
-  asyncTokenization = true;
+  asyncTokenization = false;
 };
   formatOnSave = true;
   guides = {
@@ -76,12 +84,13 @@
   minimap = {
   maxColumn = 80;
   showSlider = "always";
+  enabled = false;
 };
   renderLineHighlight = "all";
   renderLineHighlightOnlyWhenFocus = true;
   renderWhitespace = "all";
   showFoldingControls = "always";
-  smoothScrolling = true;
+  smoothScrolling = false;
   wordSegmenterLocales = "ja";
   wordWrap = "off";
 };
@@ -90,30 +99,11 @@
   confirmDelete = false;
   confirmDragAndDrop = false;
   excludeGitIgnore = false;
-  fileNesting = {
-  patterns = {
-  "*.db" = "\${capture}.\${extname}-*";
-  "*.db3" = "\${capture}.\${extname}-*";
-  "*.js" = "\${capture}.js.map, \${capture}.min.js, \${capture}.d.ts";
-  "*.jsx" = "\${capture}.js";
-  "*.s3db" = "\${capture}.\${extname}-*";
-  "*.sdb" = "\${capture}.\${extname}-*";
-  "*.sqlite" = "\${capture}.\${extname}-*";
-  "*.sqlite3" = "\${capture}.\${extname}-*";
-  "*.ts" = "\${capture}.js";
-  "*.tsx" = "\${capture}.ts";
-  Cargo = {
-  toml = "Cargo.lock";
+  focusFirstFile = false;
+  autoReveal = false;
+  openEditors = {
+  visible = 0;
 };
-  package = {
-  json = "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock";
-};
-  tsconfig = {
-  json = "tsconfig.*.json";
-};
-};
-};
-  focusFirstFile = true;
 };
   extensions = {
   ignoreRecommendations = true;
@@ -127,6 +117,11 @@
   insertFinalNewline = false;
   trimFinalNewlines = true;
   trimTrailingWhitespace = true;
+  watcherExclude = {
+  ".git/objects/**" = true;
+  ".git/subtree-cache/**" = true;
+  "**/node_modules/**" = true;
+};
 };
   git = {
   autofetch = "all";
@@ -137,7 +132,7 @@
   github = {
   copilot = {
   enable = {
-  "*" = false;
+  "*" = true;
   markdown = true;
   nextEditSuggestions = {
   enabled = true;
@@ -145,15 +140,10 @@
   plaintext = false;
   scminput = false;
 };
+  nextEditSuggestions = {
+  enabled = true;
 };
 };
-  kilo-code = {
-  allowedCommands = [
-    "npm test" "npm install" "tsc" "git log" "git diff" "git show"
-  ];
-  deniedCommands = [
-    
-  ];
 };
   markdownlint = {
   run = "onSave";
@@ -172,7 +162,9 @@
   autoFormatStrings = true;
   autoImportCompletions = true;
   completeFunctionParens = true;
-  typeCheckingMode = "standard";
+  diagnosticMode = "workspace";
+  displayEnglishDiagnostics = true;
+  typeCheckingMode = "strict";
 };
 };
   roo-cline = {
@@ -243,7 +235,6 @@
   linux = "fish";
 };
   enableImages = true;
-  enableMultiLinePasteWarning = "never";
   enableVisualBell = true;
   fontFamily = "Hack Nerd Font";
   fontSize = 12;
@@ -260,10 +251,7 @@
 };
   rightClickBehavior = "paste";
   scrollback = 10000;
-  shellIntegration = {
-  enabled = false;
-};
-  smoothScrolling = true;
+  smoothScrolling = false;
 };
 };
   update = {
@@ -278,6 +266,7 @@
 };
   menuBarVisibility = "hidden";
   titleBarStyle = "custom";
+  zoomLevel = -1;
 };
   workbench = {
   colorTheme = "Catppuccin Mocha";
@@ -294,6 +283,7 @@
   iconTheme = "ayu";
   list = {
   smoothScrolling = true;
+  openMode = "doubleClick";
 };
   tree = {
   expandMode = "doubleClick";
@@ -301,6 +291,18 @@
 };
   view = {
   alwaysShowHeaderActions = true;
+};
+  editorUnnecessaryCode.border = "#f0f";
+  editorUnnecessaryCode.opacity = "#000c";
+};
+  go = {
+  toolsManagement = {
+  autoUpdate = true;
+};
+};
+  chat = {
+  editing = {
+  confirmEditRequestRemoval = false;
 };
 };
 }

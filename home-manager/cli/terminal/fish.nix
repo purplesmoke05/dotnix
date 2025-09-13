@@ -120,7 +120,7 @@
           echo "VSCode configuration updated successfully."
 
           echo "Running darwin-rebuild for host: $DARWIN_HOST using flake at $HOME/.nix"
-          darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
+          sudo -E darwin-rebuild switch --flake "$HOME/.nix#$DARWIN_HOST" --impure
         else
           echo "Detected non-macOS (assuming NixOS/Linux)."
 

@@ -1,8 +1,9 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 {
   # Packages to be installed on the system
   environment.systemPackages = with pkgs; [
   ];
+  system.primaryUser = username;
 
   # Enable automatic upgrade of the Nix daemon
   nix.package = pkgs.nix;

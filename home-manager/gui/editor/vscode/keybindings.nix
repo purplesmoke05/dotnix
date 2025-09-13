@@ -62,10 +62,6 @@
       when = "editorTextFocus && !editorReadonly";
     }
     {
-      command = "extension.changeCase.snake";
-      key = "ctrl+[";
-    }
-    {
       command = "workbench.action.closeActiveEditor";
       key = "ctrl+x 0";
     }
@@ -94,6 +90,10 @@
       command = "-deleteWordLeft";
       key = "ctrl+backspace";
       when = "textInputFocus && !editorReadonly";
+    }
+    {
+      command = "workbench.action.quickOpen";
+      key = "ctrl+x b";
     }
     {
       command = "-workbench.action.quickOpen";
@@ -714,10 +714,6 @@
       key = "ctrl+alt+meta+n";
     }
     {
-      command = "-workbench.action.quit";
-      key = "ctrl+q";
-    }
-    {
       command = "-editor.action.clipboardPasteAction";
       key = "ctrl+v";
     }
@@ -897,11 +893,6 @@
       when = "terminalFocus";
     }
     {
-      command = "workbench.action.toggleSidebarVisibility";
-      key = "ctrl+[";
-      when = "!config.emacs-mcx.useMetaPrefixMacCmd";
-    }
-    {
       command = "-workbench.action.toggleSidebarVisibility";
       key = "ctrl+alt+space";
       when = "!config.emacs-mcx.useMetaPrefixMacCmd";
@@ -910,11 +901,6 @@
       command = "-workbench.action.toggleSidebarVisibility";
       key = "ctrl+alt+space";
       when = "config.emacs-mcx.useMetaPrefixMacCmd";
-    }
-    {
-      command = "workbench.explorer.fileView.focus";
-      key = "ctrl+q";
-      when = "!filesExplorerFocus";
     }
     {
       command = "editor.action.deleteLines";
@@ -967,19 +953,13 @@
       when = "textInputFocus";
     }
     {
-      command = "workbench.action.toggleSidebarVisibility";
       key = "ctrl+q";
-      when = "config.emacs-mcx.useMetaPrefixMacCmd";
+      command = "runCommands";
+      args = {"commands": ["workbench.view.explorer", "workbench.files.action.focusFilesExplorer"]};
     }
     {
-      command = "workbench.action.toggleSidebarVisibility";
-      key = "ctrl+]";
-      when = "!config.emacs-mcx.useMetaPrefixMacCmd";
-    }
-    {
-      command = "workbench.action.togglePanel";
-      key = "ctrl+[Equal]";
-      when = "terminalFocus";
+      key = "ctrl+q";
+      command = "-workbench.action.quit";
     }
     {
       command = "roo-cline.SidebarProvider.focus";
@@ -1109,5 +1089,19 @@
       command = "list.focusPageUp";
       key = "alt+v";
       when = "explorerViewletFocus && !inputFocus";
+    }
+    {
+      key = "ctrl+.";
+      command = "editor.action.quickFix";
+      when = "editorHasCodeActionsProvider && textInputFocus && !editorReadonly";
+    }
+    {
+      key = "cmd+.";
+      command = "-editor.action.quickFix";
+      when = "editorHasCodeActionsProvider && textInputFocus && !editorReadonly";
+    }
+    {
+      key = "ctrl+]";
+      command = "workbench.action.chat.openInSidebar";
     }
   ]

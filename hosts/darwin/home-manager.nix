@@ -45,6 +45,7 @@
     postgresql
     libpq
     libpq.pg_config
+    copilot-cli
   ];
 
   # User information
