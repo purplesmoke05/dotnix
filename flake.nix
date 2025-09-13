@@ -119,6 +119,7 @@
           # Add gh-iteration package
           gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
+
           # Add ccmanager package
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
@@ -154,6 +155,22 @@
               url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${version}.tgz";
               sha256 = "sha256-80bfBwXFbjhr8Wi6xiadoCopvbE6PPcT6yabW1lTV1I=";
             };
+          });
+
+          # Codex (Rust) - pin to rust-v0.34.0 (Linux only)
+          codex = prev.codex.overrideAttrs (old: rec {
+            version = "0.34.0";
+            src = prev.fetchFromGitHub {
+              owner = "openai";
+              repo = "codex";
+              rev = "rust-v${version}";
+              sha256 = "sha256-C1PXK/5vPFV5cz1dYWV+GaYl0grscb6qCR66BSih5/E=";
+            };
+            cargoDeps = prev.rustPlatform.fetchCargoVendor {
+              src = "${src}/codex-rs";
+              hash = "sha256-OMGGgg6hYdZ40vcUxVsWyLentFBj62CYEH3NJ909kYM=";
+            };
+            doCheck = false;
           });
         };
 

@@ -15,6 +15,7 @@
     uv
     sqlite
     volta
+    codex
     claude-code
     ctop
     iftop

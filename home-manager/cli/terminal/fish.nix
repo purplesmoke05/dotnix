@@ -142,11 +142,10 @@
             set target_host (string trim (hostname -s))
           end
 
-          # Validate that target host exists in the flake by checking a realizable path
-          # NOTE: Accessing 'config.system.build.toplevel' succeeds iff the host exists
-          if not nix eval --raw "$HOME/.nix#nixosConfigurations.$target_host.config.system.build.toplevel" >/dev/null 2>&1
-            echo "Error: target host '$target_host' is not defined in the flake or failed evaluation."
-            echo "Hint: set NIXOS_HOSTNAME=<host> to override detection, or run with DISABLE_HOST_GUARD=1 for cross-host."
+          # Lightweight guard: check host directory presence instead of full Nix evaluation
+          if not test -f "$HOME/.nix/hosts/nixos/$target_host/nixos.nix"
+            echo "Error: target host '$target_host' is not defined (hosts/nixos/$target_host/nixos.nix not found)."
+            echo "Hint: set NIXOS_HOSTNAME=<host> to override detection."
             return 1
           end
 
