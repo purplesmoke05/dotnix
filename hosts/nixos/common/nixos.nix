@@ -528,6 +528,13 @@
     package = hyprland.packages.${pkgs.system}.hyprland;
   };
 
+  # Enable uinput for user-space input injection (used by hintsd for clicks)
+  hardware.uinput.enable = true;
+
+  # Accessibility bus (AT-SPI) for GUI automation/accessibility on Wayland/X11
+  # Hints depends on AT-SPI to enumerate accessible elements.
+  services.gnome.at-spi2-core.enable = true;
+
   # System State Version
   # NixOS release version for maintaining compatibility
   system.stateVersion = "24.11";

@@ -49,6 +49,22 @@
         fi
       '';
     })
+
+    (pkgs.writeShellApplication {
+      name = "toggle-hints";
+      runtimeInputs = with pkgs; [ procps hints ];
+      bashOptions = [ "errexit" "nounset" "pipefail" ];
+      text = ''
+        #!/usr/bin/env bash
+        # Toggle hints overlay: if running, kill; otherwise, start it
+        if pgrep -u "$USER" -f "${pkgs.hints}/bin/hints" >/dev/null 2>&1; then
+          pkill -u "$USER" -f "${pkgs.hints}/bin/hints"
+          exit 0
+        fi
+        export HINTS_WINDOW_SYSTEM="${"hyprland"}"
+        exec ${pkgs.hints}/bin/hints -m hint
+      '';
+    })
   ];
 
   wayland.windowManager.hyprland = {
@@ -83,6 +99,8 @@
         "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt window decorations
         "NIXOS_OZONE_WL,1" # Force Wayland for Chromium-based applications
         "ELECTRON_OZONE_PLATFORM_HINT,auto"
+        # Hints: ensure window system auto-detection works under Hyprland
+        "HINTS_WINDOW_SYSTEM,hyprland"
       ];
 
       # Input device configuration
@@ -163,6 +181,7 @@
         "$mainMod,E,exec,nautilus" # File manager
         "CTRL, 4, exec,rofi -show drun" # Application launcher
         "CTRL, 1, exec,bemoji -t -c -e -n" # Emoji picker
+        "CTRL, 2, exec, toggle-hints" # Launch/Toggle hints (GUI hint mode)
         "$mainMod,P,pseudo," # Pseudo tiling
 
         # Utility controls
@@ -275,11 +294,46 @@
         "${pkgs.discord-ptb}/bin/discordptb"
         "hyprpanel"
       ];
+
+      # Layer rules (affect GTK Layer Shell overlays)
+      # Hints overlay uses GtkLayerShell namespace "hints"; disable animations for snappier appearance
+      layerrule = [
+        "noanim, namespace:hints"
+      ];
     };
 
     # Hyprland plugins
     plugins = [
       hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces plugin (using flake input for 0.49.0 compatibility)
     ];
+  };
+
+  # Hints UI 設定（オーバーレイのサイズ・フォントを小さめに）
+  xdg.configFile."hints/config.json" = {
+    text = builtins.toJSON {
+      hints = {
+        hint_height = 22;         # 既定30 → さらに小さく
+        hint_width_padding = 6;   # 既定10 → さらに小さく
+        hint_font_size = 11;      # 既定15 → さらに小さく
+        hint_font_face = "Noto Sans CJK JP";  # 日本語でも視認性の良いフォント
+      };
+      overlay_x_offset = 0;
+      overlay_y_offset = 0;
+    };
+  };
+
+  # hints daemon (hintsd) as a user service
+  systemd.user.services.hintsd = {
+    Unit = {
+      Description = "Hints daemon";
+      After = [ "graphical-session.target" "at-spi-dbus-bus.service" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.hints}/bin/hintsd";
+      Restart = "on-failure";
+      Environment = [ "HINTS_WINDOW_SYSTEM=hyprland" ];
+    };
+    Install = { WantedBy = [ "default.target" ]; };
   };
 }

@@ -6,7 +6,7 @@
     google-chrome.commandLineArgs = [ "--enable-features=UseOzonePlatform" "--ozone-platform=wayland" "--enable-wayland-ime=true" ];
     brave.enable = true;
     # Use Home Manager's intended option for command line args
-    brave.commandLineArgs = [ "--enable-features=UseOzonePlatform" "--ozone-platform-hint=auto" ];
+    brave.commandLineArgs = [ "--enable-features=UseOzonePlatform" "--ozone-platform=wayland" "--enable-wayland-ime=true"];
     firefox.enable = true;
   };
 

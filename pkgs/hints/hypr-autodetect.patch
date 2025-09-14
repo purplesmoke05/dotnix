@@ -1,0 +1,35 @@
+diff --git a/hints/hints.py b/hints/hints.py
+--- a/hints/hints.py
++++ b/hints/hints.py
+@@ -264,18 +264,26 @@ def get_window_system(window_system_id: str = "") -> Type[WindowSystem]:
+ 
+         if window_system_type == WindowSystemType.WAYLAND:
+ 
+             # add new waland wms here, then add a match case below to import the class
+-            supported_wayland_wms = {"sway", "Hyprland", "plasmashell"}
++            supported_wayland_wms = {"sway", "Hyprland", "hyprland", "plasmashell"}
+ 
+             # Check if there is a process running that matches the supported_wayland_wms
+             window_system_id = (
+                 run(
+                     "ps -e -o comm | grep -m 1 -o -E "
+                     + " ".join([f"-e '^{wm}$'" for wm in supported_wayland_wms]),
+                     capture_output=True,
+                     shell=True,
+                 )
+                 .stdout.decode("utf-8")
+                 .strip()
+-            ).lower()
++            )
++            if not window_system_id:
++                import os
++                env = (
++                    os.getenv("HYPRLAND_INSTANCE_SIGNATURE")
++                    or os.getenv("XDG_CURRENT_DESKTOP")
++                    or os.getenv("XDG_SESSION_DESKTOP")
++                    or os.getenv("DESKTOP_SESSION")
++                    or ""
++                )
++                if "hyprland" in env.lower():
++                    window_system_id = "hyprland"
++            window_system_id = window_system_id.lower()

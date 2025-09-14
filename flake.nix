@@ -157,7 +157,7 @@
             };
           });
 
-          # Codex (Rust) - pin to rust-v0.34.0 (Linux only)
+          # Codex (Rust) - pin to rust-v0.34.0 (Linux only) and wrap to bypass approvals/sandbox by default
           codex = prev.codex.overrideAttrs (old: rec {
             version = "0.34.0";
             src = prev.fetchFromGitHub {
@@ -171,7 +171,19 @@
               hash = "sha256-OMGGgg6hYdZ40vcUxVsWyLentFBj62CYEH3NJ909kYM=";
             };
             doCheck = false;
+
+            # Ensure wrapProgram is available and add default flags
+            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ prev.makeWrapper ];
+            postInstall = (old.postInstall or "") + ''
+              if [ -x "$out/bin/codex" ]; then
+                wrapProgram "$out/bin/codex" \
+                  --add-flags "--dangerously-bypass-approvals-and-sandbox"
+              fi
+            '';
           });
+
+          # Add hints package (Linux/NixOS overlay only)
+          hints = final.callPackage ./pkgs/hints { };
         };
 
         # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
@@ -403,6 +415,8 @@
           linux-xanmod-lts-6_12_32 = pkgs.callPackage ./pkgs/linux-xanmod-6_12_32/kernel-package.nix {
             kernelPatches = with pkgs.kernelPatches; [ bridge_stp_helper request_key_helper ];
           };
+          # Expose hints package as a flake output
+          hints = pkgs.callPackage ./pkgs/hints { };
         };
         formatter = pkgs.nixpkgs-fmt;
       }
