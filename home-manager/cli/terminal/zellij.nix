@@ -11,6 +11,8 @@
       default_shell = "fish";
 
       keybinds = {
+        # Disable Ctrl+t globally (prevents switching to Tab mode)
+        "unbind \"Ctrl t\"" = { };
         normal = {
           "bind \"Ctrl g\"" = {
             "SwitchToMode" = "Locked";

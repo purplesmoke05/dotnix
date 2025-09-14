@@ -51,20 +51,20 @@
     })
 
     (pkgs.writeShellApplication {
-      name = "toggle-hints";
-      runtimeInputs = with pkgs; [ procps hints ];
+      name = "hints-once";
+      runtimeInputs = with pkgs; [ util-linux ];
       bashOptions = [ "errexit" "nounset" "pipefail" ];
       text = ''
         #!/usr/bin/env bash
-        # Toggle hints overlay: if running, kill; otherwise, start it
-        if pgrep -u "$USER" -f "${pkgs.hints}/bin/hints" >/dev/null 2>&1; then
-          pkill -u "$USER" -f "${pkgs.hints}/bin/hints"
-          exit 0
-        fi
-        export HINTS_WINDOW_SYSTEM="${"hyprland"}"
-        exec ${pkgs.hints}/bin/hints -m hint
+        # Single-instance guard using flock on XDG_RUNTIME_DIR
+        lock_dir="''${XDG_RUNTIME_DIR:-/run/user/$UID}"
+        lock_file="$lock_dir/hints-overlay.lock"
+        exec ${pkgs.util-linux}/bin/flock -n "$lock_file" \
+          env HINTS_WINDOW_SYSTEM=hyprland ${pkgs.hints}/bin/hints -m hint
       '';
     })
+
+    # No toggle helpers for hints; keep direct invocation from keybind
   ];
 
   wayland.windowManager.hyprland = {
@@ -181,7 +181,7 @@
         "$mainMod,E,exec,nautilus" # File manager
         "CTRL, 4, exec,rofi -show drun" # Application launcher
         "CTRL, 1, exec,bemoji -t -c -e -n" # Emoji picker
-        "CTRL, 2, exec, toggle-hints" # Launch/Toggle hints (GUI hint mode)
+        "CTRL, 2, exec, hints-once" # Launch once (no duplicate)
         "$mainMod,P,pseudo," # Pseudo tiling
 
         # Utility controls
@@ -318,7 +318,7 @@
         hint_font_face = "Noto Sans CJK JP";  # 日本語でも視認性の良いフォント
       };
       overlay_x_offset = 0;
-      overlay_y_offset = 0;
+      overlay_y_offset = -32; # 画面上部バー分上にずらす（必要に応じて微調整）
     };
   };
 
@@ -336,4 +336,6 @@
     };
     Install = { WantedBy = [ "default.target" ]; };
   };
+
+  # No client one-shot services; direct invocation only
 }
