@@ -1,13 +1,6 @@
 {
-  # External Dependencies
-  # This section defines all external sources and dependencies required by the system:
-  # - nixpkgs: Core package repository (unstable channel)
-  # - nixos-hardware: Hardware-specific optimizations and drivers
-  # - xremap: Keyboard remapping utility
-  # - rust-overlay: Rust toolchain and package overlay
-  # - home-manager: User environment management
-  # - hyprland utilities: hyprpanel, hyprspace, hyprsplit for window management
-  # - flake-utils: Utility functions for flake-based systems
+  # Inputs / 外部依存関係
+  # Declare flake inputs for systems and tooling. / システムとツールを支えるフレーク入力を定義。
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
@@ -62,11 +55,11 @@
     };
   };
 
-  # System Configuration
-  # Main outputs section defining system configurations, overlays, and home-manager setups
+  # Outputs / 出力定義
+  # Collect systems, overlays, and Home Manager setups. / システム構成・オーバーレイ・Home Manager を束ねる。
   outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
     let
-      # Python builder utilities
+      # Python builders / Python ビルダー
       mkPythonBuilders = pkgs: {
         buildPython = { version, sha256 }:
           let
@@ -87,10 +80,10 @@
           in
           python;
 
-        # Available Python versions
+        # Python versions / Python バージョン一覧
         pythonVersions = let self = mkPythonBuilders pkgs; in {
           py312 = pkgs.python312;
-          # Custom build for specific patch version
+          # Custom 3.12.9 build / 独自 3.12.9 ビルド
           py3129 = self.buildPython {
             version = "3.12.9";
             sha256 = "0w6qyfhc912xxav9x9pifwca40b4l49vy52wai9j0gc1mhni2a5y";
@@ -100,47 +93,47 @@
         };
       };
 
-      # Package Overlays
-      # Custom package overlays including node packages and external overlays
+      # Overlays / オーバーレイ
+      # Collect custom overlays and external sources. / 独自パッケージや外部オーバーレイをまとめる。
       overlays = {
         common = final: prev: {
-          # Common packages like python, zen-browser
-          # OpenSSH override with custom patch - assuming this patch is platform-agnostic or handled correctly by nixpkgs for both
+          # Common overrides / 共通オーバーライド
+          # OpenSSH patch applied across platforms. / OpenSSH に独自パッチを適用。
           openssh = prev.openssh.overrideAttrs (old: {
             patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
             doCheck = false;
           });
 
-          # Alias missing fcitx5-with-addons under libsForQt5 to kdePackages variant on unstable
+          # fcitx5 alias / fcitx5 代替
           libsForQt5 = prev.libsForQt5 // {
             fcitx5-with-addons = final.kdePackages.fcitx5-with-addons;
           };
 
-          # Add gh-iteration package
+          # gh-iteration package / gh-iteration パッケージ
           gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
 
-          # Add ccmanager package
+          # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
             ccmanager = final.ccmanager-base;
           };
 
-          # Add Python-related functionality
+          # Python helpers / Python ヘルパー
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
 
-          # Add zen-browser overlay
-          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Try both default and zen-browser names
+          # zen-browser overlay / zen-browser オーバーレイ
+          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Handle name differences / 名前差異に対応
 
-          # Add sui package
+          # sui package / sui パッケージ
           sui = final.callPackage ./pkgs/sui { };
 
-          # qSpeak application (Linux; deb-based extraction)
+          # qSpeak app (deb extraction) / qSpeak アプリ（deb 展開）
           qspeak = final.callPackage ./pkgs/qspeak { };
         };
 
         nixos = final: prev: {
-          # NixOS/Linux specific overlays, e.g., Obsidian X11 mode
+          # NixOS-specific overlays / NixOS 専用オーバーレイ
           obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
             installPhase = builtins.replaceStrings
               [ "--ozone-platform=wayland" ]
@@ -148,10 +141,10 @@
               oldAttrs.installPhase;
           });
 
-          # Add code-cursor package
+          # code-cursor package / code-cursor パッケージ
           code-cursor = final.callPackage ./pkgs/code-cursor { inherit (final) substituteInPlace; };
 
-          # Claude Code CLI - update to latest version 1.0.70
+          # Claude Code CLI v1.0.70 / Claude Code CLI v1.0.70
           claude-code = prev.claude-code.overrideAttrs (oldAttrs: rec {
             version = "1.0.70";
             src = prev.fetchurl {
@@ -160,7 +153,8 @@
             };
           });
 
-          # Codex (Rust) - pin to rust-v0.34.0 (Linux only) and wrap to bypass approvals/sandbox by default
+          # Codex CLI (Rust) / Codex CLI（Rust）
+          # Pin to rust-v0.39.0 and wrap with bypass flags. / rust-v0.39.0 に固定しラッパーで承認回避。
           codex = prev.codex.overrideAttrs (old: rec {
             version = "0.39.0";
             src = prev.fetchFromGitHub {
@@ -175,7 +169,7 @@
             };
             doCheck = false;
 
-            # Ensure wrapProgram is available and add default flags
+            # Ensure wrapProgram availability / wrapProgram を追加
             nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ prev.makeWrapper ];
             postInstall = (old.postInstall or "") + ''
               if [ -x "$out/bin/codex" ]; then
@@ -185,24 +179,24 @@
             '';
           });
 
-          # Add hints package (Linux/NixOS overlay only)
+          # hints package (NixOS only) / hints パッケージ（NixOS 限定）
           hints = final.callPackage ./pkgs/hints { };
 
-          # push-to-talk (Python GUI STT app)
-          # Use Python 3.12 to avoid ecosystem breakages on 3.13 (e.g., future)
+          # push-to-talk (Python STT GUI) / push-to-talk（Python STT GUI）
+          # Pin to Python 3.12 to avoid 3.13 breakages. / Python 3.12 固定で 3.13 の崩壊を回避。
           push-to-talk = final.callPackage ./pkgs/push-to-talk {
             python3 = final.python312;
             python3Packages = final.python312Packages;
           };
         };
 
-        # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
-        # or for NixOS configurations that used to refer to 'default'.
-        default = final: prev: (self.overlays.common final prev) // (self.overlays.nixos final prev);
+        # default overlay / default オーバーレイ
+        # Combine common and nixos layers for reuse. / common+nixos を束ね再利用性を確保。
+        default = final: prev: (self.overlays.common final prev) // (self.overlays.nixos final prev); # Merge common and NixOS layers / 共通+NixOS を結合
       };
 
-      # User Configuration
-      # System-specific user configurations with environment variable fallbacks
+      # User Configuration / ユーザー設定
+      # Allow host defaults with env overrides. / ホスト別ユーザーを環境変数で上書き可能に。
       systemUsers = {
         laptop = {
           primary = let env = builtins.getEnv "LAPTOP_USER"; in
@@ -214,15 +208,15 @@
         };
       };
 
-      # User Template
-      # Base configuration template for creating user accounts
+      # User template / ユーザーテンプレート
+      # Template for shared attributes. / 共通属性の雛形。
       mkUserConfig = { name, description, extraGroups ? [ ], shell ? "fish", ... }: {
         inherit name description extraGroups shell;
         isNormalUser = true;
       };
 
-      # User Generation
-      # Function to generate system-specific user definitions
+      # User generation / ユーザー生成
+      # Build per-host user definitions. / ホスト別ユーザー定義を生成。
       mkUsers = hostname: {
         primary = mkUserConfig {
           name = systemUsers.${hostname}.primary;
@@ -232,7 +226,7 @@
         };
       };
 
-      # Home Manager Configuration Builder
+      # Home Manager builder / Home Manager 構築
       mkHomeManagerConfig = { hostname, username }: {
         home-manager = {
           useGlobalPkgs = true;
@@ -256,15 +250,15 @@
         };
       };
 
-      # System Overlay Configuration
+      # System overlays / システムオーバーレイ
       mkSystemOverlays = {
         nixpkgs.overlays = [
           (import rust-overlay)
-          self.overlays.default # This now correctly includes common and nixos specific parts
+          self.overlays.default # Combine common and NixOS layers / common と NixOS を統合
         ];
       };
 
-      # NixOS System Builder
+      # NixOS builder / NixOS ビルダー
       mkSystem = { system ? "x86_64-linux", hostname, enabledUsers ? [ "primary" ] }:
         let
           users = mkUsers hostname;
@@ -311,36 +305,36 @@
           };
       };
 
-      darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default to "user" if not set
-      darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default to "darwin-host" if not set
+      darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default "user" fallback / 未設定時は "user"
+      darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default "darwin-host" fallback / 未設定時は "darwin-host"
 
-      # Darwin System Builder
+      # Darwin builder / Darwin ビルダー
       mkDarwinSystem = { hostname, username, system ? "aarch64-darwin" }: nix-darwin.lib.darwinSystem {
         inherit system;
         pkgs = import nixpkgs {
           inherit system;
-          # Apply overlays and allow unfree packages for Darwin as well
-          config.allowUnfree = true; # Or manage via nixpkgs.config.allowUnfreePredicate if preferred
+          # Apply overlays and allow unfree / オーバーレイ適用と非自由許可
+          config.allowUnfree = true; # Adjust allowUnfreePredicate if needed / 必要なら allowUnfreePredicate を設定
           overlays = [
             self.overlays.common
             brew-nix.overlays.default
-          ]; # Apply ONLY common overlays for Darwin
+          ]; # Darwin uses common + brew-nix only / Darwin は common + brew-nix のみ
         };
         modules = [
-          ./hosts/darwin/configuration.nix # Adjusted pag
+          ./hosts/darwin/configuration.nix # Darwin system config / Darwin システム設定
           home-manager.darwinModules.home-manager
           {
             networking.hostName = hostname;
             users.users.${username}.home = "/Users/${username}";
             home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = false; # As per original darwin/flake.nix
-            home-manager.users.${username} = { pkgs, lib, config, ... }: # pkgs, lib, config are passed by home-manager.darwinModules.home-manager
-              import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and passed args
+            home-manager.useUserPackages = false; # Original darwin flow / 既定の darwin フローを踏襲
+            home-manager.users.${username} = { pkgs, lib, config, ... }: # Provided by HM module / HM から渡される値
+              import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and args / パスと引数を調整
             home-manager.backupFileExtension = "backup";
           }
         ];
         specialArgs = {
-          inherit inputs nixpkgs home-manager username; # Pass necessary inputs and args
+          inherit inputs nixpkgs home-manager username; # Pass required inputs / 必要な入力を渡す
         };
       };
     in
@@ -405,7 +399,7 @@
             buildInputs = [ pythonTools.pythonVersions.py312 pkgs.fish ];
             shellHook = ''
               echo "Welcome to Python ${pythonTools.pythonVersions.py312.version} environment"
-              # Execute fish if not already in fish shell
+              # Launch fish if current shell differs / 現在のシェルが異なれば fish を起動
               echo "Current shell: $SHELL"
               echo "Current shell: $FISH_VERSION"
               if [ -z "$FISH_VERSION" ]; then
@@ -425,9 +419,9 @@
           linux-xanmod-lts-6_12_32 = pkgs.callPackage ./pkgs/linux-xanmod-6_12_32/kernel-package.nix {
             kernelPatches = with pkgs.kernelPatches; [ bridge_stp_helper request_key_helper ];
           };
-          # Expose hints package as a flake output
+          # hints flake output / hints フレーク出力
           hints = pkgs.callPackage ./pkgs/hints { };
-          # Expose push-to-talk package as a flake output (pin to Python 3.12)
+          # push-to-talk flake output / push-to-talk フレーク出力
           push-to-talk = pkgs.callPackage ./pkgs/push-to-talk {
             python3 = pkgs.python312;
             python3Packages = pkgs.python312Packages;
@@ -436,11 +430,11 @@
         formatter = pkgs.nixpkgs-fmt;
       }
     )) // {
-      # Export overlays for external use
+      # Export overlays / オーバーレイをエクスポート
       inherit overlays;
 
-      # NixOS System Configurations
-      # Define available system configurations for different hosts
+      # NixOS configurations / NixOS 構成
+      # Define host-specific systems. / ホストごとのシステム定義。
       nixosConfigurations = {
         laptop = mkSystem {
           hostname = "laptop";
@@ -452,8 +446,8 @@
         };
       };
 
-      # Darwin System Configurations
-      # Define Darwin configurations if DARWIN_HOST and DARWIN_USER are set
+      # Darwin configurations / Darwin 構成
+      # Enabled when DARWIN env vars are provided. / 環境変数が設定された場合に有効。
       darwinConfigurations.${darwinHost} = mkDarwinSystem {
         hostname = darwinHost;
         username = darwinUser;

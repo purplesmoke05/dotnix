@@ -25,6 +25,7 @@ Language / 言語: English + 日本語 (side-by-side)
 - Filenames / ファイル名: `snake-case.nix`；packages in `pkgs/<name>/default.nix`。
 - Scope / 置き場所: host-specific → `hosts/nixos/<host>/`、shared → `hosts/nixos/common/`・`home-manager/*`。
 - Run `nix fmt` before commits; avoid unrelated churn / コミット前に `nix fmt`、無関係変更は避ける。
+- Bilingual comments: write `English sentence. / 日本語訳。` on a single line; delete stale or redundant comments. / バイリンガルコメントは1行に「英語文。/ 日本語訳。」の順で記述し、冗長・陳腐化したコメントは削除する。
 
 ## Testing Guidelines / テスト指針
 - Always run / 常に実行: `nix flake check`。

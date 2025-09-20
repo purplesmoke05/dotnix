@@ -1,10 +1,8 @@
 { inputs, config, pkgs, hostname, username, hyprland, ... }:
 
 {
-  # System Boot Configuration
-  # Configures the boot process using systemd-boot for UEFI systems
-  # - systemd-boot: Modern UEFI bootloader
-  # - xanmod kernel: Optimized for desktop performance with better scheduling and lower latency
+  # System Boot Configuration / システム起動構成
+  # Boot via systemd-boot with xanmod for low-latency desktops. / systemd-boot と xanmod カーネルで低遅延デスクトップ向けに起動を構成。
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 5;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -14,7 +12,7 @@
   boot.kernelParams = [
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
-    # For gameing
+    # USB tuning for gaming latency / ゲーム時の USB レイテンシ対策
     "usbhid.jspoll=1"
     "usbcore.usbfs_memory_mb=256"
     "usbcore.autosuspend=-1"
@@ -22,19 +20,17 @@
     "threadirqs"
   ];
 
-  # Sysctl settings
+  # Sysctl Settings / Sysctl 設定
   boot.kernel.sysctl = {
     "kernel.split_lock_mitigate" = 0;
   };
 
-  # Network Configuration
-  # Basic network setup with NetworkManager for connection management
-  # - NetworkManager: Handles both wireless and wired connections
-  # - Hostname is forced to the flake target hostname to avoid cross-host switches
+  # Network Configuration / ネットワーク設定
+  # Stabilise connectivity with NetworkManager and mkForce hostname. / NetworkManager と固定 hostname で接続を安定化。
   networking.hostName = pkgs.lib.mkForce hostname;
   networking.networkmanager = {
     enable = true;
-    dns = "default"; # Hotspotのためにデフォルト設定を使用
+    dns = "default"; # Use default for Hotspot compatibility / Hotspot 互換のため既定値を使用
     settings = {
       main = {
         rc-manager = "symlink";
@@ -44,18 +40,18 @@
   networking.wireless.userControlled.enable = true;
   hardware.wirelessRegulatoryDatabase = true;
 
-  # Configure DNS to use AdGuard Home
+  # AdGuard Home DNS / AdGuard Home で DNS を提供
   networking.nameservers = [ "127.0.0.1" ];
 
-  # NetworkManager shared (Hotspot) mode configuration
+  # NetworkManager Hotspot / NetworkManager ホットスポット設定
   environment.etc."NetworkManager/dnsmasq-shared.d/00-hotspot.conf".text = ''
-    # Hotspot用の設定
+    # Hotspot settings / ホットスポット設定
     interface=wlp5s0
     bind-interfaces
     listen-address=10.42.0.1
-    # DNSポートを変更（AdGuard Homeとの競合回避）
+    # Avoid DNS port clash with AdGuard Home / AdGuard Home と競合しないよう DNS ポートを変更
     port=0
-    # DHCPのみ提供（DNSはクライアント側で設定）
+    # Provide DHCP only; clients resolve DNS themselves. / DHCP のみ提供し DNS はクライアント任せ
     dhcp-range=10.42.0.10,10.42.0.254,255.255.255.0,12h
     dhcp-option=option:router,10.42.0.1
     dhcp-option=option:dns-server,10.42.0.1,1.1.1.1,8.8.8.8
@@ -63,11 +59,8 @@
 
 
 
-  # Localization Settings
-  # Complete Japanese language support configuration
-  # - Time zone: Asia/Tokyo
-  # - Locale: Japanese with UTF-8 encoding
-  # - All locale categories set to Japanese
+  # Localization Settings / ロケール設定
+  # Asia/Tokyo と ja_JP.UTF-8 を全面適用。 / Apply Asia/Tokyo timezone and ja_JP.UTF-8 locales system-wide.
   time.timeZone = "Asia/Tokyo";
   i18n.defaultLocale = "ja_JP.UTF-8";
 
@@ -83,11 +76,8 @@
     LC_TIME = "ja_JP.UTF-8";
   };
 
-  # Japanese Input Method Configuration
-  # Fcitx5 setup with Mozc engine for Japanese text input
-  # - Fcitx5: Modern input method framework
-  # - Mozc: Japanese input engine
-  # - Complete GUI integration across GTK and Qt
+  # Japanese Input Method / 日本語入力
+  # Fcitx5 + Mozc を GTK/Qt 双方へ統合。 / Provide Fcitx5 + Mozc integration across GTK and Qt.
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
@@ -99,11 +89,8 @@
     ];
   };
 
-  # Font Configuration
-  # Comprehensive font setup for Japanese and programming
-  # - Japanese fonts: PlemolJP, Noto CJK, Migu
-  # - Programming fonts: JetBrains Mono, Hack
-  # - Emoji support and Steam client optimization
+  # Font Configuration / フォント構成
+  # Cover Japanese fonts, programmer fonts, and emoji. / 日本語・プログラミング・絵文字を網羅。
   fonts = {
     packages = with pkgs; [
       plemoljp
@@ -146,11 +133,8 @@
     };
   };
 
-  # Display Server Configuration
-  # Pure Wayland setup with GDM and Hyprland
-  # - X11: Disabled for pure Wayland experience
-  # - GDM: Wayland-native display manager
-  # - Hyprland: Modern Wayland compositor
+  # Display Server / ディスプレイサーバー
+  # Keep a pure Wayland session via GDM and Hyprland. / GDM + Hyprland で純粋な Wayland セッションを維持。
   services.xserver.enable = false;
   services.displayManager.gdm = {
     enable = true;
@@ -159,20 +143,16 @@
   services.displayManager.defaultSession = "hyprland";
   services.desktopManager.gnome.enable = false;
 
-  # Keyboard Configuration
-  # Japanese layout with custom key remapping
-  # - Base layout: Japanese
-  # - xremap: Advanced key remapping functionality
+  # Keyboard Layout / キーボード配列
+  # Base JP layout with xremap-driven tweaks. / 日本語配列を基本として xremap で拡張。
   services.xserver.xkb = {
     options = "";
     layout = "jp";
     variant = "";
   };
 
-  # Key Remapping Configuration
-  # Custom keyboard modifications using xremap
-  # - CapsLock to Control for ergonomic improvement
-  # - Emacs-style keybindings system-wide
+  # Key Remapping / キーカスタマイズ
+  # Define CapsLock-to-Ctrl and Emacs-style bindings. / CapsLock→Ctrl や Emacs 互換操作を定義。
   services.xremap = {
     userName = username;
     serviceMode = "user";
@@ -235,10 +215,8 @@
     };
   };
 
-  # Audio and Printing Services
-  # Modern audio stack with PipeWire and CUPS printing
-  # - PipeWire: Low-latency audio with compatibility layers
-  # - CUPS: Network printing support
+  # Audio & Printing / オーディオと印刷
+  # Provide PipeWire audio and CUPS printing. / PipeWire と CUPS でモダンな入出力を構成。
   services.printing.enable = true;
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
@@ -248,16 +226,16 @@
     alsa.support32Bit = true;
     pulse.enable = true;
 
-    # High-quality Bluetooth audio configuration
+    # Bluetooth audio profile tuning / Bluetooth オーディオ品質調整
     extraConfig.pipewire."99-quality" = {
       "context.properties" = {
-        # Increase default sample rate for better quality
+        # Raise default sample rate for fidelity. / 標準サンプルレートを上げて音質を確保。
         "default.clock.rate" = 48000;
         "default.clock.allowed-rates" = [ 44100 48000 88200 96000 ];
       };
     };
 
-    # WirePlumber configuration for Bluetooth
+    # WirePlumber rules for Bluetooth / Bluetooth 用 WirePlumber 設定
     wireplumber.enable = true;
     wireplumber.configPackages = [
       (pkgs.writeTextDir "share/wireplumber/bluetooth.lua.d/51-bluez-config.lua" ''
@@ -272,32 +250,32 @@
           {
             matches = {
               {
-                -- This matches all Bluetooth devices
+                -- Match all Bluetooth devices / 全 Bluetooth デバイスが対象
                 { "device.name", "matches", "bluez_card.*" },
               },
             },
             apply_properties = {
-              -- Bluetooth audio quality settings
+              -- Bluetooth audio quality controls / Bluetooth 音質制御
               ["bluez5.auto-connect"] = "[ a2dp_sink ]",
               ["bluez5.hw-volume"] = "[ a2dp_sink ]",
 
-              -- Force high quality codec if available
+              -- Prefer high quality codecs / 高音質コーデックを優先
               ["bluez5.a2dp.codec"] = "auto",
 
-              -- SBC codec quality (bitpool)
+              -- SBC codec bitpool / SBC コーデックのビットプール
               ["bluez5.a2dp.sbc.min_bitpool"] = 48,
               ["bluez5.a2dp.sbc.max_bitpool"] = 53,
 
-              -- Disable switching to HSP/HFP
+              -- Avoid fallback to HSP/HFP / HSP/HFP への切替を防止
               ["bluez5.headset-roles"] = "[ ]",
               ["bluez5.profile"] = "a2dp_sink",
               ["bluez5.autoswitch-profile"] = false,
 
-              -- Force 48kHz sample rate (prevent 16kHz telephone quality)
+              -- Pin sample rate at 48kHz / 48kHz に固定
               ["audio.rate"] = 48000,
               ["audio.allowed-rates"] = "[ 44100 48000 ]",
 
-              -- Session settings
+              -- Session behaviour / セッションの挙動
               ["node.pause-on-idle"] = false,
               ["session.suspend-timeout-seconds"] = 0,
             },
@@ -305,22 +283,22 @@
           {
             matches = {
               {
-                -- OpenRun by Shokz専用設定
+                -- Shokz OpenRun profile / Shokz OpenRun 用プロファイル
                 { "device.name", "matches", "bluez_card.A8_F5_E1_4C_7B_20" },
               },
             },
             apply_properties = {
-              -- 必ずA2DPを使用
+              -- Force A2DP profile / 必ず A2DP を使用
               ["bluez5.profile"] = "a2dp_sink",
               ["bluez5.autoswitch-profile"] = false,
               ["device.profile"] = "a2dp-sink",
 
-              -- マイクロフォンロールを無効化
+              -- Disable microphone roles / マイク系ロールを無効化
               ["bluez5.headset-roles"] = "[ ]",
               ["bluez5.hfp-enable"] = false,
               ["bluez5.hsp-enable"] = false,
 
-              -- 音質設定
+              -- Audio tuning / 音質調整
               ["audio.rate"] = 48000,
               ["node.pause-on-idle"] = false,
             },
@@ -330,25 +308,23 @@
     ];
   };
 
-  # Auto-login Configuration
-  # Automatic login setup with systemd workarounds
+  # Auto-login / 自動ログイン
+  # Enable auto-login with systemd tweaks. / systemd workaround で即ログイン。
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = username;
 
-  # GNOME Auto-login Workaround
+  # GNOME auto-login workaround / GNOME 自動ログイン対策
   systemd.services."getty@tty1".enable = false;
   systemd.services."autovt@tty1".enable = false;
 
-  # Shell and Audio Enhancement Programs
+  # Shell & audio tools / シェルとオーディオ支援ツール
   programs = {
     noisetorch.enable = true;
     fish.enable = true;
   };
 
-  # Virtualization and Container Support
-  # Docker and Flatpak configuration
-  # - Docker: Rootless container runtime
-  # - Flatpak: Additional application distribution
+  # Virtualization & Containers / 仮想化とコンテナ
+  # Use rootless Docker alongside Flatpak. / Rootless Docker と Flatpak を併用。
   virtualisation = {
     docker = {
       enable = false;
@@ -368,11 +344,8 @@
 
   services.flatpak.enable = true;
 
-  # System Packages
-  # Core system utilities and applications
-  # - Development tools: Git, VSCode
-  # - Wayland utilities: Screenshot, clipboard
-  # - Input method and toolkit integration
+  # System Packages / システムパッケージ
+  # Base toolset covering dev, Wayland, and IME support. / 開発・Wayland・IME を含む基本ツール群。
   environment.systemPackages = with pkgs; [
     git
     alacritty
@@ -396,7 +369,7 @@
     unrar
     rar
     file-roller
-    # playwright.browsers # Temporarily disabled - libjxl build failure
+    # playwright.browsers # Disabled: libjxl build failure / libjxl ビルド失敗のため一時停止
     ghq
     peco
     htop
@@ -410,7 +383,7 @@
     remarshal
     gnum4
     gnumake
-    # jetbrains.rust-rover # Temporarily disabled - build failure with jetbrains-jdk-jcef
+    # jetbrains.rust-rover # Disabled: jetbrains-jdk-jcef build failure / jetbrains-jdk-jcef が失敗するため停止
     libglvnd
     mesa
     zstd
@@ -425,16 +398,16 @@
     ccmanager
     tailscale
     sui
-    dnsmasq # NetworkManager Hotspot用
-    # For gameing
+    dnsmasq # NetworkManager hotspot helper / NetworkManager Hotspot 用
+    # Gaming diagnostics / ゲーム用診断ツール
     evtest
     jstest-gtk
     antimicrox
     linuxConsoleTools
   ];
 
-  # Nix-ld Configuration
-  # Enable nix-ld for better compatibility with alien packages
+  # nix-ld / nix-ld 設定
+  # Provide extra runtimes for foreign binaries. / バイナリ互換性を確保する追加ランタイム。
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
@@ -470,7 +443,7 @@
       gdk-pixbuf
       xorg.libXrender
       freetype
-      # Other things from runtime
+      # Additional runtime libs / 追加ランタイムライブラリ
       flac
       freeglut
       libjpeg
@@ -482,11 +455,11 @@
       libtiff
       pixman
       speex
-      # SDL_image
-      # SDL_ttf
-      # SDL_mixer
-      # SDL2_ttf
-      # SDL2_mixer
+      # SDL_image (enable on demand) / SDL_image（必要に応じて有効化）
+      # SDL_ttf (enable on demand) / SDL_ttf（必要に応じて有効化）
+      # SDL_mixer (enable on demand) / SDL_mixer（必要に応じて有効化）
+      # SDL2_ttf (enable on demand) / SDL2_ttf（必要に応じて有効化）
+      # SDL2_mixer (enable on demand) / SDL2_mixer（必要に応じて有効化）
       libappindicator-gtk2
       libdbusmenu-gtk2
       libindicator-gtk2
@@ -519,41 +492,38 @@
     ];
   };
 
-  # Hyprland Configuration
-  # Wayland-native tiling window manager
-  # - Pure Wayland: No Xwayland support
+  # Hyprland / Hyprland 設定
+  # Enable the Wayland-native tiling WM. / Wayland ネイティブのタイル型 WM を有効化。
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
     package = hyprland.packages.${pkgs.system}.hyprland;
   };
 
-  # Enable uinput for user-space input injection (used by hintsd for clicks)
+  # uinput for hintsd / hintsd 用に uinput を有効化
   hardware.uinput.enable = true;
 
-  # Accessibility bus (AT-SPI) for GUI automation/accessibility on Wayland/X11
-  # Hints depends on AT-SPI to enumerate accessible elements.
+  # AT-SPI bridge / AT-SPI ブリッジ
+  # Required for hintsd accessibility scanning. / hintsd のアクセシビリティ探索に必須。
   services.gnome.at-spi2-core.enable = true;
 
-  # System State Version
-  # NixOS release version for maintaining compatibility
+  # System State Version / システム状態バージョン
+  # Maintain compatibility with NixOS 24.11. / NixOS 24.11 と互換維持。
   system.stateVersion = "24.11";
 
-  # Nix Package Manager Configuration
-  # Package management and garbage collection settings
-  # - Flakes: Modern Nix features
-  # - Automatic optimization and cleanup
+  # Nix Package Manager / Nix パッケージマネージャ
+  # Tune flakes and garbage collection settings. / Flakes と GC 設定を最適化。
   nix = {
     settings = {
       auto-optimise-store = true;
       experimental-features = [ "nix-command" "flakes" ];
-      # ビルド高速化のための設定
+      # Build speed tuning / ビルド高速化設定
       max-jobs = "auto";
-      cores = 0; # 0は利用可能な全てのコアを使用
+      cores = 0; # 0 uses all available cores / 0は利用可能な全てのコアを使用
       keep-going = true;
       keep-outputs = true;
       keep-derivations = true;
-      # バイナリキャッシュの設定
+      # Binary caches / バイナリキャッシュ設定
       substituters = [
         "https://cache.nixos.org"
         "https://nix-community.cachix.org"
@@ -566,11 +536,11 @@
         "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
       ];
-      # ダウンロードタイムアウトと並列性の設定
+      # Download retries & concurrency / ダウンロード再試行と並列度
       download-attempts = 3;
       connect-timeout = 10;
       stalled-download-timeout = 300;
-      http-connections = 0; # 0は無制限
+      http-connections = 0; # 0 means unlimited / 0は無制限
     };
     gc = {
       automatic = true;
@@ -585,11 +555,8 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  # Environment Variables
-  # System-wide environment configuration
-  # - Input method integration
-  # - Wayland session settings
-  # - Toolkit configurations
+  # Environment Variables / 環境変数
+  # Configure IME, Wayland, and build env vars together. / IME・Wayland・ビルド環境の一括設定。
   environment = {
     sessionVariables = {
       XMODIFIERS = "@im=fcitx";
@@ -612,21 +579,16 @@
   };
   environment.variables = { };
 
-  # System Security Configuration
-  # Security and system integrity settings
-  # - DNSSEC: Secure DNS resolution
-  # - Hardware clock: Dual-boot compatibility
+  # System Security / システムセキュリティ
+  # Adjust DNSSEC and dual-boot compatibility. / DNSSEC やデュアルブート互換を調整。
   services.resolved = {
-    enable = false; # Disabled to avoid conflicts with NetworkManager
+    enable = false; # Avoid NM conflicts / NetworkManager との競合を避ける
   };
   security.protectKernelImage = false;
   time.hardwareClockInLocalTime = true;
 
-  # AdGuard Home Configuration
-  # Network-wide ad blocking and privacy protection
-  # - DNS filtering and ad blocking
-  # - Web interface on port 3000
-  # - DNS service on port 53
+  # AdGuard Home / AdGuard Home 設定
+  # Provide network-wide ad blocking and DNS service. / 広域広告ブロックと DNS 提供を統合。
   services.adguardhome = {
     enable = true;
     host = "0.0.0.0";
@@ -634,22 +596,21 @@
     openFirewall = true;
     settings = {
       users = [
-        # Default username: admin
-        # Default password: changeme (you should change this after first login)
+        # Default credentials; change immediately. / 既定認証情報。必ず変更すること。
       ];
       dns = {
         bind_hosts = [ "0.0.0.0" ];
         port = 53;
         protection_enabled = true;
         filtering_enabled = true;
-        # Upstream DNS servers
+        # Upstream resolvers / 上流 DNS
         upstream_dns = [
           "https://dns.cloudflare.com/dns-query"
           "https://dns.google/dns-query"
           "1.1.1.1"
           "8.8.8.8"
         ];
-        # Bootstrap DNS servers for resolving DoH endpoints
+        # Bootstrap for DoH / DoH 解決用ブートストラップ
         bootstrap_dns = [
           "1.1.1.1"
           "8.8.8.8"
@@ -658,7 +619,7 @@
       filtering = {
         rewrites = [ ];
       };
-      # Filter lists (at settings level, not under filtering)
+      # Filter lists / フィルタ一覧
       filters = [
         {
           enabled = true;
@@ -679,37 +640,35 @@
           id = 100;
         }
       ];
-      # User rules for whitelist
+      # Whitelist rules / ホワイトリスト
       user_rules = [
-        # Claude API domains
+        # Claude API domains / Claude API 用
         "@@||anthropic.com^"
         "@@||claude.ai^"
         "@@||api.anthropic.com^"
         "@@||console.anthropic.com^"
-        # AWS domains that Claude might use
+        # AWS domains for Claude / Claude が利用する AWS
         "@@||amazonaws.com^"
         "@@||cloudfront.net^"
-        # Allow all subdomains
+        # Allow all subdomains / サブドメイン全許可
         "@@||*.anthropic.com^"
         "@@||*.claude.ai^"
 
-        # Cursor API domains
+        # Cursor API domains / Cursor API 用
         "@@||cursor.sh^"
         "@@||*.cursor.sh^"
         "@@||api2.cursor.sh^"
         "@@||cursor.com^"
         "@@||*.cursor.com^"
         "@@||downloads.cursor.com^"
-        # GitHub for Cursor updates
+        # GitHub for Cursor / Cursor 更新用 GitHub
         "@@||raw.githubusercontent.com^"
       ];
     };
   };
 
-  # Gaming Support
-  # Steam gaming platform configuration
-  # - Remote Play: Network gaming support
-  # - Font integration: Japanese font support
+  # Gaming Support / ゲーミング設定
+  # Enable Steam with Remote Play and JP fonts. / Steam を有効化しリモートプレイと日本語フォントを補完。
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
@@ -724,44 +683,40 @@
     };
   };
 
-  # SSH Server Configuration
-  # Secure SSH access restricted to specific network
-  # - Public key authentication only (no password auth)
-  # - Access limited to Hotspot network (192.168.XXX.0/24)
-  # - Replace XXX with your actual network address
+  # SSH Server / SSH サーバー設定
+  # Restrict access to hotspot and Tailscale with keys only. / 公開鍵のみでホットスポットと Tailscale に限定。
   services.openssh = {
     enable = true;
     settings = {
-      # Disable password authentication
+      # Disable password auth / パスワード認証を無効化
       PasswordAuthentication = false;
       PermitRootLogin = "no";
-      # Only allow public key authentication
+      # Enforce public key auth / 公開鍵認証のみ許可
       PubkeyAuthentication = true;
-      # Disable other authentication methods
+      # Disable other authentication / 他方式を無効化
       KbdInteractiveAuthentication = false;
       ChallengeResponseAuthentication = false;
     };
-    # Restrict SSH access to specific networks
-    # NetworkManager Hotspot default network: 10.42.0.0/24
-    # Tailscale network: 100.64.0.0/10
+    # Restrict networks / 接続元ネットワークを制限
+    # Hotspot: 10.42.0.0/24, Tailscale: 100.64.0.0/10
     extraConfig = ''
-      # Default: deny all
+      # Default deny / 既定で拒否
       Match Address *,!10.42.0.0/24,!100.64.0.0/10
         DenyUsers *
 
-      # Allow from Hotspot network
+      # Allow hotspot / ホットスポットを許可
       Match Address 10.42.0.0/24
         AllowUsers ${username}
         PubkeyAuthentication yes
 
-      # Allow from Tailscale network
+      # Allow Tailscale / Tailscale を許可
       Match Address 100.64.0.0/10
         AllowUsers ${username}
         PubkeyAuthentication yes
     '';
   };
 
-  # Firewall configuration for SSH and AdGuard Home
+  # Firewall ports / ファイアウォール開放ポート
   networking.firewall.allowedTCPPorts = [
     22 # SSH
     53 # DNS (AdGuard Home)
@@ -771,19 +726,17 @@
     53 # DNS (AdGuard Home)
   ];
 
-  # Tailscale Configuration
-  # Zero-config VPN for secure network access
+  # Tailscale / Tailscale 設定
+  # Enable zero-config VPN access. / ゼロコンフィグ VPN を有効化。
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "client";
-    # ユーザーがsudoなしでtailscaleコマンドを使えるようにする
+    # Allow tailscale without sudo / sudo なしで tailscale を許可
     permitCertUid = username;
   };
 
-  # Bluetooth Configuration
-  # Wireless device support
-  # - Auto-power on boot
-  # - All profiles enabled
+  # Bluetooth / Bluetooth 設定
+  # Enable auto power with full profile support. / 自動起動と全プロファイル対応。
   services.blueman.enable = true;
   hardware.bluetooth = {
     enable = true;
@@ -792,46 +745,46 @@
       General = {
         Enable = "Source,Sink,Media,Socket";
         Experimental = true;
-        # A2DPプロファイルを優先
+        # Prefer A2DP profile / A2DP プロファイルを優先
         AutoConnect = true;
-        # マルチプロファイル接続を無効化（音質向上のため）
+        # Disable multiprofile to protect quality / 複数プロファイルを無効化し音質を確保
         MultiProfile = "off";
-        # 接続の安定性向上
+        # Improve stability / 接続安定性を向上
         FastConnectable = true;
       };
       Policy = {
-        # 自動的にA2DPプロファイルに切り替える
+        # Auto-switch to A2DP / 自動で A2DP へ切替
         AutoEnable = true;
       };
     };
   };
 
-  # Bluetooth USB autosuspendを無効化（接続安定性のため）
+  # Disable Bluetooth USB autosuspend / Bluetooth USB autosuspend を無効化
   boot.extraModprobeConfig = ''
     options btusb enable_autosuspend=N
-    # Force xpad driver for better polling rate support
+    # Force xpad driver for higher polling rate / ポーリングレート向上のため xpad を強制
     options xpad quirks=0x0e6f:0x021a:0x100
   '';
 
-  # Force load xpad driver before usbhid for Victrix Pro BFG
+  # Load xpad early for Victrix Pro BFG / Victrix Pro BFG 用に早期 xpad ロード
   boot.kernelModules = [ "xpad" ];
 
-  # USB autosuspendを完全に無効化
+  # Disable USB autosuspend globally / USB autosuspend を全体で無効化
   powerManagement.powertop.enable = false;
 
-  # Gaming Performance Optimizations
-  # ゲームコントローラーのレスポンス性能向上設定
+  # Gaming Performance / ゲーム性能最適化
+  # Tune controller response and power management. / コントローラー応答と電源管理を調整。
 
-  # CPUパフォーマンス設定
-  powerManagement.cpuFreqGovernor = "performance"; # CPU常時最高クロック
+  # CPU performance governor / CPU パフォーマンス設定
+  powerManagement.cpuFreqGovernor = "performance"; # Lock CPU to highest frequency / 常時最高クロック
 
-  # ゲームモード（自動的にゲームのパフォーマンスを最適化）
+  # GameMode auto tuning / GameMode による自動最適化
   programs.gamemode = {
     enable = true;
     settings = {
       general = {
-        renice = 10; # ゲームプロセスの優先度を上げる
-        inhibit_screensaver = 1; # スクリーンセーバー無効化
+        renice = 10; # Raise game process priority / ゲームプロセスの優先度を上げる
+        inhibit_screensaver = 1; # Disable screensaver / スクリーンセーバーを無効化
       };
       custom = {
         start = "${pkgs.bash}/bin/bash -c 'echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor'";
@@ -840,62 +793,59 @@
     };
   };
 
-  # リアルタイムカーネルの設定（オーディオとUSB入力のレイテンシー削減）
+  # Realtime tuning / リアルタイム調整
+  # Reduce latency for audio and USB input. / オーディオと USB 入力の遅延を抑制。
   security.pam.loginLimits = [
     { domain = "@audio"; item = "memlock"; type = "-"; value = "unlimited"; }
     { domain = "@audio"; item = "rtprio"; type = "-"; value = "99"; }
     { domain = "@audio"; item = "nofile"; type = "soft"; value = "99999"; }
     { domain = "@audio"; item = "nofile"; type = "hard"; value = "99999"; }
-    # ユーザーにリアルタイム優先度を許可
+    # Allow real-time priority for user / ユーザーにリアルタイム優先度を付与
     { domain = username; item = "rtprio"; type = "-"; value = "99"; }
     { domain = username; item = "nice"; type = "-"; value = "-20"; }
   ];
 
-  # udevルール：コントローラー接続時の最適化とBluetooth設定
+  # udev rules / udev ルール
+  # Optimise controllers and Bluetooth handling. / コントローラーと Bluetooth の最適化。
   services.udev.extraRules = ''
-    # 全USBデバイスのautosuspendを無効化
+    # Disable autosuspend for all USB devices / 全 USB デバイスの autosuspend を無効化
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend}="-1"
 
-    # Generic HID Gamepad/Joystick - 全ゲーミングデバイスに適用
+    # Generic HID gamepads / 汎用 HID ゲームパッドに適用
     ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_JOYSTICK}=="1", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
     ACTION=="add", SUBSYSTEM=="input", KERNEL=="js*", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
 
-    # Disable USB autosuspend for Intel Bluetooth
+    # Disable USB autosuspend for Intel Bluetooth / Intel Bluetooth の autosuspend を無効化
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
 
-    # Force A2DP profile for Bluetooth audio devices
+    # Force A2DP profile for Bluetooth audio / Bluetooth オーディオで A2DP を強制
     ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
 
-    # Victrix Pro BFG Controller (Performance Designed Products)
+    # Victrix Pro BFG controller / Victrix Pro BFG コントローラー
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess", ATTR{power/autosuspend}="-1"
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", TAG+="uaccess", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="0217", TAG+="uaccess", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
 
-    # Victrix Pro BFG特定の設定（レイテンシー改善）
+    # Victrix-specific latency tweaks / Victrix 向けレイテンシー調整
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/wakeup}="enabled"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{bInterval}="1"
 
-    # Xbox互換コントローラー全般の最適化
+    # Xbox-compatible controllers / Xbox 互換コントローラーを最適化
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/control}="on"
   '';
 
-  # File Management
-  # File manager and support services
-  # - Thunar: Main file manager
-  # - GVFS: Virtual filesystem support
-  # - Tumbler: Thumbnail generation
+  # File Management / ファイル管理
+  # Enable Thunar with GVFS and Tumbler support. / Thunar + GVFS + Tumbler を有効化。
   programs.thunar.enable = true;
   services.gvfs.enable = true;
   services.tumbler.enable = true;
 
-  # NVIDIA Container Support
-  # NVIDIA Container Toolkit configuration
-  # - Enables GPU support in containers
-  # - Required for Docker containers using NVIDIA GPUs
+  # NVIDIA Containers / NVIDIA コンテナ
+  # Allow GPU passthrough for containers. / コンテナで GPU を使えるようにする。
   hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia.powerManagement.enable = true;
   hardware.nvidia.open = false;

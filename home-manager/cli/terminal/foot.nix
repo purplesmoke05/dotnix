@@ -1,6 +1,6 @@
 { lib, config, ... }:
 let
-  # Tokyo Night テーマの色定義
+  # Tokyo Night palette / Tokyo Night テーマの色定義
   base = "#1a1b26";
   text = "#a9b1d6";
   n_black = "#32344a";

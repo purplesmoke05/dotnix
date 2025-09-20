@@ -8,7 +8,7 @@
       claude = "claude --dangerously-skip-permissions";
     };
     shellInit = ''
-      # Activate VSCode shell integration
+      # VSCode shell integration / VSCode シェル統合
       if test "$TERM_PROGRAM" = "vscode"
           . (code --locate-shell-integration-path fish)
       end
@@ -19,41 +19,31 @@
         echo "Fish (macOS): DARWIN_USER=$DARWIN_USER, DARWIN_HOST=$DARWIN_HOST"
       end
 
-      # Set AGENT_MODE based on environment and interactivity
+      # AGENT_MODE auto-detection / AGENT_MODE の自動設定
       if test -n "$npm_config_yes"; or test -n "$CI"; or not status is-interactive
         set -gx AGENT_MODE true
       else
         set -gx AGENT_MODE false
       end
 
-      # Directory change handler registration
-      # The function __on_pwd_change is defined in the functions block below
-      # functions -q __on_pwd_change && __on_pwd_change --on-variable PWD
-
-      # Execute initialization checks
-      # The function __check_vscode_and_develop is defined in the functions block below
-      # functions -q __check_vscode_and_develop && __check_vscode_and_develop
-
       bind \cr peco_ghq
       bind \cw peco_kill
     '';
 
     interactiveShellInit =
-      # Initialize atuin for fish, disabling default Ctrl+R binding
-      # Use `atuin init fish --help` to see available flags
+      # atuin initialization / atuin 初期化
       ''
         atuin init fish --disable-ctrl-r | source
-        # Manually bind Ctrl+J to atuin search after init
+        # Bind Ctrl+J manually / Ctrl+J を手動割当
         bind --erase \cj
         bind \cj _atuin_search
       '';
 
-    # Define aliases for common commands
+    # Shell abbreviations / 共通コマンドの短縮形
     shellAbbrs = {
       l = "ls -alh";
       la = "ls -Alh";
       lss = "ls -hsS";
-      # ls = "ls -alFth --color auto";
       ld = "du -hs */";
       ".." = "cd ..";
       "1" = "cd -";
@@ -74,7 +64,7 @@
       pscpu = "ps auxf | sort -nr -k 3";
       pscpu10 = "ps auxf | sort -nr -k 3 | head -10";
 
-      # Docker
+      # Docker / Docker 系
       dcl = "docker container ls -a";
       dc = "docker container";
       dcr = "docker container rm";
@@ -97,10 +87,10 @@
       dprune = "docker container system prune -a";
     };
 
-    # Define functions and key bindings here
+    # Functions and key bindings / 関数とキーバインド
     functions = {
       update = ''
-        # Robust flag parsing (supports both argparse and manual fallback)
+        # Robust flag parsing / argparse 互換の堅牢な解析
         set -l skip_vscode 0
 
         if type -q argparse
@@ -130,7 +120,7 @@
           end
         end
 
-        # Environment override for CI/scripts: export UPDATE_SKIP_VSCODE=1
+        # CI override via UPDATE_SKIP_VSCODE=1 / CI では UPDATE_SKIP_VSCODE=1 で上書き
         if test -n "$UPDATE_SKIP_VSCODE"
           set skip_vscode 1
         end
@@ -178,7 +168,7 @@
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
 
-          # Determine target host for NixOS
+          # Determine target host / NixOS の対象ホスト判定
           set -l target_host
           if test -n "$NIXOS_HOSTNAME"
             set target_host $NIXOS_HOSTNAME
@@ -186,7 +176,7 @@
             set target_host (string trim (hostname -s))
           end
 
-          # Lightweight guard: check host directory presence instead of full Nix evaluation
+          # Lightweight guard / フル評価の代わりにディレクトリ存在を確認
           if not test -f "$HOME/.nix/hosts/nixos/$target_host/nixos.nix"
             echo "Error: target host '$target_host' is not defined (hosts/nixos/$target_host/nixos.nix not found)."
             echo "Hint: set NIXOS_HOSTNAME=<host> to override detection."
@@ -198,7 +188,7 @@
         end
       '';
 
-      # Python version auto-switcher function
+      # Python auto switch / Python バージョン自動切替
       __check_python_version = ''
         if test -e .python-version
           set -l arch (uname -m)
@@ -208,13 +198,11 @@
           if test "$kernel" = "Linux"
             if test "$arch" = "x86_64"
               set current_system "x86_64-linux"
-            # else if test "$arch" = "aarch64"
-            #   set current_system "aarch64-linux"
             end
-          else if test "$kernel" = "Darwin" # macOS
-            if test "$arch" = "arm64" # Apple Silicon (M1, M2, etc.)
+          else if test "$kernel" = "Darwin" # macOS / macOS
+            if test "$arch" = "arm64" # Apple Silicon (M1, M2) / Apple シリコン
               set current_system "aarch64-darwin"
-            else if test "$arch" = "x86_64" # Intel Mac
+            else if test "$arch" = "x86_64" # Intel Mac / Intel Mac
               set current_system "x86_64-darwin"
             end
           end
@@ -236,17 +224,15 @@
         end
       '';
 
-      # Directory change handler function
+      # Directory change handler / ディレクトリ変更ハンドラ
       __on_pwd_change = ''
-        # This function requires __check_python_version to be defined
-        # functions -q __check_python_version && __check_python_version
+        # Call __check_python_version if available / __check_python_version が定義されている場合に呼ぶ
+        functions -q __check_python_version; and __check_python_version
       '';
 
-      # Git add, commit, and push function
+      # Git add/commit/push / Git add/commit/push を一括
       gish = ''
-        # Stage all changes
         git add -A
-        # Show status
         git status
 
         read -l -P "Commit with this content. OK? (y/N): " confirm
@@ -261,18 +247,15 @@
         end
       '';
 
-      # Create new feature branch from develop
+      # Feature branch helper / フィーチャーブランチ作成
       girk = ''
-        # Switch to develop branch
         git checkout develop
-        # Pull latest changes
         git pull origin develop
-        # Create and switch to new feature branch
         read -l -P "Input feature branch name: " branch_name
         git checkout -b $branch_name
       '';
 
-      # Function to check VSCode and activate development environment
+      # VSCode checks / VSCode 起動確認
       __check_vscode_and_develop = ''
         if test "$TERM_PROGRAM" = "vscode"
           and not test -n "$IN_NIX_SHELL"
@@ -281,7 +264,7 @@
         end
       '';
 
-      # Define the peco_ghq function
+      # peco_ghq / peco_ghq 関数
       peco_ghq = ''
         set -l query (commandline)
 
@@ -297,7 +280,7 @@
         end
       '';
 
-      # Define the peco_kill function
+      # peco_kill / peco_kill 関数
       peco_kill = ''
         set -e proc
         set -l query (commandline)
@@ -371,7 +354,7 @@
         docker container exec -it (docker container ps -aqf "name=$argv[1]") bash
       '';
 
-      # color_print function
+      # color_print / カラー出力関数
       color_print = ''
         function color_print
           printf "%b" "$argv[1]\e0$argv[2]$COLOR_RESET"

@@ -6,28 +6,35 @@
     ./wpaperd.nix
   ];
 
-  # Essential packages for Hyprland environment
+  # Hyprland essentials / Hyprland 基本ツール
   home.packages = with pkgs; [
-    brightnessctl # Screen brightness control
-    grimblast # Screenshot utility
-    swappy # Screenshot editor
-    zenity # Dialog boxes for screenshots
-    hyprpicker # Color picker
-    bemoji # Emoji selector
-    pamixer # Audio volume control
-    playerctl # Media player control
-    swww # Wallpaper manager
-    wayvnc # VNC server
-    wev # Debug key events
-    wireplumber # Screen sharing support
-    wf-recorder # Screen recording
-    wl-clipboard # Clipboard manager
-    cliphist # Clipboard history
-    polkit # Authentication agent
-    hyprpolkitagent # Password prompts
-    libsecret # Secret service
-    networkmanagerapplet # Network management GUI
-    bluez # Bluetooth support
+    # Display & capture / 表示とキャプチャ
+    brightnessctl
+    grimblast
+    swappy
+    zenity
+    hyprpicker
+    wf-recorder
+
+    # Input & clipboard / 入力とクリップボード
+    bemoji
+    wl-clipboard
+    cliphist
+
+    # Audio & media / オーディオとメディア
+    pamixer
+    playerctl
+    wireplumber
+
+    # System helpers / システム補助
+    swww
+    wayvnc
+    wev
+    polkit
+    hyprpolkitagent
+    libsecret
+    networkmanagerapplet
+    bluez
     (pkgs.writeShellApplication {
       name = "quick-term";
       runtimeInputs = with pkgs; [ jq foot zellij ];
@@ -56,7 +63,7 @@
       bashOptions = [ "errexit" "nounset" "pipefail" ];
       text = ''
         #!/usr/bin/env bash
-        # Single-instance guard using flock on XDG_RUNTIME_DIR
+        # Single-instance guard using flock on XDG_RUNTIME_DIR / XDG_RUNTIME_DIR で flock による単一実行ガード
         lock_dir="''${XDG_RUNTIME_DIR:-/run/user/$UID}"
         lock_file="$lock_dir/hints-overlay.lock"
         exec ${pkgs.util-linux}/bin/flock -n "$lock_file" \
@@ -64,7 +71,7 @@
       '';
     })
 
-    # No toggle helpers for hints; keep direct invocation from keybind
+    # No toggle helpers for hints; keep direct invocation from keybind / hints 用トグルは作成しない
   ];
 
   wayland.windowManager.hyprland = {
@@ -76,57 +83,57 @@
     systemd.enableXdgAutostart = true;
 
     settings = {
-      # render.explicit_sync = 0; # Not available in Hyprland 0.49.0
+      # render.explicit_sync = 0; # Not available on 0.49.0 / Hyprland 0.49.0 では未対応
       xwayland = {
         use_nearest_neighbor = false;
         force_zero_scaling = true;
       };
 
-      # Basic Hyprland configuration
-      "$mainMod" = "ALT"; # Main modifier key
-      "$term" = "foot -e zellij"; # Default terminal
+      # Basic Hyprland config / Hyprland 基本設定
+      "$mainMod" = "ALT";
+      "$term" = "foot -e zellij";
 
-      # Hyprsplit configuration
+      # Hyprsplit config / Hyprsplit 設定
       "plugin:hyprsplit:persistent_workspaces" = true;
       "plugin:hyprsplit:num_workspaces" = 10;
 
-      # Environment variables for proper integration
+      # Environment variables / 環境変数
       env = [
-        "XMODIFIERS, @im=fcitx" # Input method configuration
-        "QT_QPA_PLATFORM,wayland" # Force Qt to use Wayland
-        "QT_QPA_PLATFORMTHEME,qt5ct" # Qt theme configuration
-        "QT_STYLE_OVERRIDE,Adwaita-Dark" # Qt style override
-        "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt window decorations
-        "NIXOS_OZONE_WL,1" # Force Wayland for Chromium-based applications
+        "XMODIFIERS, @im=fcitx" # Input method config / IME 設定
+        "QT_QPA_PLATFORM,wayland" # Qt を Wayland へ / Force Qt to Wayland
+        "QT_QPA_PLATFORMTHEME,qt5ct" # Qt theme config / Qt テーマ設定
+        "QT_STYLE_OVERRIDE,Adwaita-Dark" # Qt スタイル / Qt style override
+        "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt decorations / Qt 装飾無効
+        "NIXOS_OZONE_WL,1" # Force Wayland for Chromium apps / Chromium を Wayland 化
         "ELECTRON_OZONE_PLATFORM_HINT,auto"
-        # Hints: ensure window system auto-detection works under Hyprland
+        # Declare window system for hints / hints 用にウィンドウシステムを明示
         "HINTS_WINDOW_SYSTEM,hyprland"
       ];
 
-      # Input device configuration
+      # Input devices / 入力デバイス
       input = {
-        kb_layout = "jp"; # Japanese keyboard layout
-        kb_model = ""; # No specific keyboard model
-        kb_variant = ""; # No layout variant
-        kb_options = ""; # No additional options
-        follow_mouse = 2; # Enable hover scroll without focus
-        repeat_rate = 50; # Key repeat rate
-        repeat_delay = 200; # Delay before key repeat starts
+        kb_layout = "jp";
+        kb_model = "";
+        kb_variant = "";
+        kb_options = "";
+        follow_mouse = 2; # フォーカスなしでホバー / Hover-follow
+        repeat_rate = 50; # リピートレート / Repeat rate
+        repeat_delay = 200; # Repeat delay / リピート開始遅延
       };
 
-      # Window appearance settings
+      # Window appearance / ウィンドウ外観
       general = {
-        gaps_in = 4; # Inner gaps between windows
-        gaps_out = 8; # Outer gaps to screen edges
-        border_size = 2; # Window border width
+        gaps_in = 4; # Inner gaps / 内側余白
+        gaps_out = 8; # Outer gaps / 外側余白
+        border_size = 2; # Border width / 枠線幅
       };
 
-      # Misc settings
+      # Misc / その他
       misc = {
-        enable_anr_dialog = false; # Disable Application Not Responding dialog
+        enable_anr_dialog = false; # Disable ANR dialog / ANR ダイアログを無効化
       };
 
-      # Application-specific window rules
+      # Window rules / ウィンドウルール
       windowrule = [ ];
 
       windowrulev2 = [
@@ -144,7 +151,7 @@
         "float,class:^(pavucontrol)$"
         "float,class:^()$,title:^(Playwright Inspector)$"
 
-        # rulev2 for foot
+        # rulev2 for foot / foot 向け rulev2
         "opaque, class:(code)"
         "opaque, class:(Code)"
         "opaque, class:(thunar)"
@@ -170,90 +177,66 @@
         "workspace 20 silent,class:^(steam_app_1364780)$"
       ];
 
-      # Keybindings
+      # Keybindings / キーバインド
       bind = [
-        # System controls
-        "$mainMod,Return,exec,$term" # Launch terminal
-        "$mainMod SHIFT,Q,killactive," # Close window
-        "$mainMod SHIFT, E, exec, ${pkgs.hyprpanel}/bin/hyprpanel -t powerdropdownmenu" # Power menu
-        "$mainMod SHIFT, F,fullscreen," # Toggle fullscreen
-        "$mainMod SHIFT, P, pin" # Pin window
-        "$mainMod,E,exec,nautilus" # File manager
-        "CTRL, 4, exec,rofi -show drun" # Application launcher
-        "CTRL, 1, exec,bemoji -t -c -e -n" # Emoji picker
-        "CTRL, 2, exec, hints-once" # Launch once (no duplicate)
-        "$mainMod,P,pseudo," # Pseudo tiling
+        # System controls / システム操作
+        "$mainMod,Return,exec,$term"
+        "$mainMod SHIFT,Q,killactive,"
+        "$mainMod SHIFT, E, exec, ${pkgs.hyprpanel}/bin/hyprpanel -t powerdropdownmenu"
+        "$mainMod SHIFT, F,fullscreen,"
+        "$mainMod SHIFT, P, pin"
+        "$mainMod,E,exec,nautilus"
+        "CTRL, 4, exec,rofi -show drun"
+        "CTRL, 1, exec,bemoji -t -c -e -n"
+        "CTRL, 2, exec, hints-once"
+        "$mainMod,P,pseudo,"
 
-        # Utility controls
-        "$mainMod SHIFT, c, exec, hyprpicker --autocopy" # Color picker
+        # Utility controls / ユーティリティ操作
+        "$mainMod SHIFT, c, exec, hyprpicker --autocopy"
 
-        # Window focus
-        "$mainMod, j, movefocus, l" # Focus left
-        "$mainMod, k, movefocus, d" # Focus down
-        "$mainMod, l, movefocus, u" # Focus up
-        "$mainMod, semicolon, movefocus, r" # Focus right
-        "$mainMod, Tab, cyclenext" # Next window
-        "$mainMod SHIFT, Tab, cyclenext, prev" # Previous window
+        # Window focus / フォーカス移動
+        "$mainMod, j, movefocus, l"
+        "$mainMod, k, movefocus, d"
+        "$mainMod, l, movefocus, u"
+        "$mainMod, semicolon, movefocus, r"
+        "$mainMod, Tab, cyclenext"
+        "$mainMod SHIFT, Tab, cyclenext, prev"
 
-        # Window movement
-        "$mainMod SHIFT, j, movewindow, l" # Move left
-        "$mainMod SHIFT, k, movewindow, d" # Move down
-        "$mainMod SHIFT, l, movewindow, u" # Move up
-        "$mainMod SHIFT, semicolon, movewindow, r" # Move right
+        # Window movement / ウィンドウ移動
+        "$mainMod SHIFT, j, movewindow, l"
+        "$mainMod SHIFT, k, movewindow, d"
+        "$mainMod SHIFT, l, movewindow, u"
+        "$mainMod SHIFT, semicolon, movewindow, r"
 
-        # Monitor control
+        # Monitor control / モニター制御
         "$mainMod, Tab, exec, hyprctl monitors -j|jq 'map(select(.focused|not).activeWorkspace.id)[0]'|xargs hyprctl dispatch workspace"
 
-        # Screenshot controls
+        # Screenshot controls / スクリーンショット操作
         '', Print, exec, grimblast save output - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png $HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png''
         ''$mainMod, Print, exec, grimblast save active - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png "$HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png"''
         ''CTRL, Print, exec, grim -g "$(slurp)" $HOME/Pictures/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png''
         ''SHIFT, Print, exec, grimblast copy area && notify-send "Screenshot" "領域のスクリーンショットをクリップボードにコピーしました"''
         ''CTRL SHIFT, Print, exec, grimblast copy output && notify-send "Screenshot" "画面全体のスクリーンショットをクリップボードにコピーしました"''
 
-        # Screen recording controls
+        # Screen recording / 画面録画
         ''$mainMod SHIFT, r, exec, wf-recorder -g "$(slurp)" -f ~/Videos/screencast_$(date +%Y-%m-%d_%H-%M-%S).mp4''
         ''$mainMod SHIFT, s, exec, killall -s SIGINT wf-recorder''
 
-        # Workspace switching (commented out in favor of split workspace plugin)
-        # "$mainMod,1,workspace,1"
-        # "$mainMod,2,workspace,2"
-        # "$mainMod,3,workspace,3"
-        # "$mainMod,4,workspace,4"
-        # "$mainMod,5,workspace,5"
-        # "$mainMod,6,workspace,6"
-        # "$mainMod,7,workspace,7"
-        # "$mainMod,8,workspace,8"
-        # "$mainMod,9,workspace,9"
-
-        # Move window to workspace (commented out in favor of split workspace plugin)
-        # "$mainMod SHIFT,1,movetoworkspace,1"
-        # "$mainMod SHIFT,2,movetoworkspace,2"
-        # "$mainMod SHIFT,3,movetoworkspace,3"
-        # "$mainMod SHIFT,4,movetoworkspace,4"
-        # "$mainMod SHIFT,5,movetoworkspace,5"
-        # "$mainMod SHIFT,6,movetoworkspace,6"
-        # "$mainMod SHIFT,7,movetoworkspace,7"
-        # "$mainMod SHIFT,8,movetoworkspace,8"
-        # "$mainMod SHIFT,9,movetoworkspace,9"
-
-        # Volume controls
+        # Volume controls / 音量調整
         ", XF86AudioLowerVolume, exec, pamixer -ud 3 && pamixer --get-volume > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
         ", XF86AudioRaiseVolume, exec, pamixer -ui 3 && pamixer --get-volume > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
         ", XF86AudioMute, exec, amixer sset Master toggle | sed -En '/\[on\]/ s/.*\[([0-9]+)%\].*/\1/ p; /\[off\]/ s/.*/0/p' | head -1 > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
 
-        # Media playback controls
+        # Media playback / メディア操作
         ", XF86AudioPlay, exec, playerctl play-pause"
         ", XF86AudioNext, exec, playerctl next"
         ", XF86AudioPrev, exec, playerctl previous"
 
-        # Brightness controls
+        # Brightness / 輝度調整
         ", XF86MonBrightnessUp, exec, brightnessctl s +5%"
         ", XF86MonBrightnessDown, exec, brightnessctl s 5%-"
 
-        # Workspace navigation (commented out)
-        # "SUPER,tab,workspace,e+1"
-        # "SUPER SHIFT,tab,workspace,e-1"
+        # Quick terminal / クイックターミナル
         "CTRL, 3, exec, quick-term"
 
       ] ++ [
@@ -273,12 +256,13 @@
           ) 9
       ));
 
-      # On-release keybinding to avoid repeats for push-to-talk toggle
+      # On-release binding / キー離しでのバインド
+      # Avoid repeated toggles for push-to-talk. / push-to-talk の連続発火を防止。
       bindr = [
         ", F6, exec, ${pkgs.push-to-talk}/bin/push-to-talk-toggle"
       ];
 
-      # Animation configuration
+      # Animations / アニメーション設定
       animations = {
         enabled = true;
         bezier = [
@@ -300,35 +284,36 @@
         "hyprpanel"
       ];
 
-      # Layer rules (affect GTK Layer Shell overlays)
-      # Hints overlay uses GtkLayerShell namespace "hints"; disable animations for snappier appearance
+      # Layer rules / レイヤールール
+      # Disable animations for hints overlay. / hints のオーバーレイはアニメーションを無効化。
       layerrule = [
         "noanim, namespace:hints"
       ];
     };
 
-    # Hyprland plugins
+    # Hyprland plugins / Hyprland プラグイン
     plugins = [
-      hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces plugin (using flake input for 0.49.0 compatibility)
+      hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces / モニター別ワークスペース
     ];
   };
 
-  # Hints UI 設定（オーバーレイのサイズ・フォントを小さめに）
+  # Hints UI config / Hints UI 設定
+  # Shrink overlay footprint. / オーバーレイを小さく表示。
   xdg.configFile."hints/config.json" = {
     text = builtins.toJSON {
       hints = {
-        hint_height = 22;         # 既定30 → さらに小さく
-        hint_width_padding = 6;   # 既定10 → さらに小さく
-        hint_font_size = 11;      # 既定15 → さらに小さく
-        hint_font_face = "Noto Sans CJK JP";  # 日本語でも視認性の良いフォント
+        hint_height = 22;         # Smaller than default 30 / 既定30 から縮小
+        hint_width_padding = 6;   # Narrower than default 10 / 既定10 から縮小
+        hint_font_size = 11;      # Smaller than default 15 / 既定15 から縮小
+        hint_font_face = "Noto Sans CJK JP";  # JP-friendly font / 日本語でも視認性の良いフォント
       };
       backends = { enable = [ "opencv" ]; };
       overlay_x_offset = 0;
-      overlay_y_offset = -32; # 画面上部バー分上にずらす（必要に応じて微調整）
+      overlay_y_offset = -32; # Offset upward by bar height / バー分上へ
     };
   };
 
-  # hints daemon (hintsd) as a user service
+  # hints daemon service / hintsd サービス
   systemd.user.services.hintsd = {
     Unit = {
       Description = "Hints daemon";
@@ -343,5 +328,5 @@
     Install = { WantedBy = [ "default.target" ]; };
   };
 
-  # No client one-shot services; direct invocation only
+  # No client one-shot services / クライアント用 one-shot は未定義
 }

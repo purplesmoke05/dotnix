@@ -3,8 +3,8 @@
     # Rofi: Application launcher and window switcher
     rofi = {
       enable = true;
-      # rofi-wayland は rofi に統合済み（nixpkgs では rofi-wayland はエラーを投げる）
-      package = pkgs.rofi; # Wayland 対応は rofi 本体で提供される
+      # rofi-wayland is merged upstream; nixpkgs variant fails. / rofi-wayland は rofi に統合済み（nixpkgs 版はエラー）
+      package = pkgs.rofi; # Wayland support comes from core rofi. / Wayland 対応は rofi 本体が提供
       terminal = "${pkgs.foot}/bin/foot -e zellij"; # Default terminal for terminal commands
       theme = builtins.toString ./rofi.rasi; # Custom theme file
 

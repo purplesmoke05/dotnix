@@ -1,95 +1,82 @@
 { pkgs, username, ... }:
 {
-  # Packages to be installed on the system
+  # System packages / システムパッケージ
   environment.systemPackages = with pkgs; [
   ];
   system.primaryUser = username;
 
-  # Enable automatic upgrade of the Nix daemon
+  # Nix daemon updates / Nix デーモン更新
   nix.package = pkgs.nix;
 
   nix.settings = {
     substituters = [
       "https://cache.nixos.org"
-      "https://nix-community.cachix.org" # home-managerのキャッシュ
+      "https://nix-community.cachix.org" # Home Manager キャッシュ / Home Manager cache
     ];
   };
 
   ids.gids.nixbld = 350;
 
-  # zsh configuration
+  # Shell configuration / シェル設定
   programs.zsh.enable = false;
   programs.fish.enable = true;
 
-  # Allow non-free packages
+  # Allow unfree / 非自由パッケージを許可
   nixpkgs.config.allowUnfree = true;
 
-  # Finder settings
+  # Finder settings / Finder 設定
   system.defaults.finder = {
-    # Show all file extensions: When set to true, all file extensions are displayed.
-    # This makes it easier to manage files by quickly identifying file types.
+    # Show all extensions / すべての拡張子を表示
     AppleShowAllExtensions = true;
 
-    # Show hidden files: When set to true, normally hidden files (those starting with a dot) are displayed.
-    # This is useful for development work and detailed settings, but be cautious as unnecessary files may also be displayed during normal use.
+    # Show hidden files / 隠しファイルを表示
     AppleShowAllFiles = true;
 
-    # Hide desktop icons: When set to false, desktop icons are hidden.
-    # This is useful for those who prefer a clean workspace or want to enforce desktop organization.
+    # Hide desktop icons / デスクトップアイコンを非表示
     CreateDesktop = false;
 
-    # Disable warning when changing file extensions: When set to false, warnings are not displayed when changing file extensions.
-    # This improves work efficiency when frequently changing file extensions.
+    # Skip extension change warning / 拡張子変更ダイアログを無効化
     FXEnableExtensionChangeWarning = false;
 
-    # Show path bar: When set to true, the file path is displayed at the bottom of the Finder window.
-    # This makes it easier to understand the current location and navigate between directories.
+    # Show path bar / パスバーを表示
     ShowPathbar = true;
 
-    # Show status bar: When set to true, information about the selected item is displayed at the bottom of the Finder window.
-    # This helps in file management by quickly checking information such as the number of files and their size.
+    # Show status bar / ステータスバーを表示
     ShowStatusBar = true;
   };
 
-  # Dock settings
+  # Dock settings / Dock 設定
   system.defaults.dock = {
-    # Automatically hide the Dock: When set to true, the Dock is automatically hidden.
-    # This expands the workspace by allowing more screen space.
+    # Auto-hide Dock / Dock を自動的に隠す
     autohide = false;
 
-    # Hide recently used applications: When set to false, recently used applications are not displayed in the Dock.
-    # This is useful for maintaining privacy or keeping the Dock simple.
+    # Hide recents / 最近のアプリを非表示
     show-recents = false;
 
-    # Dock icon size: Set the icon size in pixels.
-    # 50px is a moderate size that balances visibility and space-saving.
+    # Icon size / アイコンサイズ
     tilesize = 50;
 
-    # Dock icon magnification: When set to true, icons are magnified when hovered over.
-    # This makes it easier to identify icons, especially when there are many applications in the Dock.
+    # Enable magnification / ホバー時に拡大
     magnification = true;
 
-    # Icon size when magnified: Set the icon size in pixels when hovered over.
-    # 64px is a moderate magnification size that makes icon details easier to see.
+    # Magnified size / 拡大時サイズ
     largesize = 64;
 
-    # Dock position: Can be set to "bottom", "left", or "right".
-    # Placing it at the left gives a typical macOS appearance.
+    # Dock position / Dock の位置
     orientation = "left";
 
-    # Window minimization effect: "scale" uses the scale effect.
-    # This effect is visually clear and makes the system feel more responsive.
+    # Minimize effect / 最小化エフェクト
     mineffect = "scale";
 
-    # Disable application launch animation: When set to false, the launch animation is not displayed.
-    # This makes the system feel more responsive, especially on lower-spec machines.
+    # Disable launch animation / 起動アニメーションを無効化
     launchanim = false;
   };
 
-  # For backward compatibility (check changelog when changing)
+  # State version / stateVersion
+  # Check changelog before bumping. / 互換性維持のため変更時は changelog を確認。
   system.stateVersion = 4;
 
-  # Target platform
+  # Target platform / 対応プラットフォーム
   nixpkgs.hostPlatform = "aarch64-darwin";
 
   homebrew = {

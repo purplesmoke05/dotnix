@@ -53,7 +53,7 @@ python3Packages.buildPythonApplication rec {
     gtk-layer-shell
   ];
 
-  # gappsWrapperArgs で十分にラップするため postInstall の追加ラップは不要
+  # No extra postInstall wrapper; gappsWrapperArgs is sufficient. / postInstall の追加ラップは不要（gappsWrapperArgs で十分）
 
   # Ensure wrapGAppsHook includes all required GI typelib and data dirs
   preFixup = ''
@@ -63,20 +63,20 @@ python3Packages.buildPythonApplication rec {
     )
   '';
 
-  # Remove custom post-install hook that tries to write intoホームやsystemdに書き込む処理
-  # Nix ビルドでは副作用を持てないため無効化
+  # Remove the post-install hook that writes into home/systemd (side effects disallowed). / ホームや systemd に書き込む post-install フックを削除（副作用は不可）
+  # Disabled because Nix builds must stay side-effect free. / Nix ビルドでは副作用が許されないため無効化。
   postPatch = ''
     substituteInPlace setup.py \
       --replace 'cmdclass={"install": PostInstallCommand},' ""
 
-    # Wayland 自動判定の候補に小文字 hyprland を追加
+    # Add lowercase hyprland to Wayland detection candidates. / Wayland 自動判定の候補に小文字 hyprland を追加。
     substituteInPlace hints/hints.py \
       --replace 'supported_wayland_wms = {"sway", "Hyprland", "plasmashell"}' 'supported_wayland_wms = {"sway", "Hyprland", "hyprland", "plasmashell"}'
 
-    # HINTS_WINDOW_SYSTEM 環境変数で強制指定できるようにする
+    # Allow forcing the window system via HINTS_WINDOW_SYSTEM env var. / HINTS_WINDOW_SYSTEM 環境変数でウィンドウシステムを強制。
     sed -i '0,/if not window_system_id:/{s//env_choice = __import__("os").getenv("HINTS_WINDOW_SYSTEM", "")\n    if env_choice:\n        window_system_id = env_choice\n    if not window_system_id:/}' hints/hints.py
 
-    # さらに、検出できなかった場合の Hyprland 環境変数フォールバックを追加
+    # Add Hyprland environment fallback when detection fails. / 検出失敗時に Hyprland 用フォールバックを追加。
     sed -i '/^\s*window_system = get_window_system_class(window_system_id)$/i \
         if not window_system_id:\n\
             import os\n\
@@ -94,7 +94,7 @@ python3Packages.buildPythonApplication rec {
     export XDG_CONFIG_HOME="$TMPDIR/.config"
   '';
 
-  # 追加の postFixup は不要（gapps のラップに統一）
+  # No extra postFixup; rely on gapps wrapping. / 追加の postFixup は不要（gapps ラップに統一）。
 
   # Runtime dependencies (to refine once upstream dependencies are confirmed)
   propagatedBuildInputs = with python3Packages; [

@@ -1,16 +1,8 @@
-# Home Manager Configuration
-# Personal user environment setup for the laptop
-# - User-specific package management and configuration
-# - Development environment and tools
-# - Desktop environment and window manager
-# - Japanese input method system
+# Home Manager configuration / Home Manager 設定
+# Define the laptop user's environment. / ラップトップ向け個人環境を定義。
 { pkgs, username, ... }: {
-  # Module Imports
-  # Core configuration modules for different aspects of the system
-  # - Development: Programming languages and tools
-  # - CLI: Command-line utilities and shell configuration
-  # - GUI: Graphical applications and themes
-  # - Hyprland: Wayland compositor and window management
+  # Module imports / モジュール読み込み
+  # Bring in development, CLI, GUI, and Hyprland modules. / 開発・CLI・GUI・Hyprland を統合。
   imports = [
     ../../../home-manager/development/default.nix
     ../../../home-manager/cli/default.nix
@@ -18,8 +10,8 @@
     ../../../home-manager/wm/hyprland/default.nix
   ];
 
-  # Basic Home Configuration
-  # User identity and state version settings
+  # Home basics / 基本ホーム設定
+  # Set identity and stateVersion. / ユーザー情報と stateVersion。
   home = {
     inherit username;
     homeDirectory = "/home/${username}";
@@ -27,13 +19,13 @@
   };
   programs.home-manager.enable = true;
 
-  # Monitor configuration
+  # Monitor configuration / モニター設定
   wayland.windowManager.hyprland.settings.monitor = [
-    "eDP-1,1920x1080@60,0x0,1" # Built-in laptop display (1920x1080, 60Hz)
+    "eDP-1,1920x1080@60,0x0,1" # Built-in panel 1080p60 / 内蔵ディスプレイ 1920x1080@60
   ];
-  # Workspace monitor assignments
+  # Workspace-to-monitor assignment / ワークスペース割当
   wayland.windowManager.hyprland.settings.workspace = [
-    "1,monitor:eDP-1,default:true" # Primary workspace
+    "1,monitor:eDP-1,default:true" # Primary workspace / 主要ワークスペース
     "2,monitor:eDP-1"
     "3,monitor:eDP-1"
     "4,monitor:eDP-1"

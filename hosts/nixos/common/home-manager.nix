@@ -1,12 +1,8 @@
 { config, pkgs, ... }:
 
 {
-  # User Packages
-  # Core user-level packages and tools
-  # - Input Method: Complete Fcitx5 + Mozc setup for Japanese
-  # - Theme Integration: Icon themes and GUI toolkits
-  # - Configuration Tools: Input method setup utilities
-  # - Exa MCP Server Package
+  # User packages / ユーザーパッケージ
+  # Provide Fcitx5 + Mozc and desktop tooling. / Fcitx5 + Mozc やテーマ関連を揃える。
   home.packages = with pkgs; [
     papirus-icon-theme
     mozc
@@ -20,11 +16,8 @@
     push-to-talk
   ];
 
-  # Environment Variables
-  # Input method integration across different toolkits
-  # - X11/Wayland compatibility
-  # - Qt/GTK framework integration
-  # - Game engine (SDL/GLFW) support
+  # Environment variables / 環境変数
+  # Bridge IME into each toolkit. / IME を各ツールキットに橋渡し。
   home.sessionVariables = {
     XMODIFIERS = "@im=fcitx";
     NIXOS_OZONE_WL = "1";
@@ -39,10 +32,8 @@
     SDL_IM_MODULE = "fcitx";
   };
 
-  # Cursor Theme
-  # System-wide cursor appearance configuration
-  # - Adwaita theme for consistency
-  # - GTK integration enabled
+  # Cursor theme / カーソルテーマ
+  # Use Adwaita across desktops. / Adwaita を全体で利用。
   home.pointerCursor = {
     name = "Adwaita";
     package = pkgs.adwaita-icon-theme;
@@ -54,26 +45,26 @@
     gtk.enable = true;
   };
 
-  # Input Method Configuration Files
-  # Detailed Fcitx5 and Mozc configuration
+  # Input method config / 入力メソッド設定
+  # Provide detailed Fcitx5 and Mozc configs. / Fcitx5 と Mozc の詳細設定を提供。
   xdg.configFile = {
-    # Input Method Profile
-    # Default input method and keyboard layout settings
+    # Input method profile / 入力メソッドプロファイル
+    # Set default layout and IM. / 既定レイアウトと IM を指定。
     "fcitx5/profile" = {
       force = true;
       text = ''
         [Groups/0]
-        # Group Name
+        # Group name / グループ名
         Name=Default
-        # Layout
+        # Layout / レイアウト
         Default Layout=jp
-        # Default Input Method
+        # Default input method / 既定 IM
         DefaultIM=mozc
 
         [Groups/0/Items/0]
-        # Name
+        # Name / 名前
         Name=mozc
-        # Layout
+        # Layout / レイアウト
         Layout=jp
 
         [GroupOrder]
@@ -81,8 +72,8 @@
       '';
     };
 
-    # Fcitx5 Global Configuration
-    # System-wide input method behavior settings
+    # Fcitx5 global config / Fcitx5 全体設定
+    # Control system-wide behaviour. / システム全体の動作を制御。
     "fcitx5/config" = {
       force = true;
       text = ''
@@ -96,8 +87,8 @@
       '';
     };
 
-    # Classic UI Configuration
-    # Visual appearance and behavior settings
+    # Classic UI config / Classic UI 設定
+    # Tune look and feel. / ルック&フィールを調整。
     "fcitx5/conf/classicui.conf" = {
       text = ''
         Vertical Candidate List=False
@@ -108,10 +99,8 @@
       '';
     };
 
-    # Mozc Key Bindings
-    # Custom key mappings for IME control
-    # - Henkan key: Enable IME
-    # - Muhenkan key: Disable IME
+    # Mozc key bindings / Mozc キーバインド
+    # Toggle IME via Henkan/Muhenkan. / 変換キーで IME を切替。
     "mozc/keymap.tsv" = {
       force = true;
       text = ''
@@ -127,8 +116,8 @@
       '';
     };
 
-    # XIM Configuration
-    # Legacy application support settings
+    # XIM config / XIM 設定
+    # Maintain legacy app compatibility. / 旧来アプリ互換を確保。
     "fcitx5/conf/xim.conf" = {
       force = true;
       text = ''
@@ -136,15 +125,15 @@
       '';
     };
 
-    # Mozc Database
-    # Pre-configured Mozc settings database
+    # Mozc database / Mozc データベース
+    # Provide preconfigured DB. / 事前設定済み DB を配備。
     "mozc/config1.db" = {
       force = true;
       source = ./mozc/config1.db;
     };
 
-    # Mozc Input Method Configuration
-    # Detailed Mozc behavior settings
+    # Mozc config / Mozc 設定
+    # Define detailed behaviour. / 詳細動作を定義。
     "fcitx5/conf/mozc.conf" = {
       force = true;
       text = ''
@@ -158,10 +147,8 @@
     };
   };
 
-  # Qt Framework Configuration
-  # Qt application theming and integration
-  # - GTK theme compatibility
-  # - Dark theme preference
+  # Qt framework / Qt フレームワーク
+  # Align Qt with GTK dark theme. / GTK テーマ互換とダークテーマ設定。
   qt = {
     enable = true;
     platformTheme = {
@@ -173,11 +160,8 @@
     };
   };
 
-  # Exa MCP Server Service
-  # Systemd user service configuration for Exa MCP server
-  # - Automatic startup after network
-  # - Development API key configuration
-  # - Automatic restart on failure
+  # Exa MCP service / Exa MCP サービス
+  # Start after network and restart on failure. / ネットワーク後に自動起動し失敗時に再起動。
 
   programs.ssh = {
     enable = true;
@@ -189,8 +173,8 @@
 
   };
 
-  # 自動起動: push-to-talk をユーザーセッションで起動
-  # 環境変数は ~/.config/mcp-secrets/push-to-talk.env から読み込み（OPENAI_API_KEY を定義）
+  # Auto-start push-to-talk / push-to-talk 自動起動
+  # Load env vars from ~/.config/mcp-secrets/push-to-talk.env. / 環境変数は ~/.config/mcp-secrets/push-to-talk.env から読み込む。
   systemd.user.services.push-to-talk = {
     Unit = {
       Description = "PushToTalk – STT Dictation";
@@ -198,13 +182,13 @@
       Wants = [ "network-online.target" ];
     };
     Service = {
-      # Use headless daemon entrypoint (no GUI, auto-starts the app)
+      # Use headless daemon entrypoint / ヘッドレス daemon エントリを使用
       ExecStart = ''${pkgs.push-to-talk}/bin/push-to-talk-daemon'';
       Restart = "on-failure";
-      # 環境変数は XDG 配下の push-to-talk 専用 env を参照
+      # Environment from XDG config / XDG 配下の env を参照
       EnvironmentFile = [ "%h/.config/push-to-talk/push-to-talk.env" ];
       WorkingDirectory = "%h";
-      # Daemon モードフラグ（sitecustomize で HotkeyService を無効化）
+      # Daemon mode flag / デーモンモードのフラグ
       Environment = [ "PTT_DAEMON=1" ];
     };
     Install = {

@@ -1,12 +1,8 @@
 { inputs, config, pkgs, username, ... }:
 
 {
-  # Hardware-Specific Configuration
-  # Imports hardware configurations and optimizations for laptop
-  # - Hardware configuration: Basic hardware setup from nixos-generate-config
-  # - AMD CPU optimizations: Power management and performance settings
-  # - SSD optimizations: TRIM and disk optimization settings
-  # - xremap: Key remapping support for laptop keyboard
+  # Hardware configuration / ハードウェア設定
+  # Import hardware definitions and tuning modules. / ハードウェア定義と最適化モジュールを取り込む。
   imports = [
     ./hardware-configuration.nix
   ] ++ (with inputs.nixos-hardware.nixosModules; [
@@ -16,18 +12,13 @@
     inputs.xremap.nixosModules.default
   ];
 
-  # Power Management
-  # Laptop-specific power and thermal management
-  # - TLP: Advanced power management
-  # - thermald: Intel thermal management daemon
+  # Power management / 電源管理
+  # Use TLP and thermald for laptop power/thermal control. / TLP と thermald でノート向け制御。
   services.tlp.enable = true;
   services.thermald.enable = true;
 
-  # User Configuration
-  # Primary user setup with administrative privileges
-  # - Network management access
-  # - Administrative (wheel) group membership
-  # - User-specific package installation
+  # User configuration / ユーザー設定
+  # Grant network and admin access to primary user. / 主要ユーザーに管理権限を付与。
   users.users.${username} = {
     isNormalUser = true;
     description = "Yosuke Otosu";
@@ -41,14 +32,14 @@
     ];
   };
 
-  # Unmanage the USB Wi‑Fi by NetworkManager (hostapd will own it)
+  # Unmanage hotspot Wi-Fi / ホットスポット用 Wi-Fi を NetworkManager 管理から除外
   networking.networkmanager.unmanaged = [
     "interface-name:wlp2s0f0u5"
     "interface-name:wlan-hotspot0"
   ];
 
-  # hostapd: USB dongle as AP on 2.4GHz, CH6, WPA3-SAE transition (WPA3 + WPA2 fallback)
-  # NOTE: Place your passphrase (single line) in the file below. It is read at runtime and not stored in the Nix store.
+  # hostapd access point / hostapd アクセスポイント
+  # Store passphrase outside the Nix store. / パスフレーズは平文ファイルに配置（Nix ストア非保存）。
   systemd.network.links."10-wlan-hotspot0" = {
     matchConfig = { MACAddress = "a8:29:48:3d:af:47"; };
     linkConfig = { Name = "wlan-hotspot0"; };
@@ -65,10 +56,10 @@
         networks.wlan-hotspot0 = {
           ssid = "Hotspot";
           authentication = {
-            # Use WPA2-PSK(SHA256) prioritizing compatibility with Realtek 88x2bu
+            # Prefer WPA2-SHA256 for Realtek 88x2bu / Realtek 88x2bu と互換性確保
             mode = "wpa2-sha256";
             wpaPasswordFile = "/var/lib/hostapd/hotspot.pass";
-            # Can revert to WPA3 if needed (wpa3-sae or wpa3-sae-transition)
+            # Need WPA3? switch to SAE. / WPA3 が必要なら SAE 系に変更
           };
         };
       };
@@ -83,40 +74,38 @@
     ];
   };
 
-  # Firewall Configuration
+  # Firewall configuration / ファイアウォール設定
   networking.firewall = {
     enable = true;
     trustedInterfaces = [ "wlan-hotspot0" ];
     checkReversePath = "loose";
 
-    # Interface-specific rule configuration
+    # Interface rules / インターフェース別ルール
     interfaces = {
-      # Rules for wlp5s0 interface (wireless LAN interface)
+      # wlp5s0 (internal Wi-Fi) / wlp5s0（内蔵 Wi-Fi）
       "wlp5s0" = {
-        allowedUDPPorts = [ 53 67 68 ]; # DNS, DHCP
-        allowedTCPPorts = [ 53 ]; # DNS
+        allowedUDPPorts = [ 53 67 68 ]; # DNS と DHCP / DNS and DHCP
+        allowedTCPPorts = [ 53 ]; # DNS / DNS
       };
-      # Rules for USB AP interface (hostapd)
+      # USB AP (hostapd) / USB AP（hostapd）
       "wlan-hotspot0" = {
-        allowedUDPPorts = [ 53 67 68 ]; # DNS via AdGuard, DHCP
-        allowedTCPPorts = [ 53 ]; # DNS via AdGuard
+        allowedUDPPorts = [ 53 67 68 ]; # AdGuard DNS と DHCP / AdGuard DNS and DHCP
+        allowedTCPPorts = [ 53 ]; # AdGuard DNS / AdGuard DNS
       };
     };
 
-    # Default rules (applied to all interfaces)
-    # Services are exposed only on specific interfaces,
-    # while global access is restricted
-    allowedUDPPorts = [ ]; # Nothing opened globally
-    allowedTCPPorts = [ ]; # Nothing opened globally
+    # Default rules / 既定ルール
+    # Keep global port exposure closed. / グローバルにはポートを開かない。
+    allowedUDPPorts = [ ]; # Global closed / グローバルで閉鎖
+    allowedTCPPorts = [ ]; # Global closed / グローバルで閉鎖
   };
 
-  # USB Controller Polling Rate Configuration
-  # Set maximum polling rate (1000Hz) for gaming controllers
-  # This reduces input latency for Victrix Pro BFG and other gaming devices
-  boot.kernelParams = [ "usbhid.jspoll=1" ]; # 1ms interval = 1000Hz
+  # USB polling / USB ポーリング
+  # Fix usbhid at 1000Hz to cut latency. / usbhid を 1000Hz に固定し入力遅延を削減。
+  boot.kernelParams = [ "usbhid.jspoll=1" ]; # 1ms interval = 1000Hz / 1ms 間隔
 
-  # NVIDIA Driver Configuration
-  # Enable NVIDIA driver
+  # NVIDIA driver / NVIDIA ドライバー
+  # Enable proprietary GPU driver. / 専用 GPU ドライバーを有効化。
   services.xserver.videoDrivers = [ "nvidia" ];
 
   fileSystems."/mnt/data" = {
@@ -125,7 +114,8 @@
     options = [ "defaults" "nofail" ];
   };
 
-  # DHCP Server Configuration (DHCP only; DNS disabled to avoid conflict with AdGuard Home)
+  # DHCP server / DHCP サーバー
+  # Disable DNS to avoid AdGuard conflicts. / DNS は AdGuard と競合しないよう無効。
   services.dnsmasq = {
     enable = true;
     settings =
@@ -147,15 +137,15 @@
       in
       {
         interface = ifaces;
-        # Serve the Wi‑Fi AP subnet (+ docker0 も有効時のみ)
+        # Serve AP subnet (+ docker0 when enabled) / AP サブネットと docker0
         dhcp-range = dhcpRanges;
-        # Per-interface router/DNS options (DNS points to this host so AdGuard serves it)
+        # Router/DNS per interface / インターフェースごとのルーター/DNS
         dhcp-option = dhcpOpts;
-        # 当該サブネットの権威サーバとしてふるまい、クライアントの設定更新を確実化
+        # Authoritative mode for fast renewals / 権威モードで更新を確実化
         dhcp-authoritative = true;
-        # Bind dynamically so dnsmasq tracks interfaces appearing after service start
+        # Track late interfaces / 後から現れるインターフェースに追従
         bind-dynamic = true;
-        # Only DHCP; disable built-in DNS to avoid port 53 conflicts
+        # DHCP only, disable DNS / DHCP のみに限定
         port = 0;
         domain = "local";
         log-queries = true;
@@ -164,24 +154,26 @@
       };
     };
 
-  # dnsmasq の起動順: ネットワーク初期化後。Docker が有効な場合のみ docker.service を after に追加。
+  # dnsmasq startup order / dnsmasq 起動順
+  # Start after network, plus docker when enabled. / ネットワーク後に開始し、Docker 有効時のみ連鎖。
   systemd.services.dnsmasq.after = [ "network-setup.service" ]
     ++ pkgs.lib.optionals config.virtualisation.docker.enable [ "docker.service" ];
 
-  # NAT from the AP subnet toward the wired uplink
+  # NAT for hotspot / ホットスポット向け NAT
   networking.nat = {
     enable = true;
     externalInterface = "enp4s0";
     internalInterfaces = [ "wlan-hotspot0" ];
   };
 
-  # Ensure runtime/persistent directory for hostapd secrets exists
+  # hostapd secret directory / hostapd シークレット用ディレクトリ
   systemd.tmpfiles.rules = [
-    # path mode user group age
+    # path mode user group age / パス モード ユーザー グループ age
     "d /var/lib/hostapd 0750 root root -"
   ];
 
-  # Realtek rtw88_usb module parameter tuning (disable USB3 switching, disable deep power saving)
+  # Realtek rtw88_usb tuning / Realtek rtw88_usb 調整
+  # Disable USB3 switching and deep power saving. / USB3 切替と深い省電力を無効化。
   boot.extraModprobeConfig = ''
     options rtw88_usb switch_usb_mode=N
     options rtw88_core disable_lps_deep=Y

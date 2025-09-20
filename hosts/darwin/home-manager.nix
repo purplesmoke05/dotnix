@@ -14,7 +14,7 @@
     ./../../home-manager/gui/editor/vscode
   ];
   home.packages = with pkgs; [
-    # --- Cli ---
+    # CLI tools / CLI ツール
     fd
     jq
     peco
@@ -29,10 +29,10 @@
     uv
     foundry
 
-    # -- Font ---
+    # Fonts / フォント
     nerd-fonts.hack
 
-    # --- Dev ---
+    # Dev tools / 開発ツール
     neovim
     gh
     ghq
@@ -48,11 +48,9 @@
     copilot-cli
   ];
 
-  # User information
+  # User information / ユーザー情報
   home.username = username;
-  # Using lib.mkForce to address a known bug in nix-darwin (Issue #682).
-  # https://github.com/LnL7/nix-darwin/issues/682
-  # Once this bug is fixed, it may be possible to simply set "/Users/${username}".
+  # Use mkForce to dodge nix-darwin bug #682. / nix-darwin のバグ #682 回避で mkForce を使用。
   home.homeDirectory = lib.mkForce "/Users/${username}";
 
   home.sessionPath = [
@@ -60,10 +58,9 @@
   ];
   # users.users.${username}.shell = pkgs.fish;
 
-
-  # Version of home-manager (be cautious when changing)
+  # Home Manager version / Home Manager バージョン
   home.stateVersion = "24.11";
 
-  # Enable home-manager
+  # Enable Home Manager / Home Manager を有効化
   programs.home-manager.enable = true;
 }

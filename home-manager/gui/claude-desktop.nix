@@ -1,16 +1,16 @@
 { pkgs, inputs, lib, ... }:
 
 let
-  # 元のパッケージを取得
+  # Fetch the original package / 元のパッケージを取得
   claudeOriginal = inputs.claude-desktop.packages.${pkgs.system}.claude-desktop-with-fhs;
 
-  # Waylandフラグ付きでラップする
+  # Wrap with Wayland flags / Wayland フラグ付きでラップ
   claudeWrapped = claudeOriginal.overrideAttrs (oldAttrs: {
-    # wrapProgram を使うために makeWrapper をビルド時依存に追加
+    # Add makeWrapper to use wrapProgram / wrapProgram を使うために makeWrapper を追加
     nativeBuildInputs = (oldAttrs.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
 
-    # postFixup フェーズで実行ファイルをラップする
-    # (installPhase や fixupPhase の後、最終的な $out が準備される前あたりで実行される)
+    # Wrap the binary during postFixup / postFixup フェーズで実行ファイルをラップ
+    # Runs after install/fixup, before final $out / installPhase・fixupPhase 後、最終 $out 前に実行
     postFixup = (oldAttrs.postFixup or "") + ''
       wrapProgram $out/bin/claude-desktop \
         --add-flags "--enable-features=UseOzonePlatform --ozone-platform=x11 --enable-wayland-ime=true --disable-gpu"
@@ -25,7 +25,7 @@ in
   # ];
 
   home.packages = [
-    # ラップされたパッケージを使用
+    # Use the wrapped package / ラップされたパッケージを使用
     claudeWrapped
   ];
 }

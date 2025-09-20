@@ -14,15 +14,11 @@
 , wtype
 }:
 
-# Package: push-to-talk (Python GUI app)
-# Upstream: https://github.com/yixin0829/push-to-talk
-# Notes:
-# - Upstream uses uv for dependency management and does not expose a build backend.
-# - We run it as a Python application by copying sources and wrapping a Python
-#   interpreter environment with the required runtime dependencies.
+# push-to-talk packaging / push-to-talk パッケージング
+# Wrap the uv-managed sources in a Python runtime environment. / uv 管理のソースを Python ランタイムでラップします。
 
 let
-  # Additional PyPI packages not in nixpkgs
+  # Extra PyPI packages / nixpkgs 未収録の PyPI パッケージ
   playsound3 = python3Packages.buildPythonPackage rec {
     pname = "playsound3";
     version = "3.2.6";
@@ -33,7 +29,7 @@ let
     };
 
     pyproject = true;
-    # Upstream uses hatchling backend
+    # Hatchling backend upstream / 上流は hatchling バックエンド
     build-system = [ python3Packages.hatchling ];
     nativeBuildInputs = [ python3Packages.wheel ];
     doCheck = false;
@@ -58,7 +54,7 @@ let
     build-system = [ python3Packages.setuptools ];
     nativeBuildInputs = [ python3Packages.wheel ];
     doCheck = false;
-    # psola imports numpy, soundfile, tqdm, parselmouth and optionally pypar
+    # psola imports numpy, soundfile, etc. / psola が依存するライブラリ
     propagatedBuildInputs = with python3Packages; [ numpy soundfile tqdm parselmouth ] ++ [ pypar ];
     pythonImportsCheck = [ "psola" ];
     meta = with lib; {
@@ -90,8 +86,8 @@ let
     };
   };
 
-  # Patch 'keyboard' to allow non-root usage on Linux by removing the strict EUID check.
-  # Note: you will still need permission to read /dev/input (e.g., add your user to 'input' group).
+  # keyboard patch / keyboard パッチ
+  # Remove the strict EUID check; still need /dev/input permissions. / 非 root でも使えるように EUID チェックを外す（/dev/input へのアクセス権は別途必要）。
   keyboardPatched = python3Packages.keyboard.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       if [ -f keyboard/_nixkeyboard.py ]; then
@@ -107,7 +103,7 @@ let
     '';
   });
 
-  # Python runtime with required packages
+  # Runtime packages / ランタイム依存パッケージ
   pythonEnv = python3.withPackages (ps: with ps; [
     keyboardPatched
     loguru
@@ -121,8 +117,8 @@ let
     tkinter
   ] ++ [ playsound3 psola ]);
 
-  # Python paths for ensuring _tkinter is discoverable
-  sp = python3.sitePackages; # e.g., lib/python3.12/site-packages
+  # Python path helpers / Python パス補助
+  sp = python3.sitePackages; # e.g. lib/python3.12/site-packages / 例: lib/python3.12/site-packages
   libDyn = builtins.replaceStrings [ "site-packages" ] [ "lib-dynload" ] sp;
 in
 
@@ -137,10 +133,10 @@ stdenvNoCC.mkDerivation rec {
     sha256 = "sha256-VCiNgEW8vmSGDSPg3xZGPEKVcRWTZfnsVn53DNRSkvk=";
   };
 
-  # Patch: Tk 8.7+/9.0 では 'trace variable' が廃止され 'trace add variable' 系に変更。
-  # 上流の tkinter.StringVar.trace("w", ...) 呼び出しを後方互換な try/except へ置換。
+  # Tk trace patch / Tk trace パッチ
+  # 8.7+/9.0 の API 変更に追随し後方互換を確保。 / Follow the 8.7+/9.0 API change while keeping compatibility.
   postPatch = ''
-    # Tk trace API change対応
+    # Tk trace API change / Tk trace API 変更対応
     substituteInPlace src/config_gui.py \
       --replace 'self.glossary_search_var.trace("w", self._filter_glossary_list)' \
 "try:
@@ -148,12 +144,12 @@ stdenvNoCC.mkDerivation rec {
         except Exception:
             self.glossary_search_var.trace(\"w\", self._filter_glossary_list)"
 
-    # デフォルト設定: Push-to-Talk 無効、Toggle=F12
+    # Default hotkeys / 既定ホットキー調整
     substituteInPlace src/push_to_talk.py \
       --replace "hotkey: str = field(\n        default_factory=lambda: (\n            f\"{'cmd' if sys.platform == 'darwin' else 'ctrl'}+shift+space\"\n        )\n    )" "hotkey: str = \"\"" \
       --replace "toggle_hotkey: str = field(\n        default_factory=lambda: (\n            f\"{'cmd' if sys.platform == 'darwin' else 'ctrl'}+shift+^\"\n        )\n    )" "toggle_hotkey: str = \"f12\""
 
-    # HotkeyService: hotkey が空/disabled の場合は登録しない
+    # Skip empty hotkeys / 空ホットキーは登録しない
     substituteInPlace src/hotkey_service.py \
       --replace 'self.hotkey = hotkey or self._get_default_hotkey()' 'self.hotkey = None if hotkey in (None, "", "disabled", "none", "off") else hotkey' \
       --replace 'self._parse_hotkey_combination(self.hotkey, self.hotkey_keys)' '(self.hotkey and self._parse_hotkey_combination(self.hotkey, self.hotkey_keys))' \
@@ -164,23 +160,23 @@ stdenvNoCC.mkDerivation rec {
 
   nativeBuildInputs = [ makeWrapper ];
 
-  # Ensure native libs required by Python packages are available at runtime
+  # Native libs / ランタイムに必要なネイティブライブラリ
   buildInputs = [ portaudio libsndfile ];
 
   installPhase = ''
     runHook preInstall
 
-    # Install sources required at runtime
+    # Install runtime sources / 実行時に必要なソースを配置
     install -dm 0755 "$out/share/${pname}"
     cp -r src "$out/share/${pname}/"
     cp main.py "$out/share/${pname}/"
-    # Optional assets (icon, README)
+    # Optional assets / 任意アセット（アイコン等）
     if [ -f icon.ico ]; then cp icon.ico "$out/share/${pname}/"; fi
     if [ -f README.md ]; then cp README.md "$out/share/${pname}/"; fi
 
-    # Provide a sitecustomize.py to monkey-patch keyboard on Linux/Wayland consoles
+    # sitecustomize for keyboard / keyboard 用 sitecustomize
     cat > "$out/share/${pname}/sitecustomize.py" <<'PY'
-# Inject minimal keymap to avoid dumpkeys on non-VC consoles (Wayland/X11)
+# Inject minimal keymap / dumpkeys 回避用の最小キーマップ注入
 try:
     import keyboard._nixkeyboard as nk
     from collections import defaultdict
@@ -188,7 +184,7 @@ try:
 
     def _fallback_build_tables():
         try:
-            # Initialize minimal maps only once
+            # Initialize once / 一度だけ初期化
             if getattr(nk, 'to_name', None) and getattr(nk, 'from_name', None):
                 if nk.to_name and nk.from_name:
                     return
@@ -211,15 +207,15 @@ try:
             except Exception:
                 pass
 
-        # Common scan codes (Linux input-event):
-        # left ctrl=29, right ctrl=97; left shift=42, right shift=54; space=57; F6=64; F12=88
+        # Common scan codes / 共通スキャンコード
+        # Mapping reference / 左Ctrl=29, 右Ctrl=97, 左Shift=42, 右Shift=54, Space=57, F6=64, F12=88
         reg(29, (), 'ctrl'); reg(97, (), 'ctrl')
         reg(42, (), 'shift'); reg(54, (), 'shift')
         reg(57, (), 'space')
         reg(64, (), 'f6')
         reg(88, (), 'f12')
 
-    # Disable root enforcement via ensure_root if present
+    # Disable ensure_root / ensure_root による root 強制を無効化
     try:
         import keyboard._nixcommon as nc
         def _ensure_root_noop():
@@ -230,10 +226,10 @@ try:
 
     nk.build_tables = _fallback_build_tables
 except Exception:
-    # If anything fails, continue without patching
+    # Fallback on failure / パッチに失敗したらスキップ
     pass
 
-# Monkey-patch text insertion to use wayland/x11 tools instead of pyautogui
+# Monkey-patch text insertion / pyautogui の代わりに Wayland/X11 ツールを使用
 try:
     from src import text_inserter as TI
     import os, subprocess
@@ -245,7 +241,7 @@ try:
         try:
             if os.getenv('WAYLAND_DISPLAY'):
                 _run(['wl-copy'], text)
-                # Paste via key chord using wtype (use Control_L for reliability)
+                # Paste via wtype / wtype で Control_L を使って貼り付け
                 _run(['wtype', '-M', 'Control_L', '-P', 'v', '-m', 'Control_L'])
             else:
                 _run(['xclip', '-selection', 'clipboard'], text)
@@ -269,7 +265,7 @@ try:
 except Exception:
     pass
 
-# Default STT language to Japanese ('ja') unless explicitly provided
+# Default STT language / STT の既定言語を日本語に設定
 try:
     from src.transcription import Transcriber
     _orig_transcribe = Transcriber.transcribe_audio
@@ -281,7 +277,7 @@ try:
 except Exception:
     pass
 
-# Add Language setting to GUI and persist in config
+# GUI language setting / GUI 言語設定を追加し永続化
 try:
     import tkinter as tk
     from tkinter import ttk
@@ -289,7 +285,7 @@ try:
     from src import config_gui as CG
     from src.push_to_talk import PushToTalkConfig, PushToTalkApp
 
-    # Ensure config has a language attribute by default
+    # Ensure language key / language キーを保証
     _orig_cfg_init = PushToTalkConfig.__init__
     def _cfg_init_lang(self, *args, **kwargs):
         _orig_cfg_init(self, *args, **kwargs)
@@ -297,22 +293,22 @@ try:
             self.language = 'ja'
     PushToTalkConfig.__init__ = _cfg_init_lang
 
-    # Save/load should include 'language'
+    # Persist language / language を保存・読み込み
     _orig_save = PushToTalkConfig.save_to_file
     def _save_with_lang(self, filepath: str):
         import json, os
         from dataclasses import asdict
-        # Resolve XDG config path: ~/.config/push-to-talk/push_to_talk_config.json
+        # Resolve XDG config path / XDG の config パスを解決
         xdg = os.getenv('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
         cfg_dir = os.path.join(xdg, 'push-to-talk')
         cfg_path = os.path.join(cfg_dir, 'push_to_talk_config.json')
-        # If caller passed default filename or relative path, redirect to XDG path
+        # Default filename fallback / 既定ファイル名なら XDG へ
         if not filepath or (filepath == 'push_to_talk_config.json') or (not os.path.isabs(filepath)):
             filepath = cfg_path
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         data = asdict(self)
         data['language'] = getattr(self, 'language', 'ja')
-        # Never persist API keys to disk
+        # Do not persist API keys / API key は保存しない
         data.pop('openai_api_key', None)
         with open(filepath, 'w') as f:
             json.dump(data, f, indent=2)
@@ -321,11 +317,11 @@ try:
     @classmethod
     def _load_with_lang(cls, filepath: str):
         import json, os
-        # Resolve default path under XDG config
+        # Resolve default path under XDG / デフォルトパスを XDG 配下に解決
         xdg = os.getenv('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
         cfg_dir = os.path.join(xdg, 'push-to-talk')
         cfg_path = os.path.join(cfg_dir, 'push_to_talk_config.json')
-        # If caller passed default filename or relative path, use XDG
+        # Use XDG for relative/default path / 相対パスの際は XDG を使用
         if not filepath or (filepath == 'push_to_talk_config.json') or (not os.path.isabs(filepath)):
             filepath = cfg_path
         try:
@@ -347,11 +343,11 @@ try:
             return o
     PushToTalkConfig.load_from_file = _load_with_lang
 
-    # Inject language section just after API settings
+    # Inject language section / API 設定の直後に language セクションを挿入
     _orig_api = CG.ConfigurationGUI._create_api_section
     def _api_with_lang(self, parent):
         _orig_api(self, parent)
-        # Language section
+        # Language section / language セクション
         frame = self._create_section_frame(parent, "Language")
         ttk.Label(frame, text="Transcription Language:").grid(row=0, column=0, sticky='w', pady=2)
         self.config_vars['language'] = tk.StringVar(value=getattr(self.config, 'language', 'ja'))
@@ -360,7 +356,7 @@ try:
         ttk.Label(frame, text='Default: ja (日本語) | auto=自動判定').grid(row=0, column=2, sticky='w', padx=(5,0), pady=2)
         frame.columnconfigure(1, weight=1)
 
-        # API Key hint section (security)
+        # API key hint (security) / API キーに関する注意
         hint = self._create_section_frame(parent, "API Key Hint / APIキーの設定")
         text = (
             "API keys are NOT saved to JSON.\n"
@@ -373,12 +369,12 @@ try:
             "EnvironmentFile から読み込みます。"
         )
         ttk.Label(hint, text=text, justify='left').grid(row=0, column=0, sticky='w')
-        # Environment detection status
+        # Environment detection status / 環境検出ステータス
         env_status = "\u2713 Detected OPENAI_API_KEY in environment" if os.getenv('OPENAI_API_KEY') else "(No OPENAI_API_KEY in environment)"
         ttk.Label(hint, text=env_status, foreground=('green' if os.getenv('OPENAI_API_KEY') else 'gray')).grid(row=1, column=0, sticky='w', pady=(6,0))
     CG.ConfigurationGUI._create_api_section = _api_with_lang
 
-    # Ensure language is written into new config objects
+    # Embed language into new config objects / language を新規 config に埋め込む
     _orig_get_cfg = CG.ConfigurationGUI._get_config_from_gui
     def _get_cfg_with_lang(self):
         cfg = _orig_get_cfg(self)
@@ -389,7 +385,7 @@ try:
         return cfg
     CG.ConfigurationGUI._get_config_from_gui = _get_cfg_with_lang
 
-    # Make transcription use configured language automatically
+    # Use configured language for transcription / 設定言語を音声認識に使用
     _orig_proc = PushToTalkApp._process_recorded_audio
     def _proc_with_lang(self):
         orig = self.transcriber.transcribe_audio
@@ -405,25 +401,25 @@ try:
 except Exception:
     pass
 
-# Patch default config values: disable push-to-talk by default, toggle=F12
+# Patch default config / 既定設定を変更（push-to-talk 無効、トグルは F12）
 try:
     from src.push_to_talk import PushToTalkConfig
     _orig_init = PushToTalkConfig.__init__
     def _patched_init(self, *args, **kwargs):
         _orig_init(self, *args, **kwargs)
-        # Set toggle to F6 if not explicitly provided
+        # Toggle fallback / 未指定なら F6
         if ('toggle_hotkey' not in kwargs) or (not getattr(self, 'toggle_hotkey', "")):
             self.toggle_hotkey = 'f6'
-        # Disable push-to-talk by default (keep user-specified value if provided)
+        # Disable push-to-talk by default / push-to-talk を既定で無効化
         if 'hotkey' not in kwargs:
-            # only if empty/unspecified
+        # Only when empty or unspecified / 値が空または未設定の場合のみ
             if not getattr(self, 'hotkey', ""):
                 self.hotkey = ""
     PushToTalkConfig.__init__ = _patched_init
 except Exception:
     pass
 
-# In daemon mode, neutralize HotkeyService to avoid global grabs and parsing
+# Daemon mode tweak / Daemon モードで HotkeyService を無効化
 try:
     import os as _os
     if _os.getenv('PTT_DAEMON') == '1':
@@ -460,7 +456,7 @@ except Exception:
     pass
 PY
 
-    # Headless daemon entrypoint (no-GUI): load config and run
+    # Headless entrypoint / GUI なしデーモン起動
     cat > "$out/share/${pname}/daemon.py" <<'PY'
 #!/usr/bin/env python3
 from loguru import logger
@@ -468,10 +464,9 @@ import sys, signal, time
 import os
 try:
     from src.push_to_talk import PushToTalkConfig, PushToTalkApp
-    # Load config (XDG path is handled in the overridden loader)
+    # Load config with XDG helper / 設定を読み込み（XDG ローダーで処理）
     cfg = PushToTalkConfig.load_from_file("push_to_talk_config.json")
-    # By default, disable internal hotkeys in daemon mode to avoid sending keys to apps
-    # In daemon mode, do not register any global hotkeys; rely on compositor binding
+    # Disable internal hotkeys in daemon mode, rely on compositor bindings. / Daemon では内部ホットキーを無効化し、コンポジタのバインドに任せる。
     try:
         cfg.hotkey = ""
         cfg.toggle_hotkey = ""
@@ -479,17 +474,17 @@ try:
         pass
     app = PushToTalkApp(cfg)
 
-    # Optional: allow compositor-level toggle via SIGUSR1
+    # Allow SIGUSR1 toggle / SIGUSR1 でトグル可能に
     _last = {'t': 0.0}
     def _toggle(_sig, _frm):
         try:
             now = time.time()
-            # Debounce rapid repeats from compositor key-repeat (ignore <300ms)
+            # Debounce compositor repeats (<300ms) / キーリピートのデバウンス（300ms 未満は無視）
             if now - _last['t'] < 0.3:
                 return
             _last['t'] = now
             if app.hotkey_service:
-                # Mimic toggle hotkey press
+                # Mimic toggle hotkey press / トグルホットキーを模擬
                 app.hotkey_service._on_toggle_hotkey_press()
         except Exception as e:
             logger.warning(f"Toggle via signal failed: {e}")
@@ -498,7 +493,7 @@ try:
     except Exception:
         pass
 
-    # PID file for external control helpers
+    # PID file for helpers / 外部制御用の PID ファイル
     try:
         xdg = os.getenv('XDG_STATE_HOME') or os.path.expanduser('~/.local/state')
         pdir = os.path.join(xdg, 'push-to-talk')
@@ -514,20 +509,20 @@ except Exception as e:
     sys.exit(1)
 PY
 
-    # Create launcher
+    # Create launcher / ランチャー生成
     install -dm 0755 "$out/bin"
     makeWrapper "${pythonEnv}/bin/python" "$out/bin/${pname}" \
       --add-flags "$out/share/${pname}/main.py" \
       --prefix PYTHONPATH : "$out/share/${pname}:${pythonEnv}/${sp}:${python3Packages.tkinter}/${sp}:${python3Packages.tkinter}/${libDyn}" \
       --prefix PATH : "${lib.makeBinPath [ ffmpeg xclip wl-clipboard kbd xdotool wtype ]}"
 
-    # Daemon launcher (no GUI)
+    # デーモンランチャー（GUI なし）/ Headless daemon launcher
     makeWrapper "${pythonEnv}/bin/python" "$out/bin/${pname}-daemon" \
       --add-flags "$out/share/${pname}/daemon.py" \
       --prefix PYTHONPATH : "$out/share/${pname}:${pythonEnv}/${sp}" \
       --prefix PATH : "${lib.makeBinPath [ ffmpeg xclip wl-clipboard kbd xdotool wtype ]}"
 
-    # Toggle helper: send SIGUSR1 to the daemon via pidfile
+    # Toggle helper sends SIGUSR1 via pidfile / トグルヘルパー：pidfile 経由で SIGUSR1 を送る
     cat > "$out/bin/${pname}-toggle" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail

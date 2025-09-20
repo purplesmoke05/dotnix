@@ -5,8 +5,7 @@ let
     programs = {
       aws-kb-retrieval = { enable = false; /* Requires AWS credentials -> envFile/passwordCommand */ };
       brave-search = {
-        enable = true; # Enable Brave Search
-        # Requires API Key -> envFile/passwordCommand
+        enable = true; # Brave Search (API key via envFile) / Brave Search（envFile に API キー）
         envFile = config.xdg.configHome + "/mcp-secrets/brave.env";
       };
       everart = {
@@ -15,11 +14,9 @@ let
       everything = { enable = true; };
       fetch = { enable = false; };
       filesystem = {
-        enable = true; # Enable Filesystem
-        # Requires allowed paths -> args
+        enable = true; # Filesystem access / ファイルシステムアクセス
         args = [
-          config.home.homeDirectory # Example: Allow access to home directory
-          # Add other allowed paths here
+          config.home.homeDirectory # Allow home directory / ホームディレクトリを許可
         ];
       };
       gdrive = { enable = false; /* Add envFile/passwordCommand if needed */ };
@@ -33,7 +30,7 @@ let
       grafana = { enable = false; /* Add envFile/passwordCommand if needed */ };
       memory = { enable = true; };
       notion = { enable = false; /* Add envFile/passwordCommand if needed */ };
-      playwright = { enable = false; }; # Temporarily disabled - libjxl build failure
+      playwright = { enable = false; }; # Disabled while libjxl fails / libjxl が壊れている間は無効
       postgres = { enable = false; /* Add envFile/passwordCommand if needed */ };
       puppeteer = { enable = false; };
       redis = { enable = false; /* Add envFile/passwordCommand if needed */ };
@@ -44,24 +41,19 @@ let
       time = { enable = false; };
     };
 
-    # --- Security Note ---
-    # Remember to configure sensitive modules (like github, gitlab, aws, etc.)
-    # using `envFile` or `passwordCommand` for security.
-    # Example:
-    # programs.github.envFile = config.xdg.configHome + "/mcp-secrets/github.env";
-    # programs.postgres.passwordCommand = { PGPASSWORD = ["pass", "postgres"]; };
+    # Security note / セキュリティ注意
+    # Use envFile or passwordCommand for credentials. / 機密モジュールは envFile/passwordCommand で資格情報を供給。
   };
 in
 {
-  # --- Place the generated config file ---
-  # Configuration for Cursor editor
+  # Cursor MCP config / Cursor 向け MCP 設定
   home.file.".cursor/mcp.json".source = mcpConfig;
 
-  # Configuration for Claude Code (global)
-  # Claude Code supports global MCP configuration in ~/.claude/config.json
+  # Claude Code config / Claude Code 設定
+  # ~/.claude/config.json でグローバルに共有。 / Shared globally via ~/.claude/config.json.
   home.file.".claude/config.json".source = mcpConfig;
 
-  # Ensure the secret directory exists
+  # Ensure secret directory / シークレット用ディレクトリを作成
   home.activation.secretsDir = lib.hm.dag.entryAfter [ "writeBoundary" ]
     ''
       mkdir -p ${config.xdg.configHome}/mcp-secrets
