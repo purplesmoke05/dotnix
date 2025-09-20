@@ -1,6 +1,6 @@
 # Repository Guidelines / リポジトリガイドライン
 
-Language / 言語: English + 日本語 (side-by-side)
+Responses must be in Japanese. / 返答は日本語のみで行うこと。
 
 ## Project Structure & Module Organization / プロジェクト構成とモジュール
 - `flake.nix`: Entry point for hosts, overlays, dev shells, formatter / フレークの入口（ホスト・オーバーレイ・開発シェル・フォーマッタ）。
