@@ -41,9 +41,53 @@
     ];
   };
 
+  # Unmanage the USB Wi‑Fi by NetworkManager (hostapd will own it)
+  networking.networkmanager.unmanaged = [
+    "interface-name:wlp2s0f0u5"
+    "interface-name:wlan-hotspot0"
+  ];
+
+  # hostapd: USB dongle as AP on 2.4GHz, CH6, WPA3-SAE transition (WPA3 + WPA2 fallback)
+  # NOTE: Place your passphrase (single line) in the file below. It is read at runtime and not stored in the Nix store.
+  systemd.network.links."10-wlan-hotspot0" = {
+    matchConfig = { MACAddress = "a8:29:48:3d:af:47"; };
+    linkConfig = { Name = "wlan-hotspot0"; };
+  };
+
+  services.hostapd = {
+    enable = true;
+    radios = {
+      wlan-hotspot0 = {
+        driver = "nl80211";
+        band = "5g";
+        channel = 36;
+        countryCode = "JP";
+        networks.wlan-hotspot0 = {
+          ssid = "Hotspot";
+          authentication = {
+            # Use WPA2-PSK(SHA256) prioritizing compatibility with Realtek 88x2bu
+            mode = "wpa2-sha256";
+            wpaPasswordFile = "/var/lib/hostapd/hotspot.pass";
+            # Can revert to WPA3 if needed (wpa3-sae or wpa3-sae-transition)
+          };
+        };
+      };
+    };
+  };
+
+  systemd.services.hostapd = {
+    serviceConfig.ExecStartPre = [
+      "${pkgs.iproute2}/bin/ip link set dev wlan-hotspot0 down"
+      "${pkgs.iproute2}/bin/ip addr flush dev wlan-hotspot0"
+      "${pkgs.iproute2}/bin/ip addr add 10.43.0.1/24 dev wlan-hotspot0"
+    ];
+  };
+
   # Firewall Configuration
   networking.firewall = {
     enable = true;
+    trustedInterfaces = [ "wlan-hotspot0" ];
+    checkReversePath = "loose";
 
     # Interface-specific rule configuration
     interfaces = {
@@ -51,6 +95,11 @@
       "wlp5s0" = {
         allowedUDPPorts = [ 53 67 68 ]; # DNS, DHCP
         allowedTCPPorts = [ 53 ]; # DNS
+      };
+      # Rules for USB AP interface (hostapd)
+      "wlan-hotspot0" = {
+        allowedUDPPorts = [ 53 67 68 ]; # DNS via AdGuard, DHCP
+        allowedTCPPorts = [ 53 ]; # DNS via AdGuard
       };
     };
 
@@ -76,27 +125,65 @@
     options = [ "defaults" "nofail" ];
   };
 
-  # DHCP Server Configuration
+  # DHCP Server Configuration (DHCP only; DNS disabled to avoid conflict with AdGuard Home)
   services.dnsmasq = {
     enable = true;
-    settings = {
-      interface = [ "docker0" ];
-      dhcp-range = "172.17.0.100,172.17.0.200,24h";
-      dhcp-option = [
-        "option:router,172.17.0.1"
-        "option:dns-server,8.8.8.8,8.8.4.4"
-      ];
-      domain = "local";
-      bind-interfaces = true;
-      server = [ "8.8.8.8" "8.8.4.4" ];
-      log-queries = true;
-      log-dhcp = true;
-      clear-on-reload = true;
+    settings =
+      let
+        opt = pkgs.lib.optionals;
+        ifaces = [ "wlan-hotspot0" ] ++ opt config.virtualisation.docker.enable [ "docker0" ];
+        dhcpRanges = [
+          "10.43.0.10,10.43.0.254,255.255.255.0,12h"
+        ] ++ opt config.virtualisation.docker.enable [
+          "172.17.0.100,172.17.0.200,24h"
+        ];
+        dhcpOpts = [
+          "interface:wlan-hotspot0,option:router,10.43.0.1"
+          "interface:wlan-hotspot0,option:dns-server,10.43.0.1"
+        ] ++ opt config.virtualisation.docker.enable [
+          "interface:docker0,option:router,172.17.0.1"
+          "interface:docker0,option:dns-server,172.17.0.1"
+        ];
+      in
+      {
+        interface = ifaces;
+        # Serve the Wi‑Fi AP subnet (+ docker0 も有効時のみ)
+        dhcp-range = dhcpRanges;
+        # Per-interface router/DNS options (DNS points to this host so AdGuard serves it)
+        dhcp-option = dhcpOpts;
+        # 当該サブネットの権威サーバとしてふるまい、クライアントの設定更新を確実化
+        dhcp-authoritative = true;
+        # Bind dynamically so dnsmasq tracks interfaces appearing after service start
+        bind-dynamic = true;
+        # Only DHCP; disable built-in DNS to avoid port 53 conflicts
+        port = 0;
+        domain = "local";
+        log-queries = true;
+        log-dhcp = true;
+        clear-on-reload = true;
+      };
     };
+
+  # dnsmasq の起動順: ネットワーク初期化後。Docker が有効な場合のみ docker.service を after に追加。
+  systemd.services.dnsmasq.after = [ "network-setup.service" ]
+    ++ pkgs.lib.optionals config.virtualisation.docker.enable [ "docker.service" ];
+
+  # NAT from the AP subnet toward the wired uplink
+  networking.nat = {
+    enable = true;
+    externalInterface = "enp4s0";
+    internalInterfaces = [ "wlan-hotspot0" ];
   };
 
-  systemd.services.dnsmasq = {
-    after = [ "docker.service" ];
-    requires = [ "docker.service" ];
-  };
+  # Ensure runtime/persistent directory for hostapd secrets exists
+  systemd.tmpfiles.rules = [
+    # path mode user group age
+    "d /var/lib/hostapd 0750 root root -"
+  ];
+
+  # Realtek rtw88_usb module parameter tuning (disable USB3 switching, disable deep power saving)
+  boot.extraModprobeConfig = ''
+    options rtw88_usb switch_usb_mode=N
+    options rtw88_core disable_lps_deep=Y
+  '';
 }

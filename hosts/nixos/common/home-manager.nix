@@ -17,6 +17,7 @@
     fcitx5-configtool
     appimage-run
     awscli2
+    push-to-talk
   ];
 
   # Environment Variables
@@ -186,5 +187,28 @@
       ServerAliveInterval 60
     '';
 
+  };
+
+  # 自動起動: push-to-talk をユーザーセッションで起動
+  # 環境変数は ~/.config/mcp-secrets/push-to-talk.env から読み込み（OPENAI_API_KEY を定義）
+  systemd.user.services.push-to-talk = {
+    Unit = {
+      Description = "PushToTalk – STT Dictation";
+      After = [ "graphical-session.target" "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      # Use headless daemon entrypoint (no GUI, auto-starts the app)
+      ExecStart = ''${pkgs.push-to-talk}/bin/push-to-talk-daemon'';
+      Restart = "on-failure";
+      # 環境変数は XDG 配下の push-to-talk 専用 env を参照
+      EnvironmentFile = [ "%h/.config/push-to-talk/push-to-talk.env" ];
+      WorkingDirectory = "%h";
+      # Daemon モードフラグ（sitecustomize で HotkeyService を無効化）
+      Environment = [ "PTT_DAEMON=1" ];
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
   };
 }

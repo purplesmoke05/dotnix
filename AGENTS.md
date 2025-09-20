@@ -38,7 +38,12 @@ Language / 言語: English + 日本語 (side-by-side)
 - Pre-PR checks / 事前確認: `nix fmt` と `nix flake check` を通す。変更点・理由・影響ホストを記載。UI系はスクリーンショット添付。
 
 ## Security & Configuration Tips / セキュリティと設定
-- Secrets / シークレット: コミット禁止。必要な鍵は `~/.config/mcp-secrets/` へ。
+- Secrets / シークレット:
+  - コミット禁止（Nixストアにも平文を置かない）。
+  - ユーザー/アプリ用（MCP・Home Manager 経由のCLI等）は `~/.config/mcp-secrets/` を使用。
+  - システムサービス用（例: hostapd, wireguard, など）はホーム外のランタイム/永続領域を使用（例: `/var/lib/<service>/…`）。
+    - 例: hostapd のパスフレーズは `/var/lib/hostapd/hotspot.pass`（root:root, 0600; リポジトリ非管理）。
+    - sops-nix/agenix等のシークレットマネージャ採用も歓迎。
 - User/Host guard / ユーザー・ホストガード: `LAPTOP_USER`/`HQ_USER`/`DARWIN_USER` で上書き可。クロスホスト評価時のみ `DISABLE_HOST_GUARD=1`。
 - Locale & IME / ロケール・IME: `ja_JP.UTF-8` と `fcitx5-mozc` を `hosts/nixos/common/nixos.nix` で設定済み（追加作業不要）。
 - MCP: See `CLAUDE.md` for agent use / エージェント利用は `CLAUDE.md` を参照。

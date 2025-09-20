@@ -134,6 +134,9 @@
 
           # Add sui package
           sui = final.callPackage ./pkgs/sui { };
+
+          # qSpeak application (Linux; deb-based extraction)
+          qspeak = final.callPackage ./pkgs/qspeak { };
         };
 
         nixos = final: prev: {
@@ -184,6 +187,13 @@
 
           # Add hints package (Linux/NixOS overlay only)
           hints = final.callPackage ./pkgs/hints { };
+
+          # push-to-talk (Python GUI STT app)
+          # Use Python 3.12 to avoid ecosystem breakages on 3.13 (e.g., future)
+          push-to-talk = final.callPackage ./pkgs/push-to-talk {
+            python3 = final.python312;
+            python3Packages = final.python312Packages;
+          };
         };
 
         # The 'default' overlay now combines common and nixos specific for convenience if needed elsewhere,
@@ -417,6 +427,11 @@
           };
           # Expose hints package as a flake output
           hints = pkgs.callPackage ./pkgs/hints { };
+          # Expose push-to-talk package as a flake output (pin to Python 3.12)
+          push-to-talk = pkgs.callPackage ./pkgs/push-to-talk {
+            python3 = pkgs.python312;
+            python3Packages = pkgs.python312Packages;
+          };
         };
         formatter = pkgs.nixpkgs-fmt;
       }

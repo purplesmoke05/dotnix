@@ -257,7 +257,7 @@
         "CTRL, 3, exec, quick-term"
 
       ] ++ [
-        "$mainMod, 0, split:workspace, 10"
+      "$mainMod, 0, split:workspace, 10"
         "$mainMod SHIFT, 0, split:movetoworkspace, 10"
       ] ++ (builtins.concatLists (
         builtins.genList
@@ -272,6 +272,11 @@
             ]
           ) 9
       ));
+
+      # On-release keybinding to avoid repeats for push-to-talk toggle
+      bindr = [
+        ", F6, exec, ${pkgs.push-to-talk}/bin/push-to-talk-toggle"
+      ];
 
       # Animation configuration
       animations = {
@@ -317,6 +322,7 @@
         hint_font_size = 11;      # 既定15 → さらに小さく
         hint_font_face = "Noto Sans CJK JP";  # 日本語でも視認性の良いフォント
       };
+      backends = { enable = [ "opencv" ]; };
       overlay_x_offset = 0;
       overlay_y_offset = -32; # 画面上部バー分上にずらす（必要に応じて微調整）
     };
