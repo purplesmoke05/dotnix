@@ -1,4 +1,19 @@
-{ pkgs, inputs, ... }: {
+{ pkgs, inputs, ... }:
+let
+  hasBattery =
+    let
+      powerSupplyPath = "/sys/class/power_supply";
+    in
+    if builtins.pathExists powerSupplyPath then
+      let
+        entries = builtins.attrNames (builtins.readDir powerSupplyPath);
+        batteryEntries = builtins.filter (name: builtins.match "^BAT" name != null) entries;
+      in
+      batteryEntries != [ ]
+    else
+      false;
+in
+{
   # Note: Hyprpanel module is now included in home-manager itself
   # No need to import from flake inputs anymore
 
@@ -28,7 +43,7 @@
       "bar.layouts" =
         let
           # Define standard layout with optional battery indicator
-          layout = { showBattery ? true }: {
+          layout = { showBattery ? hasBattery }: {
             "left" = [
               "dashboard" # System dashboard
               "workspaces" # Workspace indicator
