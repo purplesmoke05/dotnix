@@ -133,6 +133,11 @@
         enable_anr_dialog = false; # Disable ANR dialog / ANR ダイアログを無効化
       };
 
+      # Disable Hyprland update news popup. / Hyprland アップデート情報ポップアップを無効化。
+      ecosystem = {
+        no_update_news = true;
+      };
+
       # Window rules / ウィンドウルール
       windowrule = [ ];
 
