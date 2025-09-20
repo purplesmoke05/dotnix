@@ -7,7 +7,7 @@ let
   sources = {
     x86_64-linux = fetchurl {
       url = "https://downloads.cursor.com/production/64b72c9cd7e38203078327f881d5fe74930b2602/linux/x64/Cursor-1.6.14-x86_64.AppImage";
-      hash = "sha256-gcODUX7MPXnqWXN901Y82x09H3s9Y+7bck3yTnWO0TI=";
+      hash = "sha256-YEL5p3LCGA3IAmJ4oaPzgrObH0fPsJOYQXz9VQ2GoeA=";
     };
     aarch64-linux = fetchurl {
       url = "https://downloads.cursor.com/production/64b72c9cd7e38203078327f881d5fe74930b2602/linux/arm64/Cursor-1.6.14-aarch64.AppImage";

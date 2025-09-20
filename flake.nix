@@ -31,7 +31,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprsplit = {
-      url = "github:shezdy/hyprsplit?ref=v0.50.1";
+      url = "github:shezdy/hyprsplit?ref=v0.51.0";
       inputs.hyprland.follows = "hyprland";
     };
     mcp-servers-nix = {
@@ -39,7 +39,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.50.1";
+      url = "github:hyprwm/Hyprland/v0.51.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     zen-browser-flake = {
@@ -162,16 +162,16 @@
 
           # Codex (Rust) - pin to rust-v0.34.0 (Linux only) and wrap to bypass approvals/sandbox by default
           codex = prev.codex.overrideAttrs (old: rec {
-            version = "0.34.0";
+            version = "0.39.0";
             src = prev.fetchFromGitHub {
               owner = "openai";
               repo = "codex";
               rev = "rust-v${version}";
-              sha256 = "sha256-C1PXK/5vPFV5cz1dYWV+GaYl0grscb6qCR66BSih5/E=";
+              sha256 = "sha256-VxfUhPyJRYu6xvrDJRa3BqS/G7gf+J9d+2FbW1Ps4kw=";
             };
             cargoDeps = prev.rustPlatform.fetchCargoVendor {
               src = "${src}/codex-rs";
-              hash = "sha256-OMGGgg6hYdZ40vcUxVsWyLentFBj62CYEH3NJ909kYM=";
+              hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
             };
             doCheck = false;
 
@@ -309,7 +309,7 @@
             inherit nixpkgs inputs hostname username;
             inherit (inputs) hyprland hyprsplit;
           };
-        };
+      };
 
       darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default to "user" if not set
       darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default to "darwin-host" if not set

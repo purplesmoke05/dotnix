@@ -192,6 +192,10 @@ class SettingsConverter:
 
 def main():
     """Main entry point."""
+    # Environment override to force skipping (e.g., from wrapper scripts/CI)
+    if os.getenv('UPDATE_SKIP_VSCODE', '').lower() in ('1', 'true', 'yes'):
+        print('Skipping VSCode settings sync due to UPDATE_SKIP_VSCODE env')
+        return
     parser = argparse.ArgumentParser(description='Convert VSCode/Cursor settings to Nix format')
     parser.add_argument('--source', choices=['vscode', 'cursor'],
                        help='Specify settings source (vscode or cursor). If not specified, auto-detect based on platform.')

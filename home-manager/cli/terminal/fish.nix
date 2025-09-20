@@ -100,17 +100,39 @@
     # Define functions and key bindings here
     functions = {
       update = ''
-        # Parse flags
+        # Robust flag parsing (supports both argparse and manual fallback)
         set -l skip_vscode 0
-        for arg in $argv
-          switch $arg
-            case '--skip-vscode' '--no-vscode'
-              set skip_vscode 1
-            case '--help' '-h'
-              echo "Usage: update [--skip-vscode|--no-vscode]"
-              echo "  --skip-vscode/--no-vscode  Skip syncing VSCode settings/keybindings"
-              return 0
+
+        if type -q argparse
+          if not argparse --name=update 'skip-vscode' 'no-vscode' 'help,h' -- $argv
+            echo "Usage: update [--skip-vscode|--no-vscode]"
+            echo "  --skip-vscode/--no-vscode  Skip syncing VSCode settings/keybindings"
+            return 1
           end
+          if set -q _flag_help
+            echo "Usage: update [--skip-vscode|--no-vscode]"
+            echo "  --skip-vscode/--no-vscode  Skip syncing VSCode settings/keybindings"
+            return 0
+          end
+          if set -q _flag_skip_vscode; or set -q _flag_no_vscode
+            set skip_vscode 1
+          end
+        else
+          for arg in $argv
+            switch $arg
+              case '--skip-vscode' '--no-vscode'
+                set skip_vscode 1
+              case '--help' '-h'
+                echo "Usage: update [--skip-vscode|--no-vscode]"
+                echo "  --skip-vscode/--no-vscode  Skip syncing VSCode settings/keybindings"
+                return 0
+            end
+          end
+        end
+
+        # Environment override for CI/scripts: export UPDATE_SKIP_VSCODE=1
+        if test -n "$UPDATE_SKIP_VSCODE"
+          set skip_vscode 1
         end
 
         if string match -q "Darwin" (uname)

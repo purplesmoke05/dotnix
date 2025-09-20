@@ -144,6 +144,10 @@ class KeybindingsConverter:
 
 def main():
     """Main entry point."""
+    # Environment override to force skipping
+    if os.getenv('UPDATE_SKIP_VSCODE', '').lower() in ('1', 'true', 'yes'):
+        print('Skipping VSCode keybindings sync due to UPDATE_SKIP_VSCODE env')
+        return
     parser = argparse.ArgumentParser(description='Convert VSCode/Cursor keybindings to Nix format')
     parser.add_argument('--source', choices=['vscode', 'cursor'],
                        help='Specify keybindings source (vscode or cursor). If not specified, auto-detect based on platform.')
