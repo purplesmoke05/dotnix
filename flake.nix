@@ -171,7 +171,7 @@
             };
             cargoDeps = prev.rustPlatform.fetchCargoVendor {
               src = "${src}/codex-rs";
-              hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+              hash = "sha256-62JkVo2Dlrtgr66qn6a3vuIUsJpVZDQ8uqIJnXeeU90=";
             };
             doCheck = false;
 
