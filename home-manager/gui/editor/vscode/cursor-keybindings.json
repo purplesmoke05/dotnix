@@ -1108,5 +1108,19 @@
   {
     "command": "workbench.action.chat.openInSidebar",
     "key": "ctrl+]"
+  },
+  {
+    "command": "test.command",
+    "key": "ctrl+alt+t"
+  },
+  {
+    "key": "ctrl+]",
+    "command": "composer.startComposerPrompt",
+    "when": "cursor.appLayout != 'agent'"
+  },
+  {
+    "key": "ctrl+i",
+    "command": "-composer.startComposerPrompt",
+    "when": "cursor.appLayout != 'agent'"
   }
 ]

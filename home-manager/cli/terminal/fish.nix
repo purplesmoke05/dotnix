@@ -94,7 +94,7 @@
         set -l skip_vscode 0
 
         if type -q argparse
-          if not argparse --name=update 'skip-vscode' 'no-vscode' 'help,h' -- $argv
+          if not argparse --name=update 'skip-vscode' 'no-vscode' 'h/help' -- $argv
             echo "Usage: update [--skip-vscode|--no-vscode]"
             echo "  --skip-vscode/--no-vscode  Skip syncing VSCode settings/keybindings"
             return 1
