@@ -16,6 +16,7 @@
   # Control power and thermals with TLP and thermald. / TLP と thermald で熱制御。
   services.tlp.enable = true;
   services.thermald.enable = true;
+  services.upower.enable = true; # Provide battery telemetry for Hyprpanel. / Hyprpanel のバッテリー情報取得用に UPower を有効化。
 
   # User configuration / ユーザー設定
   # Grant admin and network groups to primary user. / 管理権限とネットワーク権限を付与。

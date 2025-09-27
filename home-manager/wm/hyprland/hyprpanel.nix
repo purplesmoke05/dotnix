@@ -1,17 +1,24 @@
-{ pkgs, inputs, ... }:
+{ pkgs, inputs, hostname, ... }:
 let
+  # Force battery indicator on laptop host and fall back to sysfs when readable. / laptop ホストではバッテリー表示を強制し、読み取り可能な場合は sysfs 判定へフォールバック。
   hasBattery =
     let
       powerSupplyPath = "/sys/class/power_supply";
+      batteryHosts = [ "laptop" ];
+      sysfsBatteryCheck = builtins.tryEval (
+        if builtins.pathExists powerSupplyPath then
+          let
+            entries = builtins.attrNames (builtins.readDir powerSupplyPath);
+            batteryEntries = builtins.filter (name: builtins.match "^BAT" name != null) entries;
+          in
+          batteryEntries != [ ]
+        else
+          false
+      );
+      sysfsHasBattery =
+        if sysfsBatteryCheck.success then sysfsBatteryCheck.value else false;
     in
-    if builtins.pathExists powerSupplyPath then
-      let
-        entries = builtins.attrNames (builtins.readDir powerSupplyPath);
-        batteryEntries = builtins.filter (name: builtins.match "^BAT" name != null) entries;
-      in
-      batteryEntries != [ ]
-    else
-      false;
+    builtins.elem hostname batteryHosts || sysfsHasBattery;
 in
 {
   # Note: Hyprpanel module is now included in home-manager itself

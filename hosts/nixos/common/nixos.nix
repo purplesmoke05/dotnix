@@ -24,12 +24,7 @@ in
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
-  boot.kernelPatches = [
-    {
-      name = "victrix-pro-bfg-1ms";
-      patch = ../../../pkgs/linux-xanmod-6_12_32/xpad-victrix-1ms.patch;
-    }
-  ];
+  boot.kernelPatches = [ ];
   boot.kernelParams = [
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
