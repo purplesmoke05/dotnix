@@ -156,16 +156,16 @@
           # Codex CLI (Rust) / Codex CLI（Rust）
           # Pin to rust-v0.39.0 and wrap with bypass flags. / rust-v0.39.0 に固定しラッパーで承認回避。
           codex = prev.codex.overrideAttrs (old: rec {
-            version = "0.41.0";
+            version = "0.42.0";
             src = prev.fetchFromGitHub {
               owner = "openai";
               repo = "codex";
               rev = "rust-v${version}";
-              sha256 = "sha256-Dz+RE3Ejr7BcJBJq5+UMP2Pb6v8A2intn3LzozoWovE=";
+              sha256 = "sha256-YyI4quZ1vcwzDx38EzqycnUQDBOg9SfEemR4zdKYYIw=";
             };
             cargoDeps = prev.rustPlatform.fetchCargoVendor {
               src = "${src}/codex-rs";
-              hash = "sha256-0sCmo3/3kY+nCufATBySAif5Z/T89Le0UedVgCrZiW8=";
+              hash = "sha256-No6/WmaCI+w1cVD+PsLJ1jK0zZDYziGlm9DD9E3hA58=";
             };
             doCheck = false;
 
