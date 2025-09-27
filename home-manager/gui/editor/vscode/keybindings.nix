@@ -1109,13 +1109,13 @@
       key = "ctrl+alt+t";
     }
     {
-      key = "ctrl+]";
       command = "composer.startComposerPrompt";
+      key = "ctrl+]";
       when = "cursor.appLayout != 'agent'";
     }
     {
-      key = "ctrl+i";
       command = "-composer.startComposerPrompt";
+      key = "ctrl+i";
       when = "cursor.appLayout != 'agent'";
     }
   ]
