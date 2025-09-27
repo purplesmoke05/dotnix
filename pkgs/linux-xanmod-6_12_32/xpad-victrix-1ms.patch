@@ -1,0 +1,52 @@
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -795,6 +795,22 @@
+ 	bool delayed_init_done;
+ };
+ 
++static bool xpad_is_victrix_pro_bfg(const struct usb_xpad *xpad)
++{
++	if (le16_to_cpu(xpad->udev->descriptor.idVendor) != 0x0e6f)
++		return false;
++
++	switch (le16_to_cpu(xpad->udev->descriptor.idProduct)) {
++	case 0x021a:
++	case 0x0217:
++		return true;
++	default:
++		return false;
++	}
++}
++
++static unsigned int xpad_poll_interval(const struct usb_xpad *xpad,
++				       unsigned int default_interval)
++{
++	/* Force 1ms interrupt interval for Victrix Pro BFG. / Victrix Pro BFG の割り込み間隔を 1ms に固定。 */
++	if (xpad_is_victrix_pro_bfg(xpad))
++		return 1;
++
++	return default_interval;
++}
++
+ static int xpad_init_input(struct usb_xpad *xpad);
+ static void xpad_deinit_input(struct usb_xpad *xpad);
+ static int xpad_start_input(struct usb_xpad *xpad);
+@@ -1429,7 +1445,8 @@
+ 	usb_fill_int_urb(xpad->irq_out, xpad->udev,
+ 			 usb_sndintpipe(xpad->udev, ep_irq_out->bEndpointAddress),
+ 			 xpad->odata, XPAD_PKT_LEN,
+-			 xpad_irq_out, xpad, ep_irq_out->bInterval);
++			 xpad_irq_out, xpad,
++			 xpad_poll_interval(xpad, ep_irq_out->bInterval));
+ 	xpad->irq_out->transfer_dma = xpad->odata_dma;
+ 	xpad->irq_out->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+ 
+@@ -2158,7 +2175,7 @@
+ 	usb_fill_int_urb(xpad->irq_in, udev,
+ 			 usb_rcvintpipe(udev, ep_irq_in->bEndpointAddress),
+ 			 xpad->idata, XPAD_PKT_LEN, xpad_irq_in,
+-			 xpad, ep_irq_in->bInterval);
++			 xpad, xpad_poll_interval(xpad, ep_irq_in->bInterval));
+ 	xpad->irq_in->transfer_dma = xpad->idata_dma;
+ 	xpad->irq_in->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+ 

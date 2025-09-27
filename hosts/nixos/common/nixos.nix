@@ -1,5 +1,20 @@
 { inputs, config, pkgs, hostname, username, hyprland, ... }:
 
+let
+  setVictrixPolling = pkgs.writeShellScript "set-victrix-binterval" ''
+    shopt -s nullglob
+    for iface in /sys$DEVPATH/*:1.*; do
+      if [ -d "''${iface}" ]; then
+        for ep in 81 02 84 04; do
+          path="''${iface}/ep_''${ep}/bInterval"
+          if [ -w "''${path}" ]; then
+            printf '1' > "''${path}" 2>/dev/null || true
+          fi
+        done
+      fi
+    done
+  '';
+in
 {
   # System Boot Configuration / システム起動構成
   # Boot via systemd-boot with xanmod for low-latency desktops. / systemd-boot と xanmod カーネルで低遅延デスクトップ向けに起動を構成。
@@ -9,6 +24,12 @@
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
+  boot.kernelPatches = [
+    {
+      name = "victrix-pro-bfg-1ms";
+      patch = ../../../pkgs/linux-xanmod-6_12_32/xpad-victrix-1ms.patch;
+    }
+  ];
   boot.kernelParams = [
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
@@ -831,7 +852,8 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/wakeup}="enabled"
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{bInterval}="1"
+    # Force 1 ms polling on Victrix endpoints with udev-run script. / udev スクリプトで Victrix のエンドポイントを 1ms ポーリングに設定。
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", RUN+="${setVictrixPolling}"
 
     # Xbox-compatible controllers / Xbox 互換コントローラーを最適化
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"
