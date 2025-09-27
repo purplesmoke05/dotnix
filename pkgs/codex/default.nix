@@ -1,69 +1,96 @@
 { lib
 , stdenv
-, stdenvNoCC
 , fetchurl
-, makeWrapper
 , autoPatchelfHook ? null
-, openssl
-, prevCodex ? null
+, makeWrapper
+, openssl ? null
+, zlib ? null
 }:
 
 let
-  version = "0.42.0";
-  system = stdenv.hostPlatform.system;
-  assets = {
-    "x86_64-linux" = {
-      archive = "codex-x86_64-unknown-linux-gnu.tar.gz";
-      sha256 = "sha256-C4faG9SWvchjgFOtq1cYtO3ScchBXRcbcMvxFJ5Hsvg=";
-      binary = "codex-x86_64-unknown-linux-gnu";
+  version = "0.41.0";
+
+  platforms = {
+    x86_64-linux = {
+      artifact = "codex-x86_64-unknown-linux-gnu.tar.gz";
+      sha256 = "sha256-gb1XgnuMPQMILPEYxzMrGYZMQAlZudJeSue3p6D5xJQ=";
+      nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
+      buildInputs = lib.filter (x: x != null) [ openssl zlib ];
     };
-    "aarch64-linux" = {
-      archive = "codex-aarch64-unknown-linux-gnu.tar.gz";
-      sha256 = "sha256-q2KqIgYsl9BPslXJUAiXD0k7V8ZUyaF4fbIhdagRP/A=";
-      binary = "codex-aarch64-unknown-linux-gnu";
+
+    aarch64-linux = {
+      artifact = "codex-aarch64-unknown-linux-gnu.tar.gz";
+      sha256 = "sha256-Wnmh8Pgo8Cevl6DywnfVILlwMOo9dHezZj0W7b5QGIY=";
+      nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
+      buildInputs = lib.filter (x: x != null) [ openssl zlib ];
     };
-    "x86_64-darwin" = {
-      archive = "codex-x86_64-apple-darwin.tar.gz";
-      sha256 = "sha256-I2brOrXMaH+4Vsk8OzcMUrHYf5+81x3l9G3we4HRSF8=";
-      binary = "codex-x86_64-apple-darwin";
+
+    x86_64-darwin = {
+      artifact = "codex-x86_64-apple-darwin.tar.gz";
+      sha256 = "sha256-MzYPdQD08fXXEu4W5GSrk9s1/WmDHCGrQCUV3/AMxcE=";
+      nativeBuildInputs = [ makeWrapper ];
     };
-    "aarch64-darwin" = {
-      archive = "codex-aarch64-apple-darwin.tar.gz";
-      sha256 = "sha256-faQCUslpC63Zkrmw3Wobb20D9OfXFeUkAwvzs18/Jzs=";
-      binary = "codex-aarch64-apple-darwin";
+
+    aarch64-darwin = {
+      artifact = "codex-aarch64-apple-darwin.tar.gz";
+      sha256 = "sha256-DJ9PLXOo7+TLTV2mpWBAF6R1Ri8tauP9HshRS8W8fjA=";
+      nativeBuildInputs = [ makeWrapper ];
     };
   };
-  asset = lib.attrByPath [ system ] null assets;
-  linuxPatchelfInputs = lib.optionals (stdenv.isLinux && autoPatchelfHook != null) [ autoPatchelfHook ];
-  linuxLibs = lib.optionals stdenv.isLinux [ stdenv.cc.cc.lib openssl ];
+
+  config = platforms.${stdenv.system} or null;
+
+  throwForSystem = throw "No prebuilt Codex binary for ${stdenv.system}.";
+
+  codexUrl = system: artifact:
+    "https://github.com/openai/codex/releases/download/rust-v${version}/${artifact}";
 in
-if asset == null then
-  (if prevCodex == null then lib.throw "codex: unsupported platform ${system}" else prevCodex)
+if config == null then
+  throwForSystem
 else
-  stdenvNoCC.mkDerivation {
+  let
+    binaryName = lib.removeSuffix ".tar.gz" config.artifact;
+  in
+  stdenv.mkDerivation rec {
     pname = "codex";
     inherit version;
 
     src = fetchurl {
-      url = "https://github.com/openai/codex/releases/download/rust-v${version}/${asset.archive}";
-      sha256 = asset.sha256;
+      url = codexUrl stdenv.system config.artifact;
+      sha256 = config.sha256;
     };
 
-    dontBuild = true;
-    sourceRoot = ".";
+    nativeBuildInputs = config.nativeBuildInputs;
+    buildInputs = config.buildInputs or [ ];
 
-    nativeBuildInputs = [ makeWrapper ] ++ linuxPatchelfInputs;
-    buildInputs = linuxLibs;
+    dontConfigure = true;
+    dontBuild = true;
+
+    unpackPhase = ''
+      runHook preUnpack
+      tar -xzf "$src"
+      runHook postUnpack
+    '';
 
     installPhase = ''
       runHook preInstall
-      install -Dm755 ${asset.binary} $out/bin/codex
-      wrapProgram $out/bin/codex \
-        --add-flags "--dangerously-bypass-approvals-and-sandbox"
+      install -Dm755 "${binaryName}" "$out/bin/codex"
       runHook postInstall
     '';
 
-    meta = (if prevCodex != null then prevCodex.meta else { }) // {
-      inherit version;
+    postInstall = ''
+      if [ -x "$out/bin/codex" ]; then
+        wrapProgram "$out/bin/codex" \
+          --add-flags "--dangerously-bypass-approvals-and-sandbox"
+      fi
+    '';
+
+    meta = {
+      description = "Command line interface for OpenAI Codex";
+      longDescription = "Prebuilt Codex CLI with sandbox override wrapper.";
+      homepage = "https://github.com/openai/codex";
+      license = lib.licenses.asl20;
+      maintainers = with lib.maintainers; [ ];
+      platforms = lib.attrNames platforms;
     };
   }

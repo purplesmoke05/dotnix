@@ -153,10 +153,8 @@
             };
           });
 
-          # Codex CLI (Rust) / Codex CLI（Rust）
-          codex = final.callPackage ./pkgs/codex {
-            prevCodex = prev.codex;
-          };
+          # Codex CLI (prebuilt) / Codex CLI（バイナリ）
+          codex = final.callPackage ./pkgs/codex { };
 
           # hints package (NixOS only) / hints パッケージ（NixOS 限定）
           hints = final.callPackage ./pkgs/hints { };
@@ -282,7 +280,7 @@
             inherit nixpkgs inputs hostname username;
             inherit (inputs) hyprland hyprsplit;
           };
-      };
+        };
 
       darwinUser = let env = builtins.getEnv "DARWIN_USER"; in if env != "" then env else "user"; # Default "user" fallback / 未設定時は "user"
       darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default "darwin-host" fallback / 未設定時は "darwin-host"
