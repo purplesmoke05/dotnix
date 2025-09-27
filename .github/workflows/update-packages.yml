@@ -134,8 +134,8 @@ jobs:
           commit-message: "chore(codex): Update to latest rust tag"
           title: "chore(codex): Update to latest rust tag"
           body: |
-            Automated update of the Codex (Rust) overlay in flake.nix to the latest rust tag.
-            This also refreshes src sha256 and cargo vendor hash.
+            Automated update of the Codex CLI package definition to the latest rust tag.
+            Regenerated `pkgs/codex/default.nix` with refreshed release hashes.
           branch: "chore/update-codex"
           delete-branch: true
           labels: automated pr, nix, package update

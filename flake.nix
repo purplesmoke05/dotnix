@@ -154,30 +154,9 @@
           });
 
           # Codex CLI (Rust) / Codex CLI（Rust）
-          # Pin to rust-v0.39.0 and wrap with bypass flags. / rust-v0.39.0 に固定しラッパーで承認回避。
-          codex = prev.codex.overrideAttrs (old: rec {
-            version = "0.41.0";
-            src = prev.fetchFromGitHub {
-              owner = "openai";
-              repo = "codex";
-              rev = "rust-v${version}";
-              sha256 = "sha256-Dz+RE3Ejr7BcJBJq5+UMP2Pb6v8A2intn3LzozoWovE=";
-            };
-            cargoDeps = prev.rustPlatform.fetchCargoVendor {
-              src = "${src}/codex-rs";
-              hash = "sha256-0sCmo3/3kY+nCufATBySAif5Z/T89Le0UedVgCrZiW8=";
-            };
-            doCheck = false;
-
-            # Ensure wrapProgram availability / wrapProgram を追加
-            nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ prev.makeWrapper ];
-            postInstall = (old.postInstall or "") + ''
-              if [ -x "$out/bin/codex" ]; then
-                wrapProgram "$out/bin/codex" \
-                  --add-flags "--dangerously-bypass-approvals-and-sandbox"
-              fi
-            '';
-          });
+          codex = final.callPackage ./pkgs/codex {
+            prevCodex = prev.codex;
+          };
 
           # hints package (NixOS only) / hints パッケージ（NixOS 限定）
           hints = final.callPackage ./pkgs/hints { };
