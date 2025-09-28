@@ -1,6 +1,6 @@
 --- a/drivers/input/joystick/xpad.c
 +++ b/drivers/input/joystick/xpad.c
-@@ -795,6 +795,22 @@
+@@ -795,6 +795,30 @@
  	bool delayed_init_done;
  };
  
@@ -31,20 +31,20 @@
  static int xpad_init_input(struct usb_xpad *xpad);
  static void xpad_deinit_input(struct usb_xpad *xpad);
  static int xpad_start_input(struct usb_xpad *xpad);
-@@ -1429,7 +1445,8 @@
- 	usb_fill_int_urb(xpad->irq_out, xpad->udev,
- 			 usb_sndintpipe(xpad->udev, ep_irq_out->bEndpointAddress),
- 			 xpad->odata, XPAD_PKT_LEN,
+@@ -1429,7 +1453,8 @@
+	usb_fill_int_urb(xpad->irq_out, xpad->udev,
+			 usb_sndintpipe(xpad->udev, ep_irq_out->bEndpointAddress),
+			 xpad->odata, XPAD_PKT_LEN,
 -			 xpad_irq_out, xpad, ep_irq_out->bInterval);
 +			 xpad_irq_out, xpad,
 +			 xpad_poll_interval(xpad, ep_irq_out->bInterval));
  	xpad->irq_out->transfer_dma = xpad->odata_dma;
  	xpad->irq_out->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
  
-@@ -2158,7 +2175,7 @@
- 	usb_fill_int_urb(xpad->irq_in, udev,
- 			 usb_rcvintpipe(udev, ep_irq_in->bEndpointAddress),
- 			 xpad->idata, XPAD_PKT_LEN, xpad_irq_in,
+@@ -2158,7 +2183,7 @@
+	usb_fill_int_urb(xpad->irq_in, udev,
+			 usb_rcvintpipe(udev, ep_irq_in->bEndpointAddress),
+			 xpad->idata, XPAD_PKT_LEN, xpad_irq_in,
 -			 xpad, ep_irq_in->bInterval);
 +			 xpad, xpad_poll_interval(xpad, ep_irq_in->bInterval));
  	xpad->irq_in->transfer_dma = xpad->idata_dma;

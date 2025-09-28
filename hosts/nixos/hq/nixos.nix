@@ -19,7 +19,7 @@
   boot.kernelPatches = [
     {
       name = "victrix-pro-bfg-1ms";
-      patch = ../../../pkgs/linux-xanmod-6_12_32/xpad-victrix-1ms.patch;
+      patch = ../../../pkgs/linux-xanmod-6_16_7/xpad-victrix-1ms.patch;
     }
   ]; # Apply Victrix patch on HQ host only. / HQ ホストのみで Victrix パッチを適用。
 

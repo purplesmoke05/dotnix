@@ -19,7 +19,7 @@ in
   # System Boot Configuration / システム起動構成
   # Boot via systemd-boot with xanmod for low-latency desktops. / systemd-boot と xanmod カーネルで低遅延デスクトップ向けに起動を構成。
   boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 5;
+  boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
@@ -778,8 +778,6 @@ in
   # Disable Bluetooth USB autosuspend / Bluetooth USB autosuspend を無効化
   boot.extraModprobeConfig = ''
     options btusb enable_autosuspend=N
-    # Force xpad driver for higher polling rate / ポーリングレート向上のため xpad を強制
-    options xpad quirks=0x0e6f:0x021a:0x100
   '';
 
   # Load xpad early for Victrix Pro BFG / Victrix Pro BFG 用に早期 xpad ロード

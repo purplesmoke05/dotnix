@@ -1,9 +1,9 @@
-# pkgs/linux-xanmod-6_12_32/default.nix (module version)
+# pkgs/linux-xanmod-6_16_7/default.nix (module version)
 { lib, config, pkgs, ... }:
 
 let
   # Import the kernel package definition using local path
-  customBuiltKernel = import ../linux-xanmod-6_12_32/kernel-package.nix {
+  customBuiltKernel = import ../linux-xanmod-6_16_7/kernel-package.nix {
     inherit lib pkgs;
     # Provide default kernelPatches; ensure it is a list
     kernelPatches = (config.boot.kernelPatches or [ ]) ++ (
@@ -25,6 +25,6 @@ in
   options.boot.customXanmodKernelPatches = lib.mkOption {
     type = lib.types.listOf lib.types.package;
     default = [ ];
-    description = "Additional kernel patches to apply to the custom XanMod 6.12.32 kernel.";
+    description = "Additional kernel patches to apply to the custom XanMod 6.16.7 kernel.";
   };
 }

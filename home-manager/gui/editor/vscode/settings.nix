@@ -1,17 +1,4 @@
 {
-  "[dockercompose]" = {
-  editor = {
-  autoIndent = "advanced";
-  defaultFormatter = "redhat.vscode-yaml";
-  insertSpaces = true;
-  tabSize = 2;
-};
-};
-  "[github-actions-workflow]" = {
-  editor = {
-  defaultFormatter = "redhat.vscode-yaml";
-};
-};
   "[markdown]" = {
   cSpell = {
   advanced = {
