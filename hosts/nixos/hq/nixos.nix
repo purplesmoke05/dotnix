@@ -16,13 +16,6 @@
   # Use TLP and thermald for laptop power/thermal control. / TLP と thermald でノート向け制御。
   services.tlp.enable = true;
   services.thermald.enable = true;
-  boot.kernelPatches = [
-    {
-      name = "victrix-pro-bfg-1ms";
-      patch = ../../../pkgs/linux-xanmod-6_16_7/xpad-victrix-1ms.patch;
-    }
-  ]; # Apply Victrix patch on HQ host only. / HQ ホストのみで Victrix パッチを適用。
-
   # User configuration / ユーザー設定
   # Grant network and admin access to primary user. / 主要ユーザーに管理権限を付与。
   users.users.${username} = {
