@@ -8,32 +8,32 @@
 }:
 
 let
-  version = "0.41.0";
+  version = "0.46.0";
 
   platforms = {
     x86_64-linux = {
       artifact = "codex-x86_64-unknown-linux-gnu.tar.gz";
-      sha256 = "sha256-gb1XgnuMPQMILPEYxzMrGYZMQAlZudJeSue3p6D5xJQ=";
+      sha256 = "sha256-SiG7AwsVUCQqDNJkCUxtrtnmhBEG8WsU2Hskxkju5lk=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
       buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib ];
     };
 
     aarch64-linux = {
       artifact = "codex-aarch64-unknown-linux-gnu.tar.gz";
-      sha256 = "sha256-Wnmh8Pgo8Cevl6DywnfVILlwMOo9dHezZj0W7b5QGIY=";
+      sha256 = "sha256-gheRO1Ci7nBe5nIiQO51/O3FF+M3sUw0XtXb/FFvMpw=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
       buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib ];
     };
 
     x86_64-darwin = {
       artifact = "codex-x86_64-apple-darwin.tar.gz";
-      sha256 = "sha256-MzYPdQD08fXXEu4W5GSrk9s1/WmDHCGrQCUV3/AMxcE=";
+      sha256 = "sha256-sn2JsPe+1aOnHM8sy/c31Ht1zhodfgaes8NQZfQfJLY=";
       nativeBuildInputs = [ makeWrapper ];
     };
 
     aarch64-darwin = {
       artifact = "codex-aarch64-apple-darwin.tar.gz";
-      sha256 = "sha256-DJ9PLXOo7+TLTV2mpWBAF6R1Ri8tauP9HshRS8W8fjA=";
+      sha256 = "sha256-IhYs6lPL5gMM1AMz4DbQc28uQsUVdT8iJsvVIlYfxQI=";
       nativeBuildInputs = [ makeWrapper ];
     };
   };

@@ -144,12 +144,12 @@
           # code-cursor package / code-cursor パッケージ
           code-cursor = final.callPackage ./pkgs/code-cursor { inherit (final) substituteInPlace; };
 
-          # Claude Code CLI v1.0.70 / Claude Code CLI v1.0.70
+          # Claude Code CLI v2.0.22 / Claude Code CLI v2.0.22
           claude-code = prev.claude-code.overrideAttrs (oldAttrs: rec {
-            version = "1.0.70";
+            version = "2.0.22";
             src = prev.fetchurl {
               url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${version}.tgz";
-              sha256 = "sha256-80bfBwXFbjhr8Wi6xiadoCopvbE6PPcT6yabW1lTV1I=";
+              sha256 = "sha256-iv052RKdDZPq0jdJpC21J2M5T8iyEZ3AlMFo6N5/+FE=";
             };
           });
 
