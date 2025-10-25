@@ -89,6 +89,124 @@
 
     # Functions and key bindings / 関数とキーバインド
     functions = {
+      # VSCode keybind diff checker / VSCode keybind 差分チェッカー
+      __check_vscode_keybind_diff = ''
+        function __check_vscode_keybind_diff
+          set -l source_type $argv[1]
+          set -l temp_file (mktemp)
+          set -l current_file (mktemp)
+          set -l has_differences 0
+
+          # Get current keybindings from VSCode/Cursor / 現在のキーバインドを取得
+          if test "$source_type" = "vscode"
+            if command -v code > /dev/null
+              code --list-extensions > /dev/null 2>&1
+              if test $status -eq 0
+                # VSCode is available / VSCode が利用可能
+                code --list-extensions | grep -q "vscodevim.vim" > /dev/null 2>&1
+                if test $status -eq 0
+                  # VSCodeVim extension is installed / VSCodeVim 拡張がインストール済み
+                  echo "VSCodeVim extension detected, checking keybind differences..."
+
+                  # Check if keybindings file exists and has content / キーバインドファイルの存在と内容をチェック
+                  set -l keybind_file "$HOME/.config/Code/User/keybindings.json"
+                  if test -f "$keybind_file"
+                    set -l file_size (stat -c%s "$keybind_file" 2>/dev/null || echo "0")
+                    if test "$file_size" -gt 2
+                      # File has content (more than just "[]") / ファイルに内容がある（"[]"以外）
+                      echo "Existing VSCode keybindings found, potential differences detected."
+                      set has_differences 1
+                    end
+                  end
+
+                  # Check if there are any custom keybindings in the Nix config / Nix設定にカスタムキーバインドがあるかチェック
+                  if test -f "$HOME/.nix/home-manager/gui/editor/vscode/keybindings.nix"
+                    set -l nix_keybind_size (wc -l < "$HOME/.nix/home-manager/gui/editor/vscode/keybindings.nix" 2>/dev/null || echo "0")
+                    if test "$nix_keybind_size" -gt 5
+                      echo "Nix keybindings configuration found with $nix_keybind_size lines."
+                      set has_differences 1
+                    end
+                  end
+
+                  if test $has_differences -eq 1
+                    return 0
+                  end
+                end
+              end
+            end
+          else if test "$source_type" = "cursor"
+            if command -v cursor > /dev/null
+              cursor --list-extensions > /dev/null 2>&1
+              if test $status -eq 0
+                # Cursor is available / Cursor が利用可能
+                cursor --list-extensions | grep -q "vscodevim.vim" > /dev/null 2>&1
+                if test $status -eq 0
+                  # VSCodeVim extension is installed / VSCodeVim 拡張がインストール済み
+                  echo "VSCodeVim extension detected in Cursor, checking keybind differences..."
+
+                  # Check if keybindings file exists and has content / キーバインドファイルの存在と内容をチェック
+                  set -l keybind_file "$HOME/.config/Cursor/User/keybindings.json"
+                  if test -f "$keybind_file"
+                    set -l file_size (stat -c%s "$keybind_file" 2>/dev/null || echo "0")
+                    if test "$file_size" -gt 2
+                      # File has content (more than just "[]") / ファイルに内容がある（"[]"以外）
+                      echo "Existing Cursor keybindings found, potential differences detected."
+                      set has_differences 1
+                    end
+                  end
+
+                  # Check if there are any custom keybindings in the Nix config / Nix設定にカスタムキーバインドがあるかチェック
+                  if test -f "$HOME/.nix/home-manager/gui/editor/vscode/cursor-keybindings.json"
+                    set -l nix_keybind_size (wc -l < "$HOME/.nix/home-manager/gui/editor/vscode/cursor-keybindings.json" 2>/dev/null || echo "0")
+                    if test "$nix_keybind_size" -gt 5
+                      echo "Nix Cursor keybindings configuration found with $nix_keybind_size lines."
+                      set has_differences 1
+                    end
+                  end
+
+                  if test $has_differences -eq 1
+                    return 0
+                  end
+                end
+              end
+            end
+          end
+
+          # No differences detected / 差分が検出されなかった
+          echo "No keybind differences detected, proceeding with update."
+          return 1
+        end
+      '';
+
+      # VSCode keybind update confirmation / VSCode keybind 更新確認
+      __confirm_vscode_keybind_update = ''
+        function __confirm_vscode_keybind_update
+          set -l source_type $argv[1]
+
+          echo ""
+          echo "🔧 VSCode keybind update detected / VSCode キーバインドの更新が検出されました"
+          echo "Source: $source_type"
+          echo ""
+          echo "This will update your VSCode keybindings from the Nix configuration."
+          echo "既存のVSCodeキーバインドがNix設定で更新されます。"
+          echo ""
+
+          while true
+            read -l -P "Do you want to proceed with the keybind update? [y/N]: " confirm
+            switch $confirm
+              case Y y yes Yes YES
+                echo "Proceeding with keybind update... / キーバインド更新を実行します..."
+                return 0
+              case \'\' N n no No NO
+                echo "Skipping keybind update. / キーバインド更新をスキップします。"
+                return 1
+              case '*'
+                echo "Please answer 'y' for yes or 'n' for no. / 'y'（はい）または'n'（いいえ）で回答してください。"
+            end
+          end
+        end
+      '';
+
       update = ''
         # Robust flag parsing / argparse 互換の堅牢な解析
         set -l skip_vscode 0
@@ -139,10 +257,27 @@
               echo "Error: Failed to update VSCode settings. Aborting."
               return 1
             end
-            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source vscode
-              echo "Error: Failed to update VSCode keybindings. Aborting."
-              return 1
+
+            # Check for keybind differences and confirm update / キーバインド差分をチェックして更新を確認
+            if __check_vscode_keybind_diff vscode
+              if not __confirm_vscode_keybind_update vscode
+                echo "Skipping VSCode keybindings update as requested. / 要求に応じてVSCodeキーバインド更新をスキップします。"
+              else
+                if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source vscode
+                  echo "Error: Failed to update VSCode keybindings. Aborting."
+                  return 1
+                end
+                echo "VSCode keybindings updated successfully. / VSCodeキーバインドが正常に更新されました。"
+              end
+            else
+              # No keybind differences detected, proceed with update / キーバインド差分が検出されない場合、更新を実行
+              if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source vscode
+                echo "Error: Failed to update VSCode keybindings. Aborting."
+                return 1
+              end
+              echo "VSCode keybindings updated successfully. / VSCodeキーバインドが正常に更新されました。"
             end
+
             echo "VSCode configuration updated successfully."
           else
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
@@ -159,10 +294,27 @@
               echo "Error: Failed to update VSCode settings. Aborting."
               return 1
             end
-            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source cursor
-              echo "Error: Failed to update VSCode keybindings. Aborting."
-              return 1
+
+            # Check for keybind differences and confirm update / キーバインド差分をチェックして更新を確認
+            if __check_vscode_keybind_diff cursor
+              if not __confirm_vscode_keybind_update cursor
+                echo "Skipping VSCode keybindings update as requested. / 要求に応じてVSCodeキーバインド更新をスキップします。"
+              else
+                if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source cursor
+                  echo "Error: Failed to update VSCode keybindings. Aborting."
+                  return 1
+                end
+                echo "VSCode keybindings updated successfully. / VSCodeキーバインドが正常に更新されました。"
+              end
+            else
+              # No keybind differences detected, proceed with update / キーバインド差分が検出されない場合、更新を実行
+              if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py --source cursor
+                echo "Error: Failed to update VSCode keybindings. Aborting."
+                return 1
+              end
+              echo "VSCode keybindings updated successfully. / VSCodeキーバインドが正常に更新されました。"
             end
+
             echo "VSCode configuration updated successfully."
           else
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."

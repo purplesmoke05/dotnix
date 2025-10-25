@@ -29,6 +29,10 @@ python3Packages.buildPythonApplication rec {
     sha256 = "sha256-Z+KCTi0nZL9+InpaL2dfwV7YYdP9R0rLtGySQ0MysEU=";
   };
 
+  patches = [
+    ./no-gtk-animations.patch
+  ];
+
   # (We patch upstream file in postPatch below to improve Wayland/Hyprland auto-detection)
 
   # Build using PEP 517 (pyproject.toml) if present; this is compatible with both

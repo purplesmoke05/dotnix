@@ -1,0 +1,17 @@
+diff --git a/hints/huds/overlay.py b/hints/huds/overlay.py
+index 5e50d51..453a46f 100644
+--- a/hints/huds/overlay.py
++++ b/hints/huds/overlay.py
+@@ -36,6 +36,11 @@ class OverlayWindow(Gtk.Window):
+         :param mouse_action: Mouse action information.
+         """
+         super().__init__(Gtk.WindowType.POPUP)
++
++        settings = Gtk.Settings.get_default()
++        if settings is not None:
++            # Disable GTK animations so the overlay appears instantly. / オーバーレイを即座に表示するため GTK アニメーションを無効化。
++            settings.props.gtk_enable_animations = False
+ 
+         self.width = width
+         self.height = height
+         self.hints = hints

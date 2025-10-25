@@ -13,6 +13,7 @@
       keybinds = {
         # Disable Ctrl+t globally (prevents switching to Tab mode)
         "unbind \"Ctrl t\"" = { };
+        "unbind \"Ctrl h\"" = { };
         normal = {
           "bind \"Ctrl g\"" = {
             "SwitchToMode" = "Locked";

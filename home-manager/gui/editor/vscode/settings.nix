@@ -1,4 +1,17 @@
 {
+  "[dockercompose]" = {
+  editor = {
+  autoIndent = "advanced";
+  defaultFormatter = "redhat.vscode-yaml";
+  insertSpaces = true;
+  tabSize = 2;
+};
+};
+  "[github-actions-workflow]" = {
+  editor = {
+  defaultFormatter = "redhat.vscode-yaml";
+};
+};
   "[markdown]" = {
   cSpell = {
   advanced = {
@@ -123,9 +136,11 @@
   trimFinalNewlines = true;
   trimTrailingWhitespace = true;
   watcherExclude = {
+  "" = {
+  "git/objects/**" = true;
+  "git/subtree-cache/**" = true;
+};
   "**/node_modules/**" = true;
-  ".git/objects/**" = true;
-  ".git/subtree-cache/**" = true;
 };
 };
   git = {

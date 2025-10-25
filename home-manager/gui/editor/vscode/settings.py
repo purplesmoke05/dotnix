@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import re
 
+
 def get_cursor_settings_path() -> Optional[Path]:
     """Get the path to Cursor settings.json based on the operating system."""
     home = Path.home()
@@ -19,6 +20,7 @@ def get_cursor_settings_path() -> Optional[Path]:
         return home / ".config/Cursor/User/settings.json"
     return None
 
+
 def get_vscode_settings_path() -> Optional[Path]:
     """Get the path to VSCode settings.json based on the operating system."""
     home = Path.home()
@@ -30,6 +32,7 @@ def get_vscode_settings_path() -> Optional[Path]:
     elif platform.system() == "Linux":
         return home / ".config/Code/User/settings.json"
     return None
+
 
 def get_settings_source_path(source: Optional[str] = None) -> Optional[Path]:
     """Get the appropriate settings path based on platform preference or explicit source."""
@@ -53,6 +56,20 @@ def get_settings_source_path(source: Optional[str] = None) -> Optional[Path]:
                 return cursor_path
             # Fallback to VSCode if Cursor not found
             return get_vscode_settings_path()
+
+
+NIX_IDENTIFIER_PATTERN = r"^[a-zA-Z_][a-zA-Z0-9_'-]*$"
+
+
+def is_dottable_key(key: str) -> bool:
+    """Return True when the key should be expanded into nested attrs."""
+
+    if '.' not in key or key.startswith('.') or key.endswith('.'):
+        return False
+
+    segments = key.split('.')
+    return all(segment and re.fullmatch(NIX_IDENTIFIER_PATTERN, segment) for segment in segments)
+
 
 class SettingsConverter:
     def __init__(self, input_file: str, output_file: str):
@@ -91,22 +108,11 @@ class SettingsConverter:
 
             # Revised logic for formatting keys:
             # Check if the key is a valid Nix identifier or valid dotted path
-            nix_identifier_pattern = r"^[a-zA-Z_][a-zA-Z0-9_'-]*$"
-            
-            if '.' in key:
-                # For dotted keys, check if all segments are valid identifiers
-                segments = key.split('.')
-                all_valid = all(re.fullmatch(nix_identifier_pattern, seg) for seg in segments)
-                if all_valid:
-                    # All segments are valid identifiers (e.g., "foo.bar")
-                    formatted_key = key
-                else:
-                    # At least one segment is invalid (e.g., "*.ts", "123.foo")
-                    escaped_key = key.replace('\\\\', '\\\\\\\\').replace('"', '\\"').replace('${', '\\\\${')
-                    formatted_key = f'"{escaped_key}"'
+            if is_dottable_key(key):
+                formatted_key = key
             else:
                 # Single segment key
-                if re.fullmatch(nix_identifier_pattern, key):
+                if re.fullmatch(NIX_IDENTIFIER_PATTERN, key):
                     formatted_key = key  # Valid identifier
                 else:
                     # Not a valid identifier (e.g., "*", "123"), quote it.
@@ -117,39 +123,54 @@ class SettingsConverter:
         lines.append(f"{' ' * (indent-2)}}}")
         return "\n".join(lines)
 
+    def _deep_merge(self, base: Dict[str, Any], incoming: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively merge two dictionaries."""
+        merged = dict(base)
+        for key, value in incoming.items():
+            if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
+                merged[key] = self._deep_merge(merged[key], value)
+            else:
+                merged[key] = value
+        return merged
+
     def _merge_dotted_keys(self, settings: Dict[str, Any]) -> Dict[str, Any]:
         """Merge dotted keys (e.g., 'foo.bar': value) into nested structure."""
-        result = {}
-        
-        # First, add all non-dotted keys
+        result: Dict[str, Any] = {}
+
         for key, value in settings.items():
-            if '.' not in key:
-                result[key] = value
-        
-        # Then process dotted keys
-        for key, value in settings.items():
-            if '.' in key:
-                parts = key.split('.')
-                current = result
-                
-                # Navigate to the parent of the final key
-                for i, part in enumerate(parts[:-1]):
-                    if part not in current:
-                        current[part] = {}
-                    elif not isinstance(current[part], dict):
-                        print(f"Warning: Cannot merge '{key}' - '{'.'.join(parts[:i+1])}' is not a dictionary")
-                        break
-                    current = current[part]
-                
-                # Set the final value
-                final_key = parts[-1]
-                if isinstance(current, dict):
-                    if final_key in current and isinstance(current[final_key], dict) and isinstance(value, dict):
-                        # Merge dictionaries
-                        current[final_key] = {**current[final_key], **value}
-                    else:
-                        current[final_key] = value
-        
+            if isinstance(value, dict):
+                value = self._merge_dotted_keys(value)
+
+            if not is_dottable_key(key):
+                if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                    result[key] = self._deep_merge(result[key], value)
+                else:
+                    result[key] = value
+                continue
+
+            parts = key.split('.')
+            current = result
+            skip_assignment = False
+            for index, part in enumerate(parts[:-1]):
+                if part not in current:
+                    current[part] = {}
+                elif not isinstance(current[part], dict):
+                    partial_path = '.'.join(parts[: index + 1])
+                    print(f"Warning: Cannot merge '{key}' - '{partial_path}' is not a dictionary")
+                    skip_assignment = True
+                    break
+                current = current[part]
+
+            if skip_assignment or not isinstance(current, dict):
+                continue
+
+            final_key = parts[-1]
+            existing = current.get(final_key)
+            if isinstance(existing, dict) and isinstance(value, dict):
+                current[final_key] = self._deep_merge(existing, value)
+            else:
+                current[final_key] = value
+
         return result
 
     def _read_json(self) -> Optional[Dict[str, Any]]:
@@ -189,6 +210,7 @@ class SettingsConverter:
 
         # Write to file
         return self._write_nix(nix_content)
+
 
 def main():
     """Main entry point."""
@@ -232,6 +254,7 @@ def main():
     else:
         print("Conversion failed.")
         exit(1)
+
 
 if __name__ == "__main__":
     main()

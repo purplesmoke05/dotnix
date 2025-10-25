@@ -36,4 +36,11 @@
     "9,monitor:eDP-1"
     "10,monitor:eDP-1"
   ];
+
+  # Alias HQ host via Tailscale FQDN. / Tailscale FQDN 経由で HQ ホストをエイリアス化。
+  programs.ssh.matchBlocks."hq" = {
+    hostName = "nixos-hq.tailfdaf8.ts.net";
+    user = "purplehaze";
+    identityFile = "~/.ssh/id_ed25519";
+  };
 }
