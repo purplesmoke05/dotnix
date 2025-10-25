@@ -197,10 +197,10 @@
     "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make" "cargo" "grep"
   ];
 };
-  remote = {
-    SSH = {
-      remoteCommand = "/run/current-system/sw/bin/bash -l";
-    };
+  "remote.SSH.enableRemoteCommand" = true;
+  "remote.SSH.useExecServer" = false;
+  "remote.SSH.remotePlatform" = {
+    hq = "linux";
   };
   rust-analyzer = {
   cargo = {
