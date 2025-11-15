@@ -11,8 +11,10 @@
       default_shell = "fish";
 
       keybinds = {
-        # Disable Ctrl+t globally (prevents switching to Tab mode)
-        "unbind \"Ctrl t\"" = { };
+        # Disable Ctrl+t globally to stop entering Tab mode. / Tab モードに入らないよう Ctrl+t を無効化。
+        "shared_except \"tab\" \"locked\"" = {
+          "unbind \"Ctrl t\"" = { };
+        };
         "unbind \"Ctrl h\"" = { };
         normal = {
           "bind \"Ctrl g\"" = {
@@ -33,6 +35,9 @@
           "bind \"Ctrl g\"" = {
             "SwitchToMode" = "Normal";
           };
+        };
+        tab = {
+          "unbind \"Ctrl t\"" = { };
         };
       };
 

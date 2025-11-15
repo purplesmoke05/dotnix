@@ -194,7 +194,8 @@ in
         {
           name = "Fix underscore/backslash key (JIS keyboard)";
           remap = {
-            KEY_102ND = "KEY_BACKSLASH";
+            # Map the 102nd key to Shift+RO so it emits underscore. / 102番キーをShift+ROに再割当してアンダースコアを出力。
+            KEY_102ND = "KEY_LEFTSHIFT-KEY_RO";
           };
         }
         {
@@ -689,6 +690,9 @@ in
     enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
+    extraCompatPackages = with pkgs; [
+      proton-ge-bin
+    ];
   };
   nixpkgs.config.packageOverrides = pkgs: {
     steam = pkgs.steam.override {

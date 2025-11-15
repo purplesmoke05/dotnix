@@ -11,6 +11,7 @@
     ./editor/zed.nix
     ./editor/vscode/default.nix
     ./chat/discord.nix
+    ./game/steam.nix
     ./music
   ];
 

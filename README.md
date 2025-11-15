@@ -77,7 +77,6 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 │   ├── code-cursor
 │   ├── codex
 │   ├── gh-iteration
-│   ├── linux-xanmod-6_12_*
 │   ├── push-to-talk
 │   ├── ssh
 │   ├── sui
@@ -94,7 +93,6 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 - **Development shells.** `nix develop`, `.#rust`, `.#py312` など Python/Rust ビルダーを提供。/ Rust・Python 向け開発シェルを `nix develop` で提供。
 - **Custom overlays.** Patched OpenSSH、`zen-browser`, `claude-code`, `ccmanager` などをオーバーレイ化。/ OpenSSH パッチや独自パッケージをオーバーレイで管理。
 - **MCP & automation.** `home-manager/mcp-servers` と `tasks/` が Claude/Codex ワークフローを支援。/ MCP サーバー設定とタスク雛形でエージェント運用を補助。
-- **Kernel builds.** `linux-xanmod-6_12_*` などのカスタムカーネル派生物を保持。/ XanMod カーネル派生を利用可能。
 
 ## Daily Commands / よく使うコマンド
 

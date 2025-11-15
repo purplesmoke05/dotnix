@@ -393,9 +393,6 @@
         };
 
         packages = pythonTools.pythonVersions // {
-          linux-xanmod-lts-6_16_7 = pkgs.callPackage ./pkgs/linux-xanmod-6_16_7/kernel-package.nix {
-            kernelPatches = with pkgs.kernelPatches; [ bridge_stp_helper request_key_helper ];
-          };
           # hints flake output / hints フレーク出力
           hints = pkgs.callPackage ./pkgs/hints { };
           # push-to-talk flake output / push-to-talk フレーク出力
