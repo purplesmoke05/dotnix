@@ -130,6 +130,11 @@
 
           # qSpeak app (deb extraction) / qSpeak アプリ（deb 展開）
           qspeak = final.callPackage ./pkgs/qspeak { };
+
+          # Antigravity IDE / Antigravity IDE
+          antigravity = final.callPackage ./pkgs/antigravity {
+            vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
+          };
         };
 
         nixos = final: prev: {
@@ -140,9 +145,6 @@
               [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
               oldAttrs.installPhase;
           });
-
-          # code-cursor package / code-cursor パッケージ
-          code-cursor = final.callPackage ./pkgs/code-cursor { inherit (final) substituteInPlace; };
 
           # Claude Code CLI v2.0.22 / Claude Code CLI v2.0.22
           claude-code = prev.claude-code.overrideAttrs (oldAttrs: rec {

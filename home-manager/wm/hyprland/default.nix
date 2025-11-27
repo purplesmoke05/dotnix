@@ -177,9 +177,9 @@
         "pin,class:^(foot-quick)$"
         "animation slideDown,class:^(foot-quick)$"
 
-        "workspace 10 silent,class:^(discord)$"
-        "workspace 12 silent,class:^(steam)$"
-        "workspace 20 silent,class:^(steam_app_1364780)$"
+        "workspace 20 silent,class:^(discord)$"
+        "workspace 2 silent,class:^(steam)$"
+        "workspace 10 silent,class:^(steam_app_1364780)$"
       ];
 
       # Keybindings / キーバインド
@@ -281,10 +281,8 @@
       };
 
       "exec-once" = [
-        "hyprctl dispatch exec [workspace 1 silent] ${pkgs.code-cursor}/bin/cursor"
-        "hyprctl dispatch exec [workspace 11 silent] ${pkgs.brave}/bin/brave"
-        "hyprctl dispatch exec [workspace 12 silent] ${pkgs.foot}/bin/foot"
-        "hyprctl dispatch exec [workspace 9 silent] ${pkgs.youtube-music}/bin/youtube-music"
+        "hyprctl dispatch exec [workspace 1 silent] ${pkgs.brave}/bin/brave"
+        "hyprctl dispatch exec [workspace 2 silent] ${pkgs.foot}/bin/foot"
         "${pkgs.discord-ptb}/bin/discordptb"
         "hyprpanel"
       ];

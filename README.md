@@ -74,7 +74,6 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 │   └── wm
 ├── pkgs                    # Custom packages / 独自パッケージ
 │   ├── ccmanager
-│   ├── code-cursor
 │   ├── codex
 │   ├── gh-iteration
 │   ├── push-to-talk

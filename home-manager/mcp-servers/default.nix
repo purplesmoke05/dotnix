@@ -46,9 +46,6 @@ let
   };
 in
 {
-  # Cursor MCP config / Cursor 向け MCP 設定
-  home.file.".cursor/mcp.json".source = mcpConfig;
-
   # Claude Code config / Claude Code 設定
   # ~/.claude/config.json でグローバルに共有。 / Shared globally via ~/.claude/config.json.
   home.file.".claude/config.json".source = mcpConfig;
