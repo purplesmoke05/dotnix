@@ -20,9 +20,10 @@
   };
   programs.home-manager.enable = true;
 
+  # Enable VRR for FreeSync displays. / FreeSync ディスプレイ向けに VRR を有効化。
   wayland.windowManager.hyprland.settings.monitor = [
-    "HDMI-A-1,1920x1080@60,0x0,1"
-    "DP-1,1920x1080@240,1920x0,1"
+    "HDMI-A-1,3440x1440@60,0x0,1,vrr,1"
+    "DP-1,1920x1080@240,3440x0,1,vrr,1"
   ];
   wayland.windowManager.hyprland.settings.workspace = [
     /*"1,monitor:HDMI-A-1,default:true"

@@ -40,27 +40,18 @@
   hardware.enableAllFirmware = true;
 
   # Graphics configuration / グラフィックス設定
-  # Configure proprietary NVIDIA driver tuned for Wayland. / NVIDIA 専用ドライバーで Wayland 最適化。
-  hardware = {
-    nvidia = {
-      modesetting.enable = true;
-      powerManagement.enable = true;
-      open = false;
-      nvidiaSettings = true;
-      package = config.boot.kernelPackages.nvidiaPackages.beta;
-    };
-    graphics = {
-      enable32Bit = true;
-      extraPackages = with pkgs; [
-        vaapiVdpau
-        libvdpau-va-gl
-        nvidia-vaapi-driver
-      ];
-      extraPackages32 = with pkgs.pkgsi686Linux; [
-        libva
-        vaapiVdpau
-        libvdpau-va-gl
-      ];
-    };
+  # Use Mesa-based drivers for AMD GPUs. / AMD GPU 向けに Mesa ベースのドライバーを使用。
+  hardware.graphics = {
+    enable32Bit = true;
+    extraPackages = with pkgs; [
+      libva
+      vaapiVdpau
+      libvdpau-va-gl
+    ];
+    extraPackages32 = with pkgs.pkgsi686Linux; [
+      libva
+      vaapiVdpau
+      libvdpau-va-gl
+    ];
   };
 }

@@ -135,4 +135,10 @@ in
     };
   };
 
+  # Run Hyprpanel under en_US to avoid locale-sensitive resource polling bug. / ロケール依存のリソース監視不具合を避けるため en_US で実行する。
+  systemd.user.services.hyprpanel.Service.Environment = [
+    "LANG=en_US.UTF-8"
+    "LC_ALL=en_US.UTF-8"
+  ];
+
 }

@@ -26,7 +26,6 @@ in
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
   boot.kernelPatches = [ ];
   boot.kernelParams = [
-    "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "split_lock_mitigate=0"
     # USB tuning for gaming latency / ゲーム時の USB レイテンシ対策
     "usbhid.jspoll=1"
@@ -863,9 +862,10 @@ in
   services.gvfs.enable = true;
   services.tumbler.enable = true;
 
-  # NVIDIA Containers / NVIDIA コンテナ
-  # Allow GPU passthrough for containers. / コンテナで GPU を使えるようにする。
-  hardware.nvidia-container-toolkit.enable = true;
-  hardware.nvidia.powerManagement.enable = true;
-  hardware.nvidia.open = false;
+  # Mesa graphics stack / Mesa グラフィックススタック
+  # Provide 32-bit capable Mesa for AMD GPUs and Steam. / AMD GPU と Steam 向けに 32bit 対応 Mesa を提供。
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
 }

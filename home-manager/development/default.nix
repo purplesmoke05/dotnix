@@ -8,6 +8,7 @@
   # - uv: Fast Python package installer
   # - Foundry: Ethereum development toolkit (forge, cast, anvil, chisel)
   # - Solc: Solidity compiler
+  # - radeontop: Monitor AMD GPU utilization. / AMD GPU の利用状況を監視。
   home.packages = with pkgs; [
     go
     bun
@@ -19,6 +20,7 @@
     claude-code
     ctop
     iftop
+    radeontop
     grim
     slurp
     wl-clipboard

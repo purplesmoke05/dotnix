@@ -103,9 +103,9 @@
   # Fix usbhid at 1000Hz to cut latency. / usbhid を 1000Hz に固定し入力遅延を削減。
   boot.kernelParams = [ "usbhid.jspoll=1" ]; # 1ms interval = 1000Hz / 1ms 間隔
 
-  # NVIDIA driver / NVIDIA ドライバー
-  # Enable proprietary GPU driver. / 専用 GPU ドライバーを有効化。
-  services.xserver.videoDrivers = [ "nvidia" ];
+  # AMD driver / AMD ドライバー
+  # Use amdgpu for the Radeon board. / Radeon ボード向けに amdgpu ドライバーを使用。
+  services.xserver.videoDrivers = [ "amdgpu" ];
 
   fileSystems."/mnt/data" = {
     device = "/dev/sda";
