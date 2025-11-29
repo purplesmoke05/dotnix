@@ -1,7 +1,7 @@
 { lib
 , python3Packages
 , fetchFromGitHub
-, wrapGAppsHook
+, wrapGAppsHook3
 , makeWrapper
 , gobject-introspection
 , at-spi2-core
@@ -38,7 +38,7 @@ python3Packages.buildPythonApplication rec {
   # Build using PEP 517 (pyproject.toml) if present; this is compatible with both
   # setuptools and poetry projects
   format = "pyproject";
-  nativeBuildInputs = [ wrapGAppsHook ]
+  nativeBuildInputs = [ wrapGAppsHook3 ]
     ++ (with python3Packages; [
       setuptools
       wheel
@@ -59,7 +59,7 @@ python3Packages.buildPythonApplication rec {
 
   # No extra postInstall wrapper; gappsWrapperArgs is sufficient. / postInstall の追加ラップは不要（gappsWrapperArgs で十分）
 
-  # Ensure wrapGAppsHook includes all required GI typelib and data dirs
+  # Ensure wrapGAppsHook3 includes all required GI typelib and data dirs
   preFixup = ''
     gappsWrapperArgs+=(
       --prefix GI_TYPELIB_PATH : "${lib.getLib gtk3}/lib/girepository-1.0:${lib.getLib pango}/lib/girepository-1.0:${lib.getLib gdk-pixbuf}/lib/girepository-1.0:${lib.getLib at-spi2-core}/lib/girepository-1.0:${lib.getLib harfbuzz}/lib/girepository-1.0:${lib.getLib gtk-layer-shell}/lib/girepository-1.0:${lib.getLib glib}/lib/girepository-1.0:${lib.getLib gobject-introspection}/lib/girepository-1.0"
@@ -76,6 +76,10 @@ python3Packages.buildPythonApplication rec {
     # Add lowercase hyprland to Wayland detection candidates. / Wayland 自動判定の候補に小文字 hyprland を追加。
     substituteInPlace hints/hints.py \
       --replace 'supported_wayland_wms = {"sway", "Hyprland", "plasmashell"}' 'supported_wayland_wms = {"sway", "Hyprland", "hyprland", "plasmashell"}'
+
+    # Relax pygobject version requirement
+    # Aggressively find and replace in all files with flexible regex
+    grep -rl "pygobject" . | xargs sed -i 's/pygobject.*[=<>].*/pygobject>=3.50.0/g' || true
 
     # Allow forcing the window system via HINTS_WINDOW_SYSTEM env var. / HINTS_WINDOW_SYSTEM 環境変数でウィンドウシステムを強制。
     sed -i '0,/if not window_system_id:/{s//env_choice = __import__("os").getenv("HINTS_WINDOW_SYSTEM", "")\n    if env_choice:\n        window_system_id = env_choice\n    if not window_system_id:/}' hints/hints.py
@@ -109,6 +113,9 @@ python3Packages.buildPythonApplication rec {
     evdev
     dbus-python
   ];
+
+  # Disable runtime dependency check to avoid strict version mismatch errors
+  dontCheckRuntimeDeps = true;
 
   # Basic import check; adjust module name if upstream differs
   pythonImportsCheck = [ "hints" ];

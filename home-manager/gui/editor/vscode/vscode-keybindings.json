@@ -1080,5 +1080,47 @@
     "command": "-closeReferenceSearch",
     "key": "ctrl+g",
     "when": "referenceSearchVisible && !config.editor.stablePeek"
+  },
+  {
+    "command": "workbench.action.findInFiles",
+    "key": "ctrl+shift+f"
+  },
+  {
+    "command": "list.focusPageDown",
+    "key": "ctrl+v",
+    "when": "explorerViewletFocus && !inputFocus"
+  },
+  {
+    "command": "list.focusPageUp",
+    "key": "alt+v",
+    "when": "explorerViewletFocus && !inputFocus"
+  },
+  {
+    "command": "editor.action.quickFix",
+    "key": "ctrl+.",
+    "when": "editorHasCodeActionsProvider && textInputFocus && !editorReadonly"
+  },
+  {
+    "command": "-editor.action.quickFix",
+    "key": "cmd+.",
+    "when": "editorHasCodeActionsProvider && textInputFocus && !editorReadonly"
+  },
+  {
+    "command": "workbench.action.chat.openInSidebar",
+    "key": "ctrl+]"
+  },
+  {
+    "command": "test.command",
+    "key": "ctrl+alt+t"
+  },
+  {
+    "command": "composer.startComposerPrompt",
+    "key": "ctrl+]",
+    "when": "cursor.appLayout != 'agent'"
+  },
+  {
+    "command": "-composer.startComposerPrompt",
+    "key": "ctrl+i",
+    "when": "cursor.appLayout != 'agent'"
   }
 ]

@@ -194,7 +194,12 @@
 };
   remote = {
   SSH = {
+  enableRemoteCommand = true;
   remoteCommand = "/run/current-system/sw/bin/bash -l";
+  remotePlatform = {
+  hq = "linux";
+};
+  useExecServer = false;
 };
 };
   roo-cline = {
@@ -202,11 +207,6 @@
     "npm test" "npm install" "tsc" "git log" "git diff" "git show" "nix-shell" "cd" "go" "git" "make" "cargo" "grep"
   ];
 };
-  "remote.SSH.enableRemoteCommand" = true;
-  "remote.SSH.useExecServer" = false;
-  "remote.SSH.remotePlatform" = {
-    hq = "linux";
-  };
   rust-analyzer = {
   cargo = {
   buildScripts = {

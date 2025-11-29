@@ -24,15 +24,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprsplit = {
-      url = "github:shezdy/hyprsplit?ref=v0.51.0";
+      url = "github:shezdy/hyprsplit?ref=v0.52.1";
       inputs.hyprland.follows = "hyprland";
+    };
+    hyprland = {
+      url = "github:hyprwm/Hyprland/v0.52.1";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     mcp-servers-nix = {
       url = "github:natsukium/mcp-servers-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    hyprland = {
-      url = "github:hyprwm/Hyprland/v0.51.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     zen-browser-flake = {
@@ -57,7 +57,7 @@
 
   # Outputs / 出力定義
   # Collect systems, overlays, and Home Manager setups. / システム構成・オーバーレイ・Home Manager を束ねる。
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, hyprpanel, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
     let
       # Python builders / Python ビルダー
       mkPythonBuilders = pkgs: {
@@ -106,7 +106,7 @@
 
           # fcitx5 alias / fcitx5 代替
           libsForQt5 = prev.libsForQt5 // {
-            fcitx5-with-addons = final.kdePackages.fcitx5-with-addons;
+            fcitx5-with-addons = final.qt6Packages.fcitx5-with-addons;
           };
 
           # gh-iteration package / gh-iteration パッケージ
@@ -121,9 +121,6 @@
 
           # Python helpers / Python ヘルパー
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
-
-          # zen-browser overlay / zen-browser オーバーレイ
-          zen-browser = zen-browser-flake.packages.${prev.system}.default or zen-browser-flake.packages.${prev.system}.zen-browser; # Handle name differences / 名前差異に対応
 
           # sui package / sui パッケージ
           sui = final.callPackage ./pkgs/sui { };
@@ -146,20 +143,20 @@
               oldAttrs.installPhase;
           });
 
-          # Claude Code CLI v2.0.22 / Claude Code CLI v2.0.22
-          claude-code = prev.claude-code.overrideAttrs (oldAttrs: rec {
-            version = "2.0.22";
-            src = prev.fetchurl {
-              url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${version}.tgz";
-              sha256 = "sha256-iv052RKdDZPq0jdJpC21J2M5T8iyEZ3AlMFo6N5/+FE=";
-            };
-          });
+
 
           # Codex CLI (prebuilt) / Codex CLI（バイナリ）
           codex = final.callPackage ./pkgs/codex { };
 
           # hints package (NixOS only) / hints パッケージ（NixOS 限定）
           hints = final.callPackage ./pkgs/hints { };
+
+          # hyprpanel
+          hyprpanel = inputs.hyprpanel.packages.${prev.system}.default;
+
+
+
+
 
           # push-to-talk (Python STT GUI) / push-to-talk（Python STT GUI）
           # Pin to Python 3.12 to avoid 3.13 breakages. / Python 3.12 固定で 3.13 の崩壊を回避。
@@ -229,13 +226,7 @@
         };
       };
 
-      # System overlays / システムオーバーレイ
-      mkSystemOverlays = {
-        nixpkgs.overlays = [
-          (import rust-overlay)
-          self.overlays.default # Combine common and NixOS layers / common と NixOS を統合
-        ];
-      };
+
 
       # NixOS builder / NixOS ビルダー
       mkSystem = { system ? "x86_64-linux", hostname, enabledUsers ? [ "primary" ] }:
@@ -256,7 +247,12 @@
           modules = [
             ./hosts/nixos/common/nixos.nix
             home-manager.nixosModules.home-manager
-            (mkSystemOverlays)
+            {
+              nixpkgs.overlays = [
+                (import rust-overlay)
+                self.overlays.default
+              ];
+            }
             (mkHomeManagerConfig { inherit hostname username; })
             ({ config, pkgs, ... }: {
               assertions = [{
@@ -280,7 +276,7 @@
           ];
           specialArgs = {
             inherit nixpkgs inputs hostname username;
-            inherit (inputs) hyprland hyprsplit;
+            inherit (inputs) hyprsplit;
           };
         };
 
@@ -319,7 +315,11 @@
     in
     (flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+          config.allowUnfree = true;
+        };
         pythonTools = mkPythonBuilders pkgs;
 
         mkRustShell = pkgs.mkShell {

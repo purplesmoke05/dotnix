@@ -1,4 +1,4 @@
-{ inputs, config, pkgs, hostname, username, hyprland, ... }:
+{ inputs, config, pkgs, hostname, username, ... }:
 
 let
   setVictrixPolling = pkgs.writeShellScript "set-victrix-binterval" ''
@@ -112,7 +112,7 @@ in
       rictydiminished-with-firacode
       noto-fonts-cjk-serif
       noto-fonts-cjk-sans
-      noto-fonts-emoji
+      noto-fonts-color-emoji
       nerd-fonts.noto
       nerd-fonts.jetbrains-mono
       nerd-fonts.hack
@@ -513,7 +513,8 @@ in
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
-    package = hyprland.packages.${pkgs.system}.hyprland;
+    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   };
 
   # uinput for hintsd / hintsd 用に uinput を有効化
@@ -580,7 +581,7 @@ in
       XDG_CURRENT_DESKTOP = "Hyprland";
       XDG_SESSION_TYPE = "wayland";
       XDG_SESSION_DESKTOP = "Hyprland";
-      FCITX_ADDON_DIRS = "${pkgs.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
+      FCITX_ADDON_DIRS = "${pkgs.qt6Packages.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
       DISABLE_KWALLET = "1";
       FCITX_LOG_LEVEL = "debug";
       GTK_IM_MODULE = "fcitx";
@@ -692,15 +693,11 @@ in
     extraCompatPackages = with pkgs; [
       proton-ge-bin
     ];
-  };
-  nixpkgs.config.packageOverrides = pkgs: {
-    steam = pkgs.steam.override {
-      extraPkgs = pkgs:
-        with pkgs; [
-          migu
-        ];
+    package = pkgs.steam.override {
+      extraPkgs = pkgs: with pkgs; [ migu ];
     };
   };
+  # nixpkgs.config.packageOverrides removed
 
   # SSH Server / SSH サーバー設定
   # Restrict access to hotspot and Tailscale with keys only. / 公開鍵のみでホットスポットと Tailscale に限定。
@@ -821,6 +818,9 @@ in
     { domain = username; item = "rtprio"; type = "-"; value = "99"; }
     { domain = username; item = "nice"; type = "-"; value = "-20"; }
   ];
+
+  # Stream Deck udev rules from StreamController. / StreamController 由来の Stream Deck udev ルール。
+  services.udev.packages = [ pkgs.streamcontroller ];
 
   # udev rules / udev ルール
   # Optimise controllers and Bluetooth handling. / コントローラーと Bluetooth の最適化。

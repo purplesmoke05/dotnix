@@ -201,14 +201,14 @@
   },
   "remote": {
     "SSH": {
-      "remoteCommand": "/run/current-system/sw/bin/bash -l"
+      "enableRemoteCommand": true,
+      "remoteCommand": "/run/current-system/sw/bin/bash -l",
+      "remotePlatform": {
+        "hq": "linux"
+      },
+      "useExecServer": false
     }
   },
-  "remote.SSH.enableRemoteCommand": true,
-  "remote.SSH.remotePlatform": {
-    "hq": "linux"
-  },
-  "remote.SSH.useExecServer": false,
   "roo-cline": {
     "allowedCommands": [
       "npm test",

@@ -33,7 +33,7 @@
     interactiveShellInit =
       # atuin initialization / atuin 初期化
       ''
-        atuin init fish --disable-ctrl-r | source
+        atuin init fish --disable-ctrl-r --disable-up-arrow | source
         # Bind Ctrl+J manually / Ctrl+J を手動割当
         bind --erase \cj
         bind \cj _atuin_search

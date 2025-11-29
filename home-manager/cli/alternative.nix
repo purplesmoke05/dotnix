@@ -15,7 +15,7 @@
     enable = true;
     enableFishIntegration = false; # Explicitly disable fish integration handled by the module
     # Pass flags to `atuin init fish` command
-    flags = [ "--disable-ctrl-r" ];
+    flags = [ "--disable-ctrl-r" "--disable-up-arrow" ];
     # Configure atuin settings
     settings = {
       # auto_sync = true;
@@ -26,8 +26,6 @@
           # Assuming default Emacs keymap mode. Change to 'vim' if needed.
           # Assign Ctrl+R to "no-op" (no operation) to free it up.
           ctrl_r = "no-op";
-          # Assign Ctrl+I to the search action.
-          ctrl_i = "search";
           # You can add other keybindings here if needed, for example:
           # page_up = "page_up";
           # page_down = "page_down";

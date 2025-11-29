@@ -12,7 +12,6 @@
 
   # Add zen-browser package and vdhcoapp (Video DownloadHelper companion app)
   home.packages = with pkgs; [
-    zen-browser
     vdhcoapp
   ];
 

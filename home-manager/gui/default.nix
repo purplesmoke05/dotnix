@@ -27,5 +27,7 @@
     parsec-bin
     remmina
     slack
+    streamcontroller
+    gemini-cli
   ];
 }
