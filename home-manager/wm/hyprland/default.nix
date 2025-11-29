@@ -113,7 +113,7 @@
       # Input devices / 入力デバイス
       input = {
         kb_layout = "jp";
-        kb_model = "";
+        kb_model = "jp106";
         kb_variant = "";
         kb_options = "";
         follow_mouse = 2; # フォーカスなしでホバー / Hover-follow

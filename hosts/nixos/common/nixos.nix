@@ -163,6 +163,7 @@ in
   services.xserver.xkb = {
     options = "";
     layout = "jp";
+    model = "jp106";
     variant = "";
   };
 
