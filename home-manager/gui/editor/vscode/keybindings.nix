@@ -1,5 +1,10 @@
 [
     {
+      command = "workbench.action.chat.switchToNextModel";
+      key = "ctrl+tab";
+      when = "chatIsEnabled && inChat";
+    }
+    {
       command = "workbench.action.terminal.focus";
       key = "ctrl+[Equal]";
     }
@@ -205,11 +210,6 @@
       command = "-settings.action.search";
       key = "ctrl+f";
       when = "inSettingsEditor";
-    }
-    {
-      command = "actions.find";
-      key = "ctrl+s";
-      when = "(editorFocus || editorIsOpen) && !findInputFocussed";
     }
     {
       command = "-actions.find";
@@ -859,10 +859,6 @@
       key = "ctrl+l";
     }
     {
-      command = "workbench.action.chat.newChat";
-      key = "ctrl+shift+l";
-    }
-    {
       command = "-workbench.view.explorer";
       key = "ctrl+shift+e";
       when = "viewContainer.workbench.view.explorer.enabled";
@@ -1001,15 +997,6 @@
       when = "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus";
     }
     {
-      command = "workbench.action.chat.newChat";
-      key = "ctrl+shift+n";
-    }
-    {
-      command = "-workbench.action.chat.newChat";
-      key = "ctrl+l";
-      when = "chatIsEnabled && inChat && chatLocation != 'editing-session'";
-    }
-    {
       command = "-workbench.action.newWindow";
       key = "ctrl+shift+n";
     }
@@ -1105,17 +1092,187 @@
       key = "ctrl+]";
     }
     {
-      command = "test.command";
-      key = "ctrl+alt+t";
+      command = "workbench.action.togglePanel";
+      key = "ctrl+[Equal]";
     }
     {
-      command = "composer.startComposerPrompt";
-      key = "ctrl+]";
-      when = "cursor.appLayout != 'agent'";
+      command = "-workbench.action.togglePanel";
+      key = "cmd+j";
     }
     {
-      command = "-composer.startComposerPrompt";
+      command = "-workbench.action.terminal.sendSequence";
+      key = "shift+enter";
+      when = "terminalFocus && terminalShellIntegrationEnabled && !accessibilityModeEnabled && terminalShellType == 'pwsh'";
+    }
+    {
+      command = "workbench.action.chat.openAgent";
       key = "ctrl+i";
-      when = "cursor.appLayout != 'agent'";
+      when = "config.chat.agent.enabled && !chatSetupDisabled && !chatSetupHidden";
+    }
+    {
+      command = "-workbench.action.chat.openAgent";
+      key = "shift+cmd+i";
+      when = "config.chat.agent.enabled && !chatSetupDisabled && !chatSetupHidden";
+    }
+    {
+      command = "workbench.action.chat.history";
+      key = "ctrl+x ctrl+h";
+    }
+    {
+      command = "workbench.action.newWindow";
+      key = "shift+alt+n";
+    }
+    {
+      command = "-workbench.action.newWindow";
+      key = "shift+cmd+n";
+    }
+    {
+      command = "editor.foldLevel1";
+      key = "ctrl+alt+1";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel1";
+      key = "cmd+k cmd+1";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "editor.foldLevel2";
+      key = "ctrl+alt+2";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel2";
+      key = "cmd+k cmd+2";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "editor.foldLevel3";
+      key = "ctrl+alt+3";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel3";
+      key = "cmd+k cmd+3";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "editor.foldLevel4";
+      key = "ctrl+alt+4";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel4";
+      key = "cmd+k cmd+4";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "editor.foldLevel5";
+      key = "ctrl+alt+5";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel5";
+      key = "cmd+k cmd+5";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "editor.foldLevel6";
+      key = "ctrl+alt+6";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel6";
+      key = "cmd+k cmd+6";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "editor.foldLevel7";
+      key = "ctrl+alt+7";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "-editor.foldLevel7";
+      key = "cmd+k cmd+7";
+      when = "editorTextFocus && foldingEnabled";
+    }
+    {
+      command = "workbench.action.quickOpen";
+      key = "ctrl+x ctrl+b";
+    }
+    {
+      command = "testing.runAtCursor";
+      key = "ctrl+shift+f10";
+      when = "editorTextFocus";
+    }
+    {
+      command = "-testing.runAtCursor";
+      key = "cmd+[Semicolon] c";
+      when = "editorTextFocus";
+    }
+    {
+      args = { commands = [ "actions.findWithSelection" "actions.find" ]; };
+      command = "runCommands";
+      key = "ctrl+s";
+      when = "editorTextFocus && editorHasSelection";
+    }
+    {
+      command = "actions.find";
+      key = "ctrl+s";
+      when = "editorTextFocus && !editorHasSelection";
+    }
+    {
+      command = "-actions.findWithSelection";
+      key = "cmd+e";
+    }
+    {
+      command = "go-to-next-change.go-to-next-scm-change";
+      key = "f7";
+      when = "isInDiffEditor && editorTextFocus";
+    }
+    {
+      command = "go-to-next-change.go-to-previous-scm-change";
+      key = "shift+f7";
+      when = "isInDiffEditor && editorTextFocus";
+    }
+    {
+      command = "testing.debugAtCursor";
+      key = "ctrl+shift+f9";
+      when = "editorTextFocus";
+    }
+    {
+      command = "-testing.debugAtCursor";
+      key = "cmd+[Semicolon] cmd+c";
+      when = "editorTextFocus";
+    }
+    {
+      command = "gitlens.toggleFileBlame";
+      key = "ctrl+shift+b";
+    }
+    {
+      command = "-editor.action.marker.nextInFiles";
+      key = "f8";
+      when = "editorFocus";
+    }
+    {
+      command = "workbench.action.showCommands";
+      key = "ctrl+shift+p";
+    }
+    {
+      command = "-workbench.action.showCommands";
+      key = "shift+cmd+p";
+    }
+    {
+      command = "-explorer.openToSide";
+      key = "ctrl+enter";
+      when = "explorerViewletFocus && foldersViewVisible && !inputFocus";
+    }
+    {
+      command = "github.copilot.chat.attachSelection";
+      key = "ctrl+enter";
+    }
+    {
+      command = "workbench.action.chat.attachFile";
+      key = "ctrl+enter";
     }
   ]

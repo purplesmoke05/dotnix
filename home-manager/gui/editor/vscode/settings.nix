@@ -4,6 +4,11 @@
   autoIndent = "advanced";
   defaultFormatter = "redhat.vscode-yaml";
   insertSpaces = true;
+  quickSuggestions = {
+  comments = false;
+  other = true;
+  strings = true;
+};
   tabSize = 2;
 };
 };
@@ -39,6 +44,16 @@
   wordWrap = "off";
 };
 };
+  "[python]" = {
+  diffEditor = {
+  ignoreTrimWhitespace = true;
+};
+};
+  "[yaml]" = {
+  diffEditor = {
+  ignoreTrimWhitespace = false;
+};
+};
   accessibility = {
   dimUnfocused = {
   enabled = true;
@@ -53,8 +68,31 @@
   ];
 };
   chat = {
+  agent = {
+  maxRequests = 100;
+};
   editing = {
   confirmEditRequestRemoval = false;
+};
+  tools = {
+  terminal = {
+  autoApprove = {
+  "*" = true;
+  "branch_codes=set()" = true;
+  from = true;
+  "path=pathlib.Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat')" = true;
+  sed = true;
+  "settle_counts=" = true;
+  "star_codes=set()" = true;
+  uv = true;
+  "uv run python -c \"from pathlib import Path; lines=Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat').read_text().splitlines(); print(lines[0]); print(lines[0].find('テスト')); print(len(lines[0]));\"" = {
+  approve = true;
+  matchCommandLine = true;
+};
+  "with" = true;
+  "}" = true;
+};
+};
 };
 };
   cursor = {
@@ -80,7 +118,7 @@
 };
   docker = {
   extension = {
-  enableComposeLanguageServer = false;
+  enableComposeLanguageServer = falase;
 };
 };
   editor = {
@@ -95,6 +133,11 @@
   experimental = {
   asyncTokenization = false;
 };
+  find = {
+  autoFindInSelection = "never";
+  seedSearchStringFromSelection = "never";
+};
+  fontFamily = "Ricty Diminished, Menlo, Monaco, 'Courier New', monospace";
   formatOnSave = true;
   guides = {
   bracketPairs = true;
@@ -107,10 +150,14 @@
   renderLineHighlight = "all";
   renderLineHighlightOnlyWhenFocus = true;
   renderWhitespace = "all";
+  selectionHighlightMultiline = true;
   showFoldingControls = "always";
   smoothScrolling = false;
   wordSegmenterLocales = "ja";
   wordWrap = "off";
+};
+  emmet = {
+  showExpandedAbbreviation = "never";
 };
   explorer = {
   autoReveal = false;
@@ -145,7 +192,16 @@
 };
   git = {
   autofetch = "all";
+  blame = {
+  editorDecoration = {
+  enabled = false;
+};
+  statusBarItem = {
+  enabled = true;
+};
+};
   confirmSync = false;
+  mergeEditor = true;
   pruneOnFetch = true;
   suggestSmartCommit = false;
 };
@@ -154,9 +210,7 @@
   enable = {
   "*" = true;
   markdown = true;
-  nextEditSuggestions = {
-  enabled = true;
-};
+  nextEditSuggestions = true;
   plaintext = false;
   scminput = false;
 };
@@ -165,13 +219,31 @@
 };
 };
 };
+  gitlens = {
+  ai = {
+  model = "vscode";
+  vscode = {
+  model = "copilot:gpt-4.1";
+};
+};
+};
   go = {
   toolsManagement = {
   autoUpdate = true;
 };
 };
+  markdown-preview-enhanced = {
+  codeBlockTheme = "github.css";
+  revealjsTheme = "night.css";
+};
   markdownlint = {
   run = "onSave";
+};
+  material-icon-theme = {
+  activeIconPack = "none";
+  folders = {
+  theme = "classic";
+};
 };
   motia = {
   autoStartServer = true;
@@ -254,8 +326,10 @@
   search = {
   searchEditor = {
   focusResultsOnSearch = true;
+  reusePriorSearchConfiguration = true;
 };
-  seedOnFocus = true;
+  seedOnFocus = false;
+  seedWithNearestWord = false;
   showLineNumbers = true;
 };
   terminal = {
@@ -270,6 +344,7 @@
   linux = "fish";
 };
   enableImages = true;
+  enableMultiLinePasteWarning = "always";
   enableVisualBell = true;
   fontFamily = "Hack Nerd Font";
   fontSize = 12;
@@ -319,7 +394,7 @@
   border = "#f0f";
   opacity = "#000c";
 };
-  iconTheme = "ayu";
+  iconTheme = "catppuccin-mocha";
   list = {
   openMode = "doubleClick";
   smoothScrolling = true;
