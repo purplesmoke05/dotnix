@@ -139,7 +139,7 @@
           obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
             installPhase = builtins.replaceStrings
               [ "--ozone-platform=wayland" ]
-              [ "--enable-features=UseOzonePlatform --ozone-platform=x11" ]
+              [ "--enable-features=UseOzonePlatform --ozone-platform=wayland" ]
               oldAttrs.installPhase;
           });
 
@@ -207,7 +207,7 @@
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
-          backupFileExtension = "backup";
+          backupFileExtension = "backup-hm";
           extraSpecialArgs = {
             inherit inputs nixpkgs hostname username mcp-servers-nix;
             inherit (inputs) hyprsplit;
@@ -305,7 +305,7 @@
             home-manager.useUserPackages = false; # Original darwin flow / 既定の darwin フローを踏襲
             home-manager.users.${username} = { pkgs, lib, config, ... }: # Provided by HM module / HM から渡される値
               import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and args / パスと引数を調整
-            home-manager.backupFileExtension = "backup";
+            home-manager.backupFileExtension = "backup-hm";
           }
         ];
         specialArgs = {

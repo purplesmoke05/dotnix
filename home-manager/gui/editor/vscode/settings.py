@@ -21,6 +21,8 @@ def get_vscode_settings_path() -> Optional[Path]:
 
 
 NIX_IDENTIFIER_PATTERN = r"^[a-zA-Z_][a-zA-Z0-9_'-]*$"
+# Nix reserved words that must be quoted even if they look like identifiers.
+NIX_RESERVED = {"if", "then", "else", "assert", "with", "let", "in", "rec", "inherit", "or"}
 
 
 def is_dottable_key(key: str) -> bool:
@@ -74,7 +76,7 @@ class SettingsConverter:
                 formatted_key = key
             else:
                 # Single segment key
-                if re.fullmatch(NIX_IDENTIFIER_PATTERN, key):
+                if re.fullmatch(NIX_IDENTIFIER_PATTERN, key) and key not in NIX_RESERVED:
                     formatted_key = key  # Valid identifier
                 else:
                     # Not a valid identifier (e.g., "*", "123"), quote it.

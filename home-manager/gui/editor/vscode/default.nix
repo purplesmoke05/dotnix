@@ -14,6 +14,10 @@ let
   isDarwin = pkgs.stdenv.isDarwin;
   isLinux = pkgs.stdenv.isLinux;
 
+  # Keep settings/keybindings for our manual copy flow only. / 手動コピー用に設定とキーバインドを保持。
+  vscodeSettings = if isLinux then import ./settings.nix else { };
+  vscodeKeybindings = if isLinux then import ./keybindings.nix else [ ];
+
   # VS Code configuration directory path based on platform
   vscodeConfigDir =
     if isDarwin then
@@ -25,7 +29,8 @@ in
   programs.vscode = {
     enable = true;
     profiles.default = {
-      keybindings = if isLinux then import ./keybindings.nix else [ ];
+      # Avoid HM-managed symlinked settings; activation writes real files. / HM 管理のシンボリックリンクを避け、activation で実ファイルを書き込む。
+      keybindings = lib.mkForce [ ];
       extensions = with pkgs.vscode-extensions; [
         bbenoist.nix
         tuttieee.emacs-mcx
@@ -80,7 +85,7 @@ in
         }
       ];
       # Only set userSettings for Linux
-      userSettings = if isLinux then import ./settings.nix else { };
+      userSettings = lib.mkForce { };
     };
   };
 
@@ -93,8 +98,8 @@ in
     writeVSCodeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       $DRY_RUN_CMD mkdir -p ${vscodeConfigDir}
       $DRY_RUN_CMD rm -f ${vscodeConfigDir}/settings.json ${vscodeConfigDir}/keybindings.json
-      $DRY_RUN_CMD cp --remove-destination ${beautifyJson (builtins.toJSON (import ./settings.nix))} ${vscodeConfigDir}/settings.json
-      $DRY_RUN_CMD cp --remove-destination ${beautifyJson (builtins.toJSON (import ./keybindings.nix))} ${vscodeConfigDir}/keybindings.json
+      $DRY_RUN_CMD cp --remove-destination ${beautifyJson (builtins.toJSON vscodeSettings)} ${vscodeConfigDir}/settings.json
+      $DRY_RUN_CMD cp --remove-destination ${beautifyJson (builtins.toJSON vscodeKeybindings)} ${vscodeConfigDir}/keybindings.json
       $DRY_RUN_CMD chmod 644 ${vscodeConfigDir}/settings.json
       $DRY_RUN_CMD chmod 644 ${vscodeConfigDir}/keybindings.json
     '';

@@ -118,6 +118,9 @@ in
       nerd-fonts.hack
       twemoji-color-font
       migu
+      ipafont
+      source-han-sans
+      source-han-serif
     ];
     fontDir.enable = true;
     fontconfig = {
@@ -131,16 +134,63 @@ in
         <?xml version="1.0"?>
         <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
         <fontconfig>
-          <description>Change default fonts for Steam client</description>
-          <match>
-            <test name="prgname">
-              <string>steamwebhelper</string>
+          <description>Steam font fix</description>
+          <!-- Fix for Steam: Force Noto Sans CJK JP for Steam processes -->
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steam</string>
             </test>
             <test name="family" qual="any">
               <string>sans-serif</string>
             </test>
-            <edit mode="prepend" name="family">
-              <string>Migu 1P</string>
+            <edit mode="prepend" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+              <string>IPAGothic</string>
+            </edit>
+          </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steam</string>
+            </test>
+            <test name="family" qual="any">
+              <string>sans</string>
+            </test>
+            <edit mode="prepend" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+              <string>IPAGothic</string>
+            </edit>
+          </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steam</string>
+            </test>
+            <test name="family" qual="any">
+              <string>Arial</string>
+            </test>
+            <edit mode="assign" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+            </edit>
+          </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steam</string>
+            </test>
+            <test name="family" qual="any">
+              <string>Helvetica</string>
+            </test>
+            <edit mode="assign" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+            </edit>
+          </match>
+           <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steam</string>
+            </test>
+            <test name="family" qual="any">
+              <string>Verdana</string>
+            </test>
+            <edit mode="assign" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
             </edit>
           </match>
         </fontconfig>
@@ -163,13 +213,13 @@ in
   services.xserver.xkb = {
     options = "";
     layout = "jp";
-    model = "jp106";
     variant = "";
   };
 
   # Key Remapping / キーカスタマイズ
   # Define CapsLock-to-Ctrl and Emacs-style bindings. / CapsLock→Ctrl や Emacs 互換操作を定義。
   services.xremap = {
+    enable = true;
     userName = username;
     serviceMode = "user";
     withWlroots = true;
@@ -421,6 +471,7 @@ in
     jstest-gtk
     antimicrox
     linuxConsoleTools
+    fontconfig
   ];
 
   # nix-ld / nix-ld 設定
@@ -694,8 +745,20 @@ in
     extraCompatPackages = with pkgs; [
       proton-ge-bin
     ];
+    # Explicitly add fonts to Steam environment using the dedicated option
+    fontPackages = with pkgs; [
+      noto-fonts-cjk-sans
+      noto-fonts-cjk-serif
+      ipafont
+      source-han-sans
+      source-han-serif
+      migu
+    ];
     package = pkgs.steam.override {
-      extraPkgs = pkgs: with pkgs; [ migu ];
+      extraPkgs = pkgs: with pkgs; [
+        fontconfig
+        freetype
+      ];
     };
   };
   # nixpkgs.config.packageOverrides removed

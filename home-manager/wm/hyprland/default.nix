@@ -113,7 +113,7 @@
       # Input devices / 入力デバイス
       input = {
         kb_layout = "jp";
-        kb_model = "jp106";
+        kb_model = "";
         kb_variant = "";
         kb_options = "";
         follow_mouse = 2; # フォーカスなしでホバー / Hover-follow
@@ -284,7 +284,6 @@
         "hyprctl dispatch exec [workspace 1 silent] ${pkgs.brave}/bin/brave"
         "hyprctl dispatch exec [workspace 2 silent] ${pkgs.foot}/bin/foot"
         "${pkgs.discord-ptb}/bin/discordptb"
-        "env LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 hyprpanel"
       ];
 
       # Layer rules / レイヤールール

@@ -13,7 +13,7 @@ let
     # Runs after install/fixup, before final $out / installPhase・fixupPhase 後、最終 $out 前に実行
     postFixup = (oldAttrs.postFixup or "") + ''
       wrapProgram $out/bin/claude-desktop \
-        --add-flags "--enable-features=UseOzonePlatform --ozone-platform=x11 --enable-wayland-ime=true --disable-gpu"
+        --add-flags "--enable-features=UseOzonePlatform --ozone-platform=wayland --enable-wayland-ime=true"
     '';
   });
 

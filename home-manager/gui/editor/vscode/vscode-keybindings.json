@@ -1260,29 +1260,29 @@
     "key": "ctrl+shift+b"
   },
   {
-    "key": "f8",
     "command": "-editor.action.marker.nextInFiles",
+    "key": "f8",
     "when": "editorFocus"
   },
   {
-    "key": "ctrl+shift+p",
-    "command": "workbench.action.showCommands"
+    "command": "workbench.action.showCommands",
+    "key": "ctrl+shift+p"
   },
   {
-    "key": "shift+cmd+p",
-    "command": "-workbench.action.showCommands"
+    "command": "-workbench.action.showCommands",
+    "key": "shift+cmd+p"
   },
   {
-    "key": "ctrl+enter",
     "command": "-explorer.openToSide",
+    "key": "ctrl+enter",
     "when": "explorerViewletFocus && foldersViewVisible && !inputFocus"
   },
   {
-    "key": "ctrl+enter",
-    "command": "github.copilot.chat.attachSelection"
+    "command": "github.copilot.chat.attachSelection",
+    "key": "ctrl+enter"
   },
   {
-    "key": "ctrl+enter",
-    "command": "workbench.action.chat.attachFile"
+    "command": "workbench.action.chat.attachFile",
+    "key": "ctrl+enter"
   }
 ]

@@ -77,20 +77,7 @@
     "tools": {
       "terminal": {
         "autoApprove": {
-          "*": true,
-          "branch_codes=set()": true,
-          "from": true,
-          "path=pathlib.Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat')": true,
-          "sed": true,
-          "settle_counts=": true,
-          "star_codes=set()": true,
-          "uv": true,
-          "uv run python -c \"from pathlib import Path; lines=Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat').read_text().splitlines(); print(lines[0]); print(lines[0].find('テスト')); print(len(lines[0]));\"": {
-            "approve": true,
-            "matchCommandLine": true
-          },
-          "with": true,
-          "}": true
+          "sed": true
         }
       }
     }
@@ -139,7 +126,6 @@
       "autoFindInSelection": "never",
       "seedSearchStringFromSelection": "never"
     },
-    "fontFamily": "Ricty Diminished, Menlo, Monaco, 'Courier New', monospace",
     "formatOnSave": true,
     "guides": {
       "bracketPairs": true
@@ -273,14 +259,14 @@
   },
   "remote": {
     "SSH": {
-      "enableRemoteCommand": true,
-      "remoteCommand": "/run/current-system/sw/bin/bash -l",
-      "remotePlatform": {
-        "hq": "linux"
-      },
-      "useExecServer": false
+      "remoteCommand": "/run/current-system/sw/bin/bash -l"
     }
   },
+  "remote.SSH.enableRemoteCommand": true,
+  "remote.SSH.remotePlatform": {
+    "hq": "linux"
+  },
+  "remote.SSH.useExecServer": false,
   "roo-cline": {
     "allowedCommands": [
       "npm test",
@@ -443,5 +429,25 @@
       "alwaysShowHeaderActions": true
     }
   },
-  "workbench.iconTheme": "catppuccin-mocha"
+  "workbench.iconTheme": "catppuccin-mocha",
+  "editor.fontFamily": "Ricty Diminished, Menlo, Monaco, 'Courier New', monospace",
+  "chat.tools.terminal.autoApprove": {
+    "*": true,
+    "sed": true,
+    "uv run python -c \"from pathlib import Path; lines=Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat').read_text().splitlines(); print(lines[0]); print(lines[0].find('テスト')); print(len(lines[0]));\"": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "uv": true,
+    "from": true,
+    "path=pathlib.Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat')": true,
+    "settle_counts=": true,
+    "}": true,
+    "star_codes=set()": true,
+    "branch_codes=set()": true,
+    "with": true
+  },
+  "chat.agent.maxRequests": 100,
+  "markdown-preview-enhanced.codeBlockTheme": "github.css",
+  "markdown-preview-enhanced.revealjsTheme": "night.css"
 }
