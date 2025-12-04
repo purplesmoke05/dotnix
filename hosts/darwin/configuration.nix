@@ -90,9 +90,11 @@
     ];
     casks = [
       "wireshark"
-      "spectacle"
+      "rectangle"
       "raycast"
       "brave-browser"
     ];
   };
+
+  programs.direnv.enable = true;
 }

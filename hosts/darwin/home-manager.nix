@@ -47,7 +47,6 @@
     libpq.pg_config
     copilot-cli
     gh-copilot
-    direnv
   ];
 
   # User information / ユーザー情報

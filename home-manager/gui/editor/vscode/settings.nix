@@ -118,7 +118,7 @@
 };
   docker = {
   extension = {
-  enableComposeLanguageServer = falase;
+  enableComposeLanguageServer = false;
 };
 };
   editor = {
