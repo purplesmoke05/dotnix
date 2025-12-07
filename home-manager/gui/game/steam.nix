@@ -1,7 +1,7 @@
 { pkgs, lib, ... }:
 
 let
-  pythonWithVdf = pkgs.python3.withPackages (ps: [ ps.vdf ]);
+  pythonWithVdf = pkgs.python312.withPackages (ps: [ ps.vdf ]);
 in
 {
   # Ensure Proton GE compatibility tool symlinks exist. / Proton GE 互換ツールへのシンボリックリンクを確保。

@@ -149,21 +149,12 @@
           codex = final.callPackage ./pkgs/codex { };
 
           # hints package (NixOS only) / hints パッケージ（NixOS 限定）
-          hints = final.callPackage ./pkgs/hints { };
+          hints = final.callPackage ./pkgs/hints {
+            python3Packages = final.python312Packages;
+          };
 
           # hyprpanel
           hyprpanel = inputs.hyprpanel.packages.${prev.system}.default;
-
-
-
-
-
-          # push-to-talk (Python STT GUI) / push-to-talk（Python STT GUI）
-          # Pin to Python 3.12 to avoid 3.13 breakages. / Python 3.12 固定で 3.13 の崩壊を回避。
-          push-to-talk = final.callPackage ./pkgs/push-to-talk {
-            python3 = final.python312;
-            python3Packages = final.python312Packages;
-          };
         };
 
         # default overlay / default オーバーレイ
@@ -396,10 +387,7 @@
 
         packages = pythonTools.pythonVersions // {
           # hints flake output / hints フレーク出力
-          hints = pkgs.callPackage ./pkgs/hints { };
-          # push-to-talk flake output / push-to-talk フレーク出力
-          push-to-talk = pkgs.callPackage ./pkgs/push-to-talk {
-            python3 = pkgs.python312;
+          hints = pkgs.callPackage ./pkgs/hints {
             python3Packages = pkgs.python312Packages;
           };
         };

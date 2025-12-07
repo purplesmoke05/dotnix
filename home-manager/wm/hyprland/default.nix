@@ -261,12 +261,6 @@
           ) 9
       ));
 
-      # On-release binding / キー離しでのバインド
-      # Avoid repeated toggles for push-to-talk. / push-to-talk の連続発火を防止。
-      bindr = [
-        ", F6, exec, ${pkgs.push-to-talk}/bin/push-to-talk-toggle"
-      ];
-
       # Animations / アニメーション設定
       animations = {
         enabled = true;

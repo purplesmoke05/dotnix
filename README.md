@@ -76,7 +76,6 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 │   ├── ccmanager
 │   ├── codex
 │   ├── gh-iteration
-│   ├── push-to-talk
 │   ├── ssh
 │   ├── sui
 │   └── whisper-typing

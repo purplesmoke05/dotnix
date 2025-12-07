@@ -13,7 +13,6 @@
     qt6Packages.fcitx5-configtool
     appimage-run
     awscli2
-    push-to-talk
   ];
 
   # Environment variables / 環境変数
@@ -173,26 +172,4 @@
 
   };
 
-  # Auto-start push-to-talk / push-to-talk 自動起動
-  # Load env vars from ~/.config/mcp-secrets/push-to-talk.env. / 環境変数は ~/.config/mcp-secrets/push-to-talk.env から読み込む。
-  systemd.user.services.push-to-talk = {
-    Unit = {
-      Description = "PushToTalk – STT Dictation";
-      After = [ "graphical-session.target" "network-online.target" ];
-      Wants = [ "network-online.target" ];
-    };
-    Service = {
-      # Use headless daemon entrypoint / ヘッドレス daemon エントリを使用
-      ExecStart = ''${pkgs.push-to-talk}/bin/push-to-talk-daemon'';
-      Restart = "on-failure";
-      # Environment from XDG config / XDG 配下の env を参照
-      EnvironmentFile = [ "%h/.config/push-to-talk/push-to-talk.env" ];
-      WorkingDirectory = "%h";
-      # Daemon mode flag / デーモンモードのフラグ
-      Environment = [ "PTT_DAEMON=1" ];
-    };
-    Install = {
-      WantedBy = [ "graphical-session.target" ];
-    };
-  };
 }
