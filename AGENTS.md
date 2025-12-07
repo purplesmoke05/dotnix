@@ -15,6 +15,7 @@ Responses must be in Japanese. / 返答は日本語のみで行うこと。
 ## Build, Test, and Development Commands / ビルド・テスト・開発コマンド
 - Enter dev shell / 開発シェルに入る: `nix develop`, `nix develop .#rust`, `.#py312`, `.#py311`。
 - Format Nix / フォーマット: `nix fmt`（`nixpkgs-fmt`）。
+  - Note: Executing `nix fmt` without arguments might lead to unresponsiveness in environments with many Nix files; consider specifying file paths for stability. / 注: 引数なしで `nix fmt` を実行すると、Nix ファイルが多数ある環境では応答がなくなる可能性があります。安定性のため、ファイルパスを指定することを検討してください。
 - Validate flake / 検証: `nix flake check`。
 - Dry build system / ドライビルド: `nixos-rebuild build --flake .#<host>`。
 - Apply system / 反映: `sudo nixos-rebuild switch --flake .#<host>`（`laptop`, `hq`）。
