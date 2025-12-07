@@ -173,10 +173,10 @@
         "opacity 0.9 0.9, class:^(foot-quick)$"
         "float, class:^(foot-quick)$"
         "size 98% 40%, class:^(foot-quick)$"
-        "move 1% 45px, class:^(foot-quick)$"
+        "move 1% 55%, class:^(foot-quick)$"
         "noshadow, class:^(foot-quick)$"
         "pin,class:^(foot-quick)$"
-        "animation slideDown,class:^(foot-quick)$"
+        "animation slide,class:^(foot-quick)$"
 
         "workspace 20 silent,class:^(discord)$"
         "workspace 2 silent,class:^(steam)$"
