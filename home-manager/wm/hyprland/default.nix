@@ -4,6 +4,7 @@
     ./hyprpanel.nix
     ./gtk.nix
     ./wpaperd.nix
+    ./hypridle.nix
   ];
 
   # Hyprland essentials / Hyprland 基本ツール

@@ -177,4 +177,9 @@
     options rtw88_usb switch_usb_mode=N
     options rtw88_core disable_lps_deep=Y
   '';
+
+  # Host-specific system packages. / ホスト専用の追加システムパッケージ。
+  environment.systemPackages = with pkgs; [
+    gamescope
+  ];
 }

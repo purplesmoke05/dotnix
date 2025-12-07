@@ -150,7 +150,31 @@ in
           </match>
           <match target="pattern">
             <test name="prgname" compare="contains">
+              <string>steamwebhelper</string>
+            </test>
+            <test name="family" qual="any">
+              <string>sans-serif</string>
+            </test>
+            <edit mode="prepend" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+              <string>IPAGothic</string>
+            </edit>
+          </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
               <string>steam</string>
+            </test>
+            <test name="family" qual="any">
+              <string>sans</string>
+            </test>
+            <edit mode="prepend" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+              <string>IPAGothic</string>
+            </edit>
+          </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steamwebhelper</string>
             </test>
             <test name="family" qual="any">
               <string>sans</string>
@@ -173,6 +197,17 @@ in
           </match>
           <match target="pattern">
             <test name="prgname" compare="contains">
+              <string>steamwebhelper</string>
+            </test>
+            <test name="family" qual="any">
+              <string>Arial</string>
+            </test>
+            <edit mode="assign" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+            </edit>
+          </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
               <string>steam</string>
             </test>
             <test name="family" qual="any">
@@ -182,7 +217,18 @@ in
               <string>Noto Sans CJK JP</string>
             </edit>
           </match>
-           <match target="pattern">
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steamwebhelper</string>
+            </test>
+            <test name="family" qual="any">
+              <string>Helvetica</string>
+            </test>
+            <edit mode="assign" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+            </edit>
+          </match>
+          <match target="pattern">
             <test name="prgname" compare="contains">
               <string>steam</string>
             </test>
@@ -193,6 +239,31 @@ in
               <string>Noto Sans CJK JP</string>
             </edit>
           </match>
+          <match target="pattern">
+            <test name="prgname" compare="contains">
+              <string>steamwebhelper</string>
+            </test>
+            <test name="family" qual="any">
+              <string>Verdana</string>
+            </test>
+            <edit mode="assign" name="family" binding="strong">
+              <string>Noto Sans CJK JP</string>
+            </edit>
+          </match>
+          <alias binding="same">
+            <family>Motiva Sans</family>
+            <prefer>
+              <family>Noto Sans CJK JP</family>
+              <family>IPAGothic</family>
+            </prefer>
+          </alias>
+          <alias binding="same">
+            <family>Steam Sans</family>
+            <prefer>
+              <family>Noto Sans CJK JP</family>
+              <family>IPAGothic</family>
+            </prefer>
+          </alias>
         </fontconfig>
       '';
     };

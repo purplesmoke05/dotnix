@@ -28,6 +28,5 @@
     remmina
     slack
     streamcontroller
-    gemini-cli
   ];
 }

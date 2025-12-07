@@ -76,9 +76,7 @@
     },
     "tools": {
       "terminal": {
-        "autoApprove": {
-          "sed": true
-        }
+        "autoApprove": {}
       }
     }
   },
@@ -122,10 +120,7 @@
     "experimental": {
       "asyncTokenization": false
     },
-    "find": {
-      "autoFindInSelection": "never",
-      "seedSearchStringFromSelection": "never"
-    },
+    "fontFamily": "Ricty Diminished, Menlo, Monaco, 'Courier New', monospace",
     "formatOnSave": true,
     "guides": {
       "bracketPairs": true
@@ -259,14 +254,14 @@
   },
   "remote": {
     "SSH": {
-      "remoteCommand": "/run/current-system/sw/bin/bash -l"
+      "enableRemoteCommand": true,
+      "remoteCommand": "/run/current-system/sw/bin/bash -l",
+      "remotePlatform": {
+        "hq": "linux"
+      },
+      "useExecServer": false
     }
   },
-  "remote.SSH.enableRemoteCommand": true,
-  "remote.SSH.remotePlatform": {
-    "hq": "linux"
-  },
-  "remote.SSH.useExecServer": false,
   "roo-cline": {
     "allowedCommands": [
       "npm test",
@@ -429,25 +424,5 @@
       "alwaysShowHeaderActions": true
     }
   },
-  "workbench.iconTheme": "catppuccin-mocha",
-  "editor.fontFamily": "Ricty Diminished, Menlo, Monaco, 'Courier New', monospace",
-  "chat.tools.terminal.autoApprove": {
-    "*": true,
-    "sed": true,
-    "uv run python -c \"from pathlib import Path; lines=Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat').read_text().splitlines(); print(lines[0]); print(lines[0].find('テスト')); print(len(lines[0]));\"": {
-      "approve": true,
-      "matchCommandLine": true
-    },
-    "uv": true,
-    "from": true,
-    "path=pathlib.Path('tests/batch/test_data/ftpuser/wsgkh1BF9999.dat')": true,
-    "settle_counts=": true,
-    "}": true,
-    "star_codes=set()": true,
-    "branch_codes=set()": true,
-    "with": true
-  },
-  "chat.agent.maxRequests": 100,
-  "markdown-preview-enhanced.codeBlockTheme": "github.css",
-  "markdown-preview-enhanced.revealjsTheme": "night.css"
+  "workbench.iconTheme": "catppuccin-mocha"
 }

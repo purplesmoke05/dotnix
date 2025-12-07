@@ -1,6 +1,6 @@
 # Home Manager configuration / Home Manager 設定
 # Define the laptop user's environment. / ラップトップ向け個人環境を定義。
-{ pkgs, username, ... }: {
+{ pkgs, username, lib, ... }: {
   # Module imports / モジュール読み込み
   # Bring in development, CLI, GUI, and Hyprland modules. / 開発・CLI・GUI・Hyprland を統合。
   imports = [
@@ -20,32 +20,23 @@
   };
   programs.home-manager.enable = true;
 
-  # Enable VRR for FreeSync displays. / FreeSync ディスプレイ向けに VRR を有効化。
-  wayland.windowManager.hyprland.settings.monitor = [
-    "HDMI-A-1,3440x1440@60,0x0,1,vrr,1"
-    "DP-1,1920x1080@240,3440x0,1,vrr,1"
-  ];
-  wayland.windowManager.hyprland.settings.workspace = [
-    /*"1,monitor:HDMI-A-1,default:true"
-      "2,monitor:HDMI-A-1"
-      "3,monitor:HDMI-A-1"
-      "4,monitor:HDMI-A-1"
-      "5,monitor:HDMI-A-1"
-      "6,monitor:HDMI-A-1"
-      "7,monitor:HDMI-A-1"
-      "8,monitor:HDMI-A-1"
-      "9,monitor:HDMI-A-1"
-      "10,monitor:HDMI-A-1"
+  wayland.windowManager.hyprland.settings = {
+    # Place DP ultrawide left and rotate HDMI 2.5K portrait on the right. / DPのウルトラワイドを左、HDMIの2.5Kを右で縦向きに配置。
+    monitor = [
+      "DP-3,3440x1440@100,0x0,1,transform,0,vrr,1" # Ultrawide on DP-3 left / 左側DP-3のウルトラワイド。
+      "HDMI-A-1,2560x1600@120,3440x0,1.25,transform,3,vrr,1" # Portrait 2.5K 16:10 on HDMI-A-1 right with VRR and 1.25x scale / 右側HDMI-A-1の2.5K 16:10縦、VRR有効＋1.25倍スケール。
+    ];
 
-      "1,monitor:DP-1"
-      "2,monitor:DP-1"
-      "3,monitor:DP-1"
-      "4,monitor:DP-1"
-      "5,monitor:DP-1"
-      "6,monitor:DP-1"
-      "7,monitor:DP-1"
-      "8,monitor:DP-1"
-      "9,monitor:DP-1"
-    "10,monitor:DP-1"*/
-  ];
+    # Pin gamescope to HDMI-A-1 workspace 13 bottom-half. / gamescope を HDMI-A-1 のワークスペース13下半分に固定。
+    workspace = [
+      "13,monitor:HDMI-A-1"
+    ];
+    windowrulev2 = lib.mkAfter [
+      "workspace 13 silent,class:^(gamescope)$"
+      "monitor HDMI-A-1,class:^(gamescope)$"
+      "float,class:^(gamescope)$"
+      "size 1600 1280,class:^(gamescope)$"
+      "move 0 1280,class:^(gamescope)$"
+    ];
+  };
 }

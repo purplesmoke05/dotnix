@@ -10,6 +10,148 @@ in
   home.file.".local/share/Steam/compatibilitytools.d/GE-Proton".source =
     pkgs.proton-ge-bin.steamcompattool;
 
+  # Ensure Steam UI uses CJK-capable fonts. / Steam UI が CJK 対応フォントを必ず使うようにする。
+  xdg.configFile."fontconfig/conf.d/99-steam.conf".text = ''
+    <?xml version="1.0"?>
+    <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+    <fontconfig>
+      <description>Force JP fonts for Steam UI</description>
+      <!-- Apply to Steam binaries / Steam バイナリに適用 -->
+      <match target="pattern">
+        <test name="prgname" compare="contains">
+          <string>steam</string>
+        </test>
+        <edit mode="prepend" name="family" binding="strong">
+          <string>Noto Sans CJK JP</string>
+          <string>IPAGothic</string>
+        </edit>
+      </match>
+      <match target="pattern">
+        <test name="prgname" compare="contains">
+          <string>steamwebhelper</string>
+        </test>
+        <edit mode="prepend" name="family" binding="strong">
+          <string>Noto Sans CJK JP</string>
+          <string>IPAGothic</string>
+        </edit>
+      </match>
+      <!-- Alias Steam UI fonts / Steam UI フォントに別名を張る -->
+      <alias binding="same">
+        <family>Motiva Sans</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>Steam Sans</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>Segoe UI</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>Arial</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>Helvetica</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>Verdana</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>sans-serif</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>sans</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>GoNotoKurrent</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>GoNotoKurrent UI</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+      <alias binding="same">
+        <family>GoNotoCurrent</family>
+        <prefer>
+          <family>Noto Sans CJK JP</family>
+          <family>IPAGothic</family>
+        </prefer>
+      </alias>
+    </fontconfig>
+  '';
+
+  # Deploy fonts and CSS as real files inside Steam tree to bypass symlink restrictions. / Steam ツリー内に実体配置してサンドボックス・検証の制約を回避。
+  # Force Steam UI CSS to prefer JP-capable fonts. / Steam UI の CSS で日本語対応フォントを優先させる。
+  home.file.".local/share/Steam/steamui/libraryroot.custom.css" = {
+    text = ''
+      :root, body {
+        font-family: "Noto Sans CJK JP","IPAGothic","Motiva Sans","Steam Sans",system-ui,sans-serif !important;
+      }
+      :lang(ja), :lang(ja-JP) {
+        font-family: "Noto Sans CJK JP","IPAGothic","Motiva Sans","Steam Sans",system-ui,sans-serif !important;
+      }
+    '';
+    force = true;
+  };
+
+  # Ship CJK fonts directly into Steam UI font search paths. / Steam UI のフォント検索パスに CJK フォントを直接配置する。
+  home.file.".local/share/Steam/steamui/fonts/NotoSansCJK-VF.otf.ttc" = {
+    source = "${pkgs.noto-fonts-cjk-sans}/share/fonts/opentype/noto-cjk/NotoSansCJK-VF.otf.ttc";
+    force = true;
+  };
+  home.file.".local/share/Steam/clientui/fonts/NotoSansCJK-VF.otf.ttc" = {
+    source = "${pkgs.noto-fonts-cjk-sans}/share/fonts/opentype/noto-cjk/NotoSansCJK-VF.otf.ttc";
+    force = true;
+  };
+  home.file.".local/share/Steam/clientui/fonts/ipag.ttf" = {
+    source = "${pkgs.ipafont}/share/fonts/opentype/ipag.ttf";
+    force = true;
+  };
+  home.file.".local/share/fonts/NotoSansCJK-VF.otf.ttc" = {
+    source = "${pkgs.noto-fonts-cjk-sans}/share/fonts/opentype/noto-cjk/NotoSansCJK-VF.otf.ttc";
+    force = true;
+  };
+  home.file.".local/share/fonts/ipag.ttf" = {
+    source = "${pkgs.ipafont}/share/fonts/opentype/ipag.ttf";
+    force = true;
+  };
+
   # Force gamemoderun launch option for Street Fighter 6. / Street Fighter 6 を常に gamemoderun で起動。
   home.activation.ensureSF6Gamemode =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''

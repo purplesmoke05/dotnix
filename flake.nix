@@ -112,6 +112,8 @@
           # gh-iteration package / gh-iteration パッケージ
           gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
+          # gemini-cli package / gemini-cli パッケージ
+          gemini-cli = final.callPackage ./pkgs/gemini-cli { };
 
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };

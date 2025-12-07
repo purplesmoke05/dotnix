@@ -72,6 +72,24 @@ in
               "notifications" # Notification center
             ];
           };
+          # Remove media and clock only for mobile monitor to save horizontal room. / モバイルモニター向けにメディアと時計だけ省いて横幅を確保。
+          layoutNoMediaClock = { showBattery ? hasBattery }: {
+            "left" = [
+              "dashboard"
+              "workspaces"
+              "windowtitle"
+              "updates"
+            ] ++ (if showBattery then [ "battery" ] else [ ]);
+            "middle" = [ ];
+            "right" = [
+              "cpu"
+              "ram"
+              "volume"
+              "network"
+              "bluetooth"
+              "systray"
+            ];
+          };
           # Empty layout definition
           none = {
             "left" = [ ];
@@ -81,7 +99,7 @@ in
         in
         {
           "0" = layout { }; # Default layout
-          "1" = layout { showBattery = false; }; # Layout without battery
+          "1" = layoutNoMediaClock { }; # Mobile monitor layout without media and clock
           "2" = layout { showBattery = false; }; # Layout without battery
           "3" = layout { showBattery = false; }; # Layout without battery
         };
