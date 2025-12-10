@@ -115,6 +115,9 @@
           # gemini-cli package / gemini-cli パッケージ
           gemini-cli = final.callPackage ./pkgs/gemini-cli { };
 
+          # uv package / uv パッケージ
+          uv = final.callPackage ./pkgs/uv { };
+
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
@@ -392,6 +395,7 @@
           hints = pkgs.callPackage ./pkgs/hints {
             python3Packages = pkgs.python312Packages;
           };
+          uv = pkgs.uv;
         };
         formatter = pkgs.nixpkgs-fmt;
       }
