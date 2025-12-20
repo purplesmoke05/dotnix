@@ -538,6 +538,7 @@ in
     sui
     dnsmasq # NetworkManager hotspot helper / NetworkManager Hotspot 用
     # Gaming diagnostics / ゲーム用診断ツール
+    mangohud
     evtest
     jstest-gtk
     antimicrox
@@ -909,6 +910,11 @@ in
       };
     };
   };
+
+  # Logitech Wireless Devices / Logicool ワイヤレスデバイス
+  # Enable Solaar and udev rules for Unifying/Bolt receivers. / Solaar とレシーバー用 udev ルールを有効化。
+  hardware.logitech.wireless.enable = true;
+  hardware.logitech.wireless.enableGraphical = true;
 
   # Disable Bluetooth USB autosuspend / Bluetooth USB autosuspend を無効化
   boot.extraModprobeConfig = ''

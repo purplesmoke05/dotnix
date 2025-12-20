@@ -180,7 +180,6 @@
 
         "workspace 20 silent,class:^(discord)$"
         "workspace 2 silent,class:^(steam)$"
-        "workspace 10 silent,class:^(steam_app_1364780)$"
       ];
 
       # Keybindings / キーバインド
@@ -246,7 +245,7 @@
         "CTRL, 3, exec, quick-term"
 
       ] ++ [
-      "$mainMod, 0, split:workspace, 10"
+        "$mainMod, 0, split:workspace, 10"
         "$mainMod SHIFT, 0, split:movetoworkspace, 10"
       ] ++ (builtins.concatLists (
         builtins.genList
@@ -299,10 +298,10 @@
   xdg.configFile."hints/config.json" = {
     text = builtins.toJSON {
       hints = {
-        hint_height = 22;         # Smaller than default 30 / 既定30 から縮小
-        hint_width_padding = 6;   # Narrower than default 10 / 既定10 から縮小
-        hint_font_size = 11;      # Smaller than default 15 / 既定15 から縮小
-        hint_font_face = "Noto Sans CJK JP";  # JP-friendly font / 日本語でも視認性の良いフォント
+        hint_height = 22; # Smaller than default 30 / 既定30 から縮小
+        hint_width_padding = 6; # Narrower than default 10 / 既定10 から縮小
+        hint_font_size = 11; # Smaller than default 15 / 既定15 から縮小
+        hint_font_face = "Noto Sans CJK JP"; # JP-friendly font / 日本語でも視認性の良いフォント
       };
       backends = { enable = [ "opencv" ]; };
       overlay_x_offset = 0;

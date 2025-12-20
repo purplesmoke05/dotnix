@@ -21,22 +21,26 @@
   programs.home-manager.enable = true;
 
   wayland.windowManager.hyprland.settings = {
-    # Place DP ultrawide left and rotate HDMI 2.5K portrait on the right. / DPのウルトラワイドを左、HDMIの2.5Kを右で縦向きに配置。
+    # Place DP ultrawide left and rotate DP 2.5K portrait on the right. / DPのウルトラワイドを左、DPの2.5Kを右で縦向きに配置。
     monitor = [
-      "DP-3,3440x1440@100,0x0,1,transform,0,vrr,1" # Ultrawide on DP-3 left / 左側DP-3のウルトラワイド。
-      "HDMI-A-1,2560x1600@120,3440x0,1.25,transform,3,vrr,1" # Portrait 2.5K 16:10 on HDMI-A-1 right with VRR and 1.25x scale / 右側HDMI-A-1の2.5K 16:10縦、VRR有効＋1.25倍スケール。
+      "DP-3,preferred,0x0,1,transform,0,vrr,1" # Ultrawide on DP-3 left / 左側DP-3のウルトラワイド。
+      "DP-2,2560x1600@120,auto,1.25,transform,3,vrr,1" # Portrait 2.5K 16:10 on DP-2 right with VRR and 1.25x scale / 右側DP-2の2.5K 16:10縦、VRR有効＋1.25倍スケール。
     ];
 
-    # Pin gamescope to HDMI-A-1 workspace 13 bottom-half. / gamescope を HDMI-A-1 のワークスペース13下半分に固定。
+    # Pin gamescope to DP-2 workspace 13 bottom-half. / gamescope を DP-2 のワークスペース13下半分に固定。
     workspace = [
-      "13,monitor:HDMI-A-1"
+      "13,monitor:DP-2"
     ];
     windowrulev2 = lib.mkAfter [
       "workspace 13 silent,class:^(gamescope)$"
-      "monitor HDMI-A-1,class:^(gamescope)$"
+      "monitor DP-2,class:^(gamescope)$"
       "float,class:^(gamescope)$"
       "size 1600 1280,class:^(gamescope)$"
       "move 0 1280,class:^(gamescope)$"
+
+      # Pin Street Fighter 6 to DP-2 workspace 13. / Street Fighter 6 を DP-2 のワークスペース13に固定。
+      "workspace 13 silent,class:^(steam_app_1364780)$"
+      "monitor DP-2,class:^(steam_app_1364780)$"
     ];
   };
 }

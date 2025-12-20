@@ -31,6 +31,8 @@
     foundry
     solc
     slither-analyzer
+    postgresql.pg_config
+    pkg-config
   ];
 
   # Environment variables for Volta
