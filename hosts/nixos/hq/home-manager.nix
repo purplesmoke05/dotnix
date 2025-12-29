@@ -27,19 +27,17 @@
       "DP-2,2560x1600@120,auto,1.25,transform,3,vrr,1" # Portrait 2.5K 16:10 on DP-2 right with VRR and 1.25x scale / 右側DP-2の2.5K 16:10縦、VRR有効＋1.25倍スケール。
     ];
 
-    # Pin gamescope to DP-2 workspace 13 bottom-half. / gamescope を DP-2 のワークスペース13下半分に固定。
+    # Pin gamescope to DP-2 workspace 3 fullscreen. / gamescope を DP-2 のワークスペース3でフルスクリーン。
     workspace = [
-      "13,monitor:DP-2"
+      "3,monitor:DP-2"
     ];
     windowrulev2 = lib.mkAfter [
-      "workspace 13 silent,class:^(gamescope)$"
+      "workspace 3 silent,class:^(gamescope)$"
       "monitor DP-2,class:^(gamescope)$"
-      "float,class:^(gamescope)$"
-      "size 1600 1280,class:^(gamescope)$"
-      "move 0 1280,class:^(gamescope)$"
+      "fullscreen,class:^(gamescope)$"
 
-      # Pin Street Fighter 6 to DP-2 workspace 13. / Street Fighter 6 を DP-2 のワークスペース13に固定。
-      "workspace 13 silent,class:^(steam_app_1364780)$"
+      # Pin Street Fighter 6 to DP-2 workspace 3. / Street Fighter 6 を DP-2 のワークスペース3に固定。
+      "workspace 3 silent,class:^(steam_app_1364780)$"
       "monitor DP-2,class:^(steam_app_1364780)$"
     ];
   };

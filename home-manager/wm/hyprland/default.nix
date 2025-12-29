@@ -178,6 +178,10 @@
         "pin,class:^(foot-quick)$"
         "animation slide,class:^(foot-quick)$"
 
+        # Street Fighter 6 on DP-2 fullscreen. / Street Fighter 6 を DP-2 でフルスクリーン。
+        "monitor DP-2, class:^(steam_app_1364780)$"
+        "fullscreen, class:^(steam_app_1364780)$"
+
         "workspace 20 silent,class:^(discord)$"
         "workspace 2 silent,class:^(steam)$"
       ];

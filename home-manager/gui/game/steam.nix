@@ -152,8 +152,8 @@ in
     force = true;
   };
 
-  # Force MangoHud + GameMode launch option for Street Fighter 6. / Street Fighter 6 を常に MangoHud + GameMode で起動。
-  home.activation.ensureSF6Gamemode =
+  # Ensure Steam games inhibit idle; keep SF6 on MangoHud + GameMode. / Steam ゲームのアイドル抑止を追加し、SF6は MangoHud + GameMode を維持。
+  home.activation.ensureSteamLaunchOptions =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             set -euo pipefail
             shopt -s nullglob
@@ -169,7 +169,23 @@ in
       import vdf
 
       config_path = sys.argv[1]
-      app_id = "1364780"
+      sf6_app_id = "1364780"
+      base_prefix = 'systemd-inhibit --what=idle --mode=block --why="gaming"'
+
+      def normalize(value):
+          if value is None:
+              return None
+          if not isinstance(value, str):
+              return str(value)
+          return value.strip()
+
+      def ensure_prefix(value):
+          value = normalize(value)
+          if not value:
+              return f"{base_prefix} %command%"
+          if base_prefix in value:
+              return value
+          return f"{base_prefix} {value}"
       try:
           with open(config_path, "r", encoding="utf-8", errors="ignore") as fh:
               data = vdf.load(fh)
@@ -185,13 +201,18 @@ in
       apps_store = steam_root.setdefault("apps", steam_root.get("Apps", {}))
       # Keep legacy key in sync if it exists / existed. / 互換用キーがあれば同期。
       steam_root["Apps"] = apps_store
-      app_block = apps_store.setdefault(app_id, {})
+      for app_id, app_block in apps_store.items():
+          if not isinstance(app_block, dict):
+              continue
+          current = app_block.get("LaunchOptions")
+          updated = ensure_prefix(current)
+          if current != updated:
+              app_block["LaunchOptions"] = updated
 
-      desired = "mangohud gamemoderun %command%"
-      if app_block.get("LaunchOptions") == desired:
-          sys.exit(0)
-
-      app_block["LaunchOptions"] = desired
+      sf6_block = apps_store.setdefault(sf6_app_id, {})
+      desired_sf6 = f"{base_prefix} mangohud gamemoderun %command%"
+      if sf6_block.get("LaunchOptions") != desired_sf6:
+          sf6_block["LaunchOptions"] = desired_sf6
       with open(config_path, "w", encoding="utf-8") as fh:
           vdf.dump(data, fh)
       PY

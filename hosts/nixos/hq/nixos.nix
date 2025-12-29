@@ -21,7 +21,7 @@
   users.users.${username} = {
     isNormalUser = true;
     description = "Yosuke Otosu";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" "i2c" ];
     packages = with pkgs; [
     ];
     openssh.authorizedKeys.keys = [

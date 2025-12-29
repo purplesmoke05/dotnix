@@ -921,6 +921,9 @@ in
     options btusb enable_autosuspend=N
   '';
 
+  # Enable i2c devices for DDC/CI. / DDC/CI 用に i2c デバイスを有効化。
+  hardware.i2c.enable = true;
+
   # Load xpad early for Victrix Pro BFG / Victrix Pro BFG 用に早期 xpad ロード
   boot.kernelModules = [ "xpad" ];
 
