@@ -423,6 +423,5 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  },
-  "workbench.iconTheme": "catppuccin-mocha"
+  }
 }

@@ -296,7 +296,10 @@
           home-manager.darwinModules.home-manager
           {
             networking.hostName = hostname;
-            users.users.${username}.home = "/Users/${username}";
+            users.users.${username} = {
+              home = "/Users/${username}";
+              name = username;
+            };
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = false; # Original darwin flow / 既定の darwin フローを踏襲
             home-manager.users.${username} = { pkgs, lib, config, ... }: # Provided by HM module / HM から渡される値

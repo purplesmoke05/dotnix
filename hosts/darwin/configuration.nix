@@ -90,7 +90,6 @@
     ];
     casks = [
       "wireshark"
-      "rectangle"
       "raycast"
       "brave-browser"
     ];

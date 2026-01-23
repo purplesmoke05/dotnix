@@ -1284,5 +1284,9 @@
   {
     "command": "workbench.action.chat.attachFile",
     "key": "ctrl+enter"
+  },
+  {
+    "key": "ctrl+enter",
+    "command": "workbench.action.chat.attachSelection"
   }
 ]
