@@ -13,6 +13,7 @@
     ./chat/discord.nix
     ./game/steam.nix
     ./music
+    ./streamcontroller.nix
   ];
 
   # Additional GUI applications
@@ -28,5 +29,6 @@
     remmina
     slack
     streamcontroller
+    streamcontroller-hypr
   ];
 }

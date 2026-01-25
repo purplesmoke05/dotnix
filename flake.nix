@@ -130,6 +130,9 @@
           # sui package / sui パッケージ
           sui = final.callPackage ./pkgs/sui { };
 
+          # StreamController OSPlugin patch / StreamController OSPlugin パッチ
+          streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
+
           # qSpeak app (deb extraction) / qSpeak アプリ（deb 展開）
           qspeak = final.callPackage ./pkgs/qspeak { };
 
@@ -157,6 +160,9 @@
           hints = final.callPackage ./pkgs/hints {
             python3Packages = final.python312Packages;
           };
+
+          # StreamController Hyprland wrapper. / StreamController の Hyprland ラッパー。
+          streamcontroller-hypr = final.callPackage ./pkgs/streamcontroller-hypr { };
 
           # hyprpanel
           hyprpanel = inputs.hyprpanel.packages.${prev.system}.default;

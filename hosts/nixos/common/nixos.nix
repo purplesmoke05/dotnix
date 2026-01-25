@@ -381,7 +381,7 @@ in
           ["bluez5.enable-sbc-xq"] = true,
           ["bluez5.enable-msbc"] = true,
           ["bluez5.enable-hw-volume"] = true,
-          ["bluez5.codecs"] = "[ sbc sbc_xq aac ldac aptx aptx_hd aptx_ll aptx_ll_duplex faststream faststream_duplex ]",
+          ["bluez5.codecs"] = "[ sbc aac ]",
         }
 
         bluez_monitor.rules = {
@@ -400,10 +400,6 @@ in
               -- Prefer high quality codecs / 高音質コーデックを優先
               ["bluez5.a2dp.codec"] = "auto",
 
-              -- SBC codec bitpool / SBC コーデックのビットプール
-              ["bluez5.a2dp.sbc.min_bitpool"] = 48,
-              ["bluez5.a2dp.sbc.max_bitpool"] = 53,
-
               -- Avoid fallback to HSP/HFP / HSP/HFP への切替を防止
               ["bluez5.headset-roles"] = "[ ]",
               ["bluez5.profile"] = "a2dp_sink",
@@ -416,6 +412,29 @@ in
               -- Session behaviour / セッションの挙動
               ["node.pause-on-idle"] = false,
               ["session.suspend-timeout-seconds"] = 0,
+            },
+          },
+          {
+            matches = {
+              {
+                -- Technics EAH-AZ100 profile / Technics EAH-AZ100 用プロファイル
+                { "device.name", "matches", "bluez_card.BC_3E_0B_03_16_1D" },
+              },
+            },
+            apply_properties = {
+              -- Force A2DP profile / 必ず A2DP を使用
+              ["bluez5.profile"] = "a2dp_sink",
+              ["bluez5.autoswitch-profile"] = false,
+              ["device.profile"] = "a2dp-sink",
+
+              -- Disable microphone roles / マイク系ロールを無効化
+              ["bluez5.headset-roles"] = "[ ]",
+              ["bluez5.hfp-enable"] = false,
+              ["bluez5.hsp-enable"] = false,
+
+              -- Audio tuning / 音質調整
+              ["audio.rate"] = 48000,
+              ["node.pause-on-idle"] = false,
             },
           },
           {
@@ -966,6 +985,13 @@ in
   # Stream Deck udev rules from StreamController. / StreamController 由来の Stream Deck udev ルール。
   services.udev.packages = [ pkgs.streamcontroller ];
 
+  # Normalize steam-devices udev rule formatting. / steam-devices の udev ルール書式を整える。
+  environment.etc."udev/rules.d/60-steam-input.rules".text =
+    builtins.replaceStrings
+      [ "MODE=\"0660\" TAG+=\"uaccess\"" ]
+      [ "MODE=\"0660\", TAG+=\"uaccess\"" ]
+      (builtins.readFile "${pkgs.steam-devices-udev-rules}/lib/udev/rules.d/60-steam-input.rules");
+
   # udev rules / udev ルール
   # Optimise controllers and Bluetooth handling. / コントローラーと Bluetooth の最適化。
   services.udev.extraRules = ''
@@ -987,6 +1013,9 @@ in
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess", ATTR{power/autosuspend}="-1"
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="021a", TAG+="uaccess", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", ATTRS{idProduct}=="0217", TAG+="uaccess", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
+
+    # CO2 monitor (Holtek USB-zyTemp) / CO2 モニター（Holtek USB-zyTemp）
+    KERNEL=="hidraw*", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE="0660", GROUP="input", TAG+="uaccess"
 
     # Victrix-specific latency tweaks / Victrix 向けレイテンシー調整
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
