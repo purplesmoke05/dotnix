@@ -1,4 +1,4 @@
-{ pkgs, inputs, hostname, ... }:
+{ config, lib, pkgs, inputs, hostname, ... }:
 let
   # Force battery indicator on laptop host and fall back to sysfs when readable. / laptop ホストではバッテリー表示を強制し、読み取り可能な場合は sysfs 判定へフォールバック。
   hasBattery =
@@ -98,10 +98,12 @@ in
           };
         in
         {
-          "0" = layout { }; # Default layout
-          "1" = layoutNoMediaClock { }; # Mobile monitor layout without media and clock
-          "2" = layout { showBattery = false; }; # Layout without battery
-          "3" = layout { showBattery = false; }; # Layout without battery
+          "DP-3" = layout { }; # Ultrawide monitor layout. / ウルトラワイド用レイアウト。
+          "DP-2" = layoutNoMediaClock { }; # Mobile monitor layout without media and clock. / モバイル用にメディアと時計を省いたレイアウト。
+          "0" = layout { }; # Default layout. / 既定レイアウト。
+          "1" = layoutNoMediaClock { }; # Mobile monitor layout without media and clock. / モバイル用にメディアと時計を省いたレイアウト。
+          "2" = layout { showBattery = false; }; # Layout without battery. / バッテリーなしレイアウト。
+          "3" = layout { showBattery = false; }; # Layout without battery. / バッテリーなしレイアウト。
         };
 
       "theme.name" = "catppuccin_mocha";

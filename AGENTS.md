@@ -42,7 +42,7 @@ Responses must be in Japanese. / 返答は日本語のみで行うこと。
 ## Security & Configuration Tips / セキュリティと設定
 - Secrets / シークレット:
   - コミット禁止（Nixストアにも平文を置かない）。
-  - ユーザー/アプリ用（MCP・Home Manager 経由のCLI等）は `~/.config/mcp-secrets/` を使用。
+  - ユーザー/アプリ用（MCP・Home Manager 経由のCLI等）の保管先は都度判断（リポジトリ外・Nixストア外に置く）。
   - システムサービス用（例: hostapd, wireguard, など）はホーム外のランタイム/永続領域を使用（例: `/var/lib/<service>/…`）。
     - 例: hostapd のパスフレーズは `/var/lib/hostapd/hotspot.pass`（root:root, 0600; リポジトリ非管理）。
     - sops-nix/agenix等のシークレットマネージャ採用も歓迎。
