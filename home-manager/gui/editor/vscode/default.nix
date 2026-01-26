@@ -28,6 +28,7 @@ in
 {
   programs.vscode = {
     enable = true;
+    package = pkgs.vscode;
     profiles.default = {
       # Avoid HM-managed symlinked settings; activation writes real files. / HM 管理のシンボリックリンクを避け、activation で実ファイルを書き込む。
       keybindings = lib.mkForce [ ];
@@ -88,10 +89,6 @@ in
       userSettings = lib.mkForce { };
     };
   };
-
-  home.packages = with pkgs; [
-    vscode
-  ];
 
   # Copy configuration files directly to avoid read-only symlinks / 読み取り専用シンボリックリンクを避けるため直接コピー
   home.activation = lib.mkIf (isDarwin || isLinux) {
