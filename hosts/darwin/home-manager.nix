@@ -46,6 +46,7 @@
     libpq
     libpq.pg_config
     copilot-cli  # AWS Copilot CLI
+    wtp
 
     # GUIツール
     rectangle
