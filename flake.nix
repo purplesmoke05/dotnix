@@ -118,6 +118,9 @@
           # uv package / uv パッケージ
           uv = final.callPackage ./pkgs/uv { };
 
+          # wtp package / wtp パッケージ
+          wtp = final.callPackage ./pkgs/wtp { };
+
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
@@ -405,6 +408,7 @@
             python3Packages = pkgs.python312Packages;
           };
           uv = pkgs.uv;
+          wtp = pkgs.wtp;
         };
         formatter = pkgs.nixpkgs-fmt;
       }
