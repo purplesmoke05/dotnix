@@ -37,6 +37,10 @@
         # Bind Ctrl+J manually / Ctrl+J を手動割当
         bind --erase \cj
         bind \cj _atuin_search
+
+        if type -q wtp
+          wtp shell-init fish | source
+        end
       '';
 
     # Shell abbreviations / 共通コマンドの短縮形
