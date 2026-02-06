@@ -1024,6 +1024,10 @@ in
     # Force 1 ms polling on Victrix endpoints with udev-run script. / udev スクリプトで Victrix のエンドポイントを 1ms ポーリングに設定。
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", RUN+="${setVictrixPolling}"
 
+    # Vader 4 Pro power management lock. / Vader 4 Pro の電源管理を固定。
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", ATTR{power/control}="on"
+
     # Xbox-compatible controllers / Xbox 互換コントローラーを最適化
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/control}="on"

@@ -1,0 +1,18 @@
+{
+  "x86_64-linux": {
+    "url": "https://update.code.visualstudio.com/1.108.1/linux-x64/stable",
+    "hash": "sha256-qYthiZlioD6fWCyDPfg7Yfo5PqCHzcenk8NjgobLW7c="
+  },
+  "aarch64-linux": {
+    "url": "https://update.code.visualstudio.com/1.108.1/linux-arm64/stable",
+    "hash": "sha256-7DBRwwdQm06nyxRMR3wOH+4DqlnPvXGL/rMdq7jpxTw="
+  },
+  "x86_64-darwin": {
+    "url": "https://update.code.visualstudio.com/1.108.1/darwin/stable",
+    "hash": "sha256-zwvdrstg6UtoG8EE87VXjDORT3zEbbKCFdAP0wPsD9s="
+  },
+  "aarch64-darwin": {
+    "url": "https://update.code.visualstudio.com/1.108.1/darwin-arm64/stable",
+    "hash": "sha256-YXmTzpsRSwdtbmoQLDRcJ5hcDURZnrkh5p8e8rYnA0Y="
+  }
+}

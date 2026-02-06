@@ -5,7 +5,7 @@ let
     programs = {
       aws-kb-retrieval = { enable = false; /* Requires AWS credentials -> envFile/passwordCommand */ };
       brave-search = {
-        enable = true; # Brave Search (API key via envFile) / Brave Search（envFile に API キー）
+        enable = false; # Brave Search (API key via envFile) / Brave Search（envFile に API キー）
         envFile = config.xdg.configHome + "/mcp-secrets/brave.env";
       };
       everart = {

@@ -5,35 +5,36 @@
 , makeWrapper
 , openssl ? null
 , zlib ? null
+, libcap ? null
 }:
 
 let
-  version = "0.87.0";
+  version = "0.98.0";
 
   platforms = {
     x86_64-linux = {
       artifact = "codex-x86_64-unknown-linux-gnu.tar.gz";
-      sha256 = "sha256-fNXEBdExcqJUvX3iohOxC5O1sMOukbY/81JkPp68nMc=";
+      sha256 = "sha256-smZ5dxFkFVdRZRs6Z/v7SLZove/TUsGhVssDU4NJDUA=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
-      buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib ];
+      buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib libcap ];
     };
 
     aarch64-linux = {
       artifact = "codex-aarch64-unknown-linux-gnu.tar.gz";
-      sha256 = "sha256-Nn/uy7sfdD8qWADHqAahXNv1rgFFr8GUO8CmLQJnEcM=";
+      sha256 = "sha256-Kw7NnEgQ5xhHLkQdvj52CGrQOmkzr8BAUBBZpxhGRwE=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
-      buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib ];
+      buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib libcap ];
     };
 
     x86_64-darwin = {
       artifact = "codex-x86_64-apple-darwin.tar.gz";
-      sha256 = "sha256-uXk1/dB0sdgBId59pbxfeNWUk7kg6VVmJlqo82ttAkg=";
+      sha256 = "sha256-EIxBNYHb9bH7rw9SeAaXspEg3Etdn/KZK1r9rN9eUwQ=";
       nativeBuildInputs = [ makeWrapper ];
     };
 
     aarch64-darwin = {
       artifact = "codex-aarch64-apple-darwin.tar.gz";
-      sha256 = "sha256-NvHqAJbFhWePYTuVSt5PFPYoT0ZV3fZswBuSjlSE+ec=";
+      sha256 = "sha256-PMdXcogDruDEyZTFaCENmQCrxs7GC+Aj57LApuMBglU=";
       nativeBuildInputs = [ makeWrapper ];
     };
   };

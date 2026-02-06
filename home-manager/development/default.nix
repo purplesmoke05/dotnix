@@ -18,7 +18,6 @@
     volta
     codex
     claude-code
-    gemini-cli
     ctop
     iftop
     radeontop

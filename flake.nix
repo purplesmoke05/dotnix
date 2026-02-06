@@ -121,6 +121,11 @@
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
 
+          # VSCode package / VSCode パッケージ
+          vscode = final.callPackage ./pkgs/vscode {
+            vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
+          };
+
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
