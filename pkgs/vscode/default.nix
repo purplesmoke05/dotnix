@@ -11,6 +11,7 @@ let
   inherit (stdenv.hostPlatform) system;
   sources = lib.importJSON ./sources.json;
   source = sources.${system} or (throw "Unsupported system: ${system}");
+  archiveFormat = if stdenv.hostPlatform.isDarwin then "zip" else "tar.gz";
   version = "1.108.1";
 in
 callPackage vscode-generic {
@@ -26,7 +27,7 @@ callPackage vscode-generic {
     ;
 
   src = fetchurl {
-    name = "VSCode_${version}_${system}";
+    name = "VSCode_${version}_${system}.${archiveFormat}";
     inherit (source) url hash;
   };
 
