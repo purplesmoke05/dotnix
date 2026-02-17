@@ -17,6 +17,7 @@
     sqlite
     volta
     codex
+    clawzero
     claude-code
     ctop
     iftop
@@ -30,13 +31,16 @@
     foundry
     solc
     slither-analyzer
-    postgresql.pg_config
+    libpq
+    libpq.pg_config
     pkg-config
   ];
 
   # Environment variables for Volta
   home.sessionVariables = {
     VOLTA_HOME = "$HOME/.volta";
+    PG_CONFIG = "${pkgs.libpq}/bin/pg_config";
+    LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libpq ]}:$LD_LIBRARY_PATH";
   };
 
   # Add Volta binary directory to PATH

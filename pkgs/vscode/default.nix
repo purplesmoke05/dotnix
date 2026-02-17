@@ -13,8 +13,9 @@ let
   source = sources.${system} or (throw "Unsupported system: ${system}");
   archiveFormat = if stdenv.hostPlatform.isDarwin then "zip" else "tar.gz";
   version = "1.108.1";
+  vscodeGeneric = callPackage vscode-generic { };
 in
-callPackage vscode-generic {
+vscodeGeneric {
   pname = "vscode";
   executableName = "code";
   longName = "Visual Studio Code";

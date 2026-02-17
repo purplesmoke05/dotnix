@@ -16,8 +16,9 @@ let
 
   version = "1.13.3-4533425205018624";
   vscodeVersion = "1.104.0";
+  vscodeGeneric = callPackage vscode-generic { };
 in
-callPackage vscode-generic {
+vscodeGeneric {
   inherit
     commandLineArgs
     useVSCodeRipgrep

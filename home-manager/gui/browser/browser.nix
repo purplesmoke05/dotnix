@@ -1,4 +1,4 @@
-{ config, pkgs, ... }: # Ensure config and pkgs are available if needed elsewhere
+{ ... }:
 
 {
   programs = {
@@ -23,11 +23,6 @@
     ];
     firefox.enable = true;
   };
-
-  # Add zen-browser package and vdhcoapp (Video DownloadHelper companion app)
-  home.packages = with pkgs; [
-    vdhcoapp
-  ];
 
   # Removed ineffective brave-flags.conf definition
   # xdg.configFile."brave-flags.conf".text = ''
