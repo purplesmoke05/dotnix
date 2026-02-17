@@ -1,0 +1,45 @@
+model_list:
+  # OpenAI
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: "os.environ/OPENAI_API_KEY"
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: "os.environ/OPENAI_API_KEY"
+
+  # Anthropic
+  - model_name: claude-sonnet-4-20250514
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+  - model_name: claude-haiku-3-5
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  # Gemini
+  - model_name: gemini-2.0-flash
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: "os.environ/GEMINI_API_KEY"
+  - model_name: gemini-2.5-pro
+    litellm_params:
+      model: gemini/gemini-2.5-pro-preview-05-06
+      api_key: "os.environ/GEMINI_API_KEY"
+
+  # Modal
+  - model_name: GLM-5-FP8
+    litellm_params:
+      model: hosted_vllm/zai-org/GLM-5-FP8
+      api_key: "os.environ/MODAL_API_KEY"
+      api_base: "https://api.us-west-2.modal.direct/v1"
+      max_parallel_requests: 1
+      rpm: 10
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  master_key: "os.environ/LITELLM_MASTER_KEY"

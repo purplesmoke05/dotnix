@@ -481,8 +481,14 @@ in
   };
 
   # Virtualization & Containers / 仮想化とコンテナ
-  # Use rootless Docker alongside Flatpak. / Rootless Docker と Flatpak を併用。
+  # Podman for OCI services, rootless Docker for CLI use, Flatpak for GUI apps.
+  # Podman で OCI サービス管理、rootless Docker は CLI 用途、Flatpak は GUI アプリ。
   virtualisation = {
+    podman = {
+      enable = true;
+      dockerCompat = false; # Keep rootless Docker as docker command / rootless Docker を docker コマンドとして維持
+      autoPrune.enable = true;
+    };
     docker = {
       enable = false;
       rootless = {
@@ -1016,6 +1022,9 @@ in
 
     # CO2 monitor (Holtek USB-zyTemp) / CO2 モニター（Holtek USB-zyTemp）
     KERNEL=="hidraw*", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE="0660", GROUP="input", TAG+="uaccess"
+
+    # Vial-compatible keyboard (Cornix) access. / Vial 対応キーボード（Cornix）へのアクセスを許可。
+    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="e118", ATTRS{idProduct}=="0001", MODE="0660", GROUP="input", TAG+="uaccess"
 
     # Victrix-specific latency tweaks / Victrix 向けレイテンシー調整
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"

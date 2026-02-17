@@ -91,6 +91,10 @@
         allowedUDPPorts = [ 53 67 68 ]; # AdGuard DNS と DHCP / AdGuard DNS and DHCP
         allowedTCPPorts = [ 53 ]; # AdGuard DNS / AdGuard DNS
       };
+      # Tailscale VPN / Tailscale VPN
+      "tailscale0" = {
+        allowedTCPPorts = [ 4000 ]; # LiteLLM Proxy
+      };
     };
 
     # Default rules / 既定ルール
@@ -169,6 +173,8 @@
   systemd.tmpfiles.rules = [
     # path mode user group age / パス モード ユーザー グループ age
     "d /var/lib/hostapd 0750 root root -"
+    "d /var/lib/litellm 0750 root root -"
+    "d /var/lib/litellm/pgdata 0750 root root -"
   ];
 
   # Realtek rtw88_usb tuning / Realtek rtw88_usb 調整
@@ -177,6 +183,57 @@
     options rtw88_usb switch_usb_mode=N
     options rtw88_core disable_lps_deep=Y
   '';
+
+  # Secrets management / シークレット管理
+  # Decrypt secrets via sops-nix using the host SSH key. / ホスト SSH 鍵で sops-nix による復号を実行。
+  sops = {
+    defaultSopsFile = ../../../secrets/hq/llm-proxy.env;
+    defaultSopsFormat = "dotenv";
+    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    secrets."llm-proxy-env" = { };
+    secrets."litellm-db-password" = {
+      sopsFile = ../../../secrets/hq/litellm-db-password.env;
+      format = "dotenv";
+    };
+  };
+
+  # LiteLLM Proxy container / LiteLLM Proxy コンテナ
+  # Run LiteLLM gateway via Podman with sops-decrypted env and config.yaml. / sops 復号済み env と config.yaml で LiteLLM ゲートウェイを稼働。
+  virtualisation.oci-containers = {
+    backend = "podman";
+    containers.litellm-db = {
+      image = "docker.io/library/postgres:16-alpine";
+      ports = [ "127.0.0.1:5433:5432" ];
+      environment = {
+        POSTGRES_DB = "litellm";
+        POSTGRES_USER = "litellm";
+      };
+      environmentFiles = [
+        config.sops.secrets."litellm-db-password".path
+      ];
+      volumes = [
+        "/var/lib/litellm/pgdata:/var/lib/postgresql/data"
+      ];
+    };
+    containers.litellm = {
+      image = "ghcr.io/berriai/litellm:main-latest";
+      dependsOn = [ "litellm-db" ];
+      environmentFiles = [
+        config.sops.secrets."llm-proxy-env".path
+      ];
+      volumes = [
+        "${./litellm-config.yaml}:/app/config.yaml:ro"
+      ];
+      extraOptions = [ "--network=host" ];
+      cmd = [ "--config" "/app/config.yaml" "--port" "4000" ];
+    };
+  };
+
+  # Ensure containers start after secrets are decrypted. / シークレット復号後にコンテナを起動。
+  systemd.services."podman-litellm" = {
+    after = [ "sops-nix.service" "podman-litellm-db.service" ];
+    wants = [ "sops-nix.service" ];
+  };
 
   # Host-specific system packages. / ホスト専用の追加システムパッケージ。
   environment.systemPackages = with pkgs; [
