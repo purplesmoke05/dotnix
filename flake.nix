@@ -53,11 +53,15 @@
       url = "github:BatteredBunny/brew-api";
       flake = false;
     };
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # Outputs / 出力定義
   # Collect systems, overlays, and Home Manager setups. / システム構成・オーバーレイ・Home Manager を束ねる。
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, hyprpanel, zen-browser-flake, nix-darwin, brew-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, hyprpanel, zen-browser-flake, nix-darwin, brew-nix, sops-nix, ... }@inputs:
     let
       # Python builders / Python ビルダー
       mkPythonBuilders = pkgs: {
@@ -115,11 +119,20 @@
           # gemini-cli package / gemini-cli パッケージ
           gemini-cli = final.callPackage ./pkgs/gemini-cli { };
 
+          # claude-code package / claude-code パッケージ
+          claude-code = final.callPackage ./pkgs/claude-code { };
+
+          # clawzero package / clawzero パッケージ
+          clawzero = final.callPackage ./pkgs/clawzero { };
+
           # uv package / uv パッケージ
           uv = final.callPackage ./pkgs/uv { };
 
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
+
+          # zellij package / zellij パッケージ
+          zellij = final.callPackage ./pkgs/zellij { };
 
           # VSCode package / VSCode パッケージ
           vscode = final.callPackage ./pkgs/vscode {
@@ -256,6 +269,7 @@
           inherit system;
           modules = [
             ./hosts/nixos/common/nixos.nix
+            sops-nix.nixosModules.sops
             home-manager.nixosModules.home-manager
             {
               nixpkgs.overlays = [
@@ -375,12 +389,19 @@
         mkPythonShell = pythonVersion: pkgs.mkShell {
           packages = [ pythonVersion ]
           ++ (pythonPackages pythonVersion)
-          ++ [ pkgs.playwright-driver.browsers ];
+          ++ [
+            pkgs.libpq
+            pkgs.pkg-config
+            pkgs.playwright-driver.browsers
+          ];
 
           shellHook = ''
             echo "Welcome to Python ${pythonVersion.version} environment"
             export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
             export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+            # Ensure psycopg can resolve libpq at runtime. / psycopg が実行時に libpq を解決できるようにする。
+            export PG_CONFIG=${pkgs.libpq}/bin/pg_config
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.libpq ]}:''${LD_LIBRARY_PATH:-}"
           '';
         };
 
@@ -412,6 +433,7 @@
           hints = pkgs.callPackage ./pkgs/hints {
             python3Packages = pkgs.python312Packages;
           };
+          clawzero = pkgs.clawzero;
           uv = pkgs.uv;
           wtp = pkgs.wtp;
         };
