@@ -41,15 +41,33 @@
       runtimeInputs = with pkgs; [ jq foot zellij ];
       bashOptions = [ "pipefail" ];
       text = ''
-        # shellcheck disable=SC2009
-        _pid="$(hyprctl clients -j | jq -r '.[] | select(.class == "foot-quick") | .pid')"
+        ensure_quick_term_pinned() {
+          _focused_class_now="$(hyprctl activewindow -j | jq -r '.class // ""')"
+          _is_pinned_now="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .pinned)')"
+          if [ "$_focused_class_now" = "foot-quick" ] && [ "$_is_pinned_now" = "false" ]; then
+            hyprctl dispatch pin >/dev/null 2>&1
+          fi
+        }
 
-        if [ -n "$_pid" ]; then
-          curr_focused="$(hyprctl activewindow -j | jq -r '.class')"
-          if [ "$curr_focused" = "foot-quick" ]; then
-            kill -9 "$_pid"
+        _pid="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .pid)')"
+
+        if [ -n "$_pid" ] && [ "$_pid" != "null" ]; then
+          _ws="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .workspace.name)')"
+          _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // ""')"
+          _focused_class="$(hyprctl activewindow -j | jq -r '.class // ""')"
+
+          if [ "$_focused_class" = "foot-quick" ]; then
+            _is_pinned="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .pinned)')"
+            if [ "$_is_pinned" = "true" ]; then
+              hyprctl dispatch pin >/dev/null 2>&1
+            fi
+            hyprctl dispatch movetoworkspacesilent "special:quickterm,pid:$_pid" >/dev/null 2>&1
           else
-            hyprctl dispatch focuswindow pid:"$_pid"
+            if [ "$_ws" != "$_active_ws" ]; then
+              hyprctl dispatch movetoworkspace "$_active_ws,pid:$_pid" >/dev/null 2>&1
+            fi
+            hyprctl dispatch focuswindow pid:"$_pid" >/dev/null 2>&1
+            ensure_quick_term_pinned
           fi
         else
           foot -a "foot-quick" -e zellij attach -c quick-term >/dev/null 2>&1 &
@@ -176,7 +194,7 @@
         "move 1% 55%, class:^(foot-quick)$"
         "noshadow, class:^(foot-quick)$"
         "pin,class:^(foot-quick)$"
-        "animation slide,class:^(foot-quick)$"
+        "animation slide bottom,class:^(foot-quick)$"
 
         # Street Fighter 6 on DP-2 fullscreen. / Street Fighter 6 を DP-2 でフルスクリーン。
         "monitor DP-2, class:^(steam_app_1364780)$"
