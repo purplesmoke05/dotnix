@@ -1,0 +1,250 @@
+[
+  {
+    "bindings": {
+      "ctrl-g": "menu::Cancel"
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-g": null,
+      "ctrl-n": null,
+      "ctrl-p": null,
+      "ctrl-x": null
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "alt-,": "pane::GoBack",
+      "alt-.": "editor::GoToDefinition",
+      "alt-;": [
+        "editor::ToggleComments",
+        {
+          "advance_downwards": false
+        }
+      ],
+      "alt-<": "editor::MoveToBeginning",
+      "alt->": "editor::MoveToEnd",
+      "alt-?": "editor::FindAllReferences",
+      "alt-^": "editor::JoinLines",
+      "alt-b": "editor::MoveToPreviousWordStart",
+      "alt-backspace": "editor::DeleteToPreviousWordStart",
+      "alt-c": "editor::ConvertToUpperCamelCase",
+      "alt-d": [
+        "editor::DeleteToNextWordEnd",
+        {
+          "ignore_newlines": false,
+          "ignore_brackets": false
+        }
+      ],
+      "alt-delete": "editor::DeleteToPreviousWordStart",
+      "alt-f": "editor::MoveToNextWordEnd",
+      "alt-g alt-g": "go_to_line::Toggle",
+      "alt-g g": "go_to_line::Toggle",
+      "alt-l": "editor::ConvertToLowerCase",
+      "alt-left": "editor::MoveToPreviousWordStart",
+      "alt-m": [
+        "editor::MoveToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false,
+          "stop_at_indent": true
+        }
+      ],
+      "alt-q": "editor::Rewrap",
+      "alt-right": "editor::MoveToNextWordEnd",
+      "alt-u": "editor::ConvertToUpperCase",
+      "alt-v": "editor::MovePageUp",
+      "alt-w": "editor::Copy",
+      "alt-{": "editor::MoveToStartOfParagraph",
+      "alt-}": "editor::MoveToEndOfParagraph",
+      "ctrl-/": "editor::Undo",
+      "ctrl-@": "editor::SetMark",
+      "ctrl-_": "editor::Undo",
+      "ctrl-a": [
+        "editor::MoveToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "ctrl-b": "editor::MoveLeft",
+      "ctrl-d": "editor::Delete",
+      "ctrl-down": "editor::MoveToEndOfParagraph",
+      "ctrl-e": [
+        "editor::MoveToEndOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "ctrl-end": "editor::MoveToEnd",
+      "ctrl-f": "editor::MoveRight",
+      "ctrl-g": "editor::Cancel",
+      "ctrl-home": "editor::MoveToBeginning",
+      "ctrl-k": "editor::KillRingCut",
+      "ctrl-l": "editor::ScrollCursorCenterTopBottom",
+      "ctrl-n": "editor::MoveDown",
+      "ctrl-p": "editor::MoveUp",
+      "ctrl-r": "buffer_search::Deploy",
+      "ctrl-s": "buffer_search::Deploy",
+      "ctrl-space": "editor::SetMark",
+      "ctrl-t": "editor::Transpose",
+      "ctrl-up": "editor::MoveToStartOfParagraph",
+      "ctrl-v": "editor::MovePageDown",
+      "ctrl-w": "editor::Cut",
+      "ctrl-x [": "editor::MoveToBeginning",
+      "ctrl-x ]": "editor::MoveToEnd",
+      "ctrl-x ctrl-;": "editor::ToggleComments",
+      "ctrl-x ctrl-x": "editor::SwapSelectionEnds",
+      "ctrl-x h": "editor::SelectAll",
+      "ctrl-x u": "editor::Undo",
+      "ctrl-y": "editor::KillRingYank",
+      "end": [
+        "editor::MoveToEndOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "home": [
+        "editor::MoveToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "shift-end": [
+        "editor::SelectToEndOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "shift-home": [
+        "editor::SelectToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ]
+    }
+  },
+  {
+    "context": "Editor && selection_mode",
+    "bindings": {
+      "alt-<": "editor::SelectToBeginning",
+      "alt->": "editor::SelectToEnd",
+      "alt-b": "editor::SelectToPreviousWordStart",
+      "alt-f": "editor::SelectToNextWordEnd",
+      "alt-left": "editor::SelectToPreviousWordStart",
+      "alt-m": [
+        "editor::SelectToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false,
+          "stop_at_indent": true
+        }
+      ],
+      "alt-right": "editor::SelectToNextWordEnd",
+      "alt-v": "editor::SelectPageUp",
+      "alt-{": "editor::SelectToStartOfParagraph",
+      "alt-}": "editor::SelectToEndOfParagraph",
+      "ctrl-a": [
+        "editor::SelectToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "ctrl-b": "editor::SelectLeft",
+      "ctrl-down": "editor::SelectToEndOfParagraph",
+      "ctrl-e": [
+        "editor::SelectToEndOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "ctrl-end": "editor::SelectToEnd",
+      "ctrl-f": "editor::SelectRight",
+      "ctrl-g": "editor::Cancel",
+      "ctrl-home": "editor::SelectToBeginning",
+      "ctrl-n": "editor::SelectDown",
+      "ctrl-p": "editor::SelectUp",
+      "ctrl-up": "editor::SelectToStartOfParagraph",
+      "ctrl-v": "editor::SelectPageDown",
+      "ctrl-x [": "editor::SelectToBeginning",
+      "ctrl-x ]": "editor::SelectToEnd",
+      "down": "editor::SelectDown",
+      "end": [
+        "editor::SelectToEndOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "home": [
+        "editor::SelectToBeginningOfLine",
+        {
+          "stop_at_soft_wraps": false
+        }
+      ],
+      "left": "editor::SelectLeft",
+      "pagedown": "editor::SelectPageDown",
+      "pageup": "editor::SelectPageUp",
+      "right": "editor::SelectRight",
+      "up": "editor::SelectUp"
+    }
+  },
+  {
+    "context": "Editor && (showing_code_actions || showing_completions)",
+    "bindings": {
+      "ctrl-n": "editor::ContextMenuNext",
+      "ctrl-p": "editor::ContextMenuPrevious"
+    }
+  },
+  {
+    "context": "Editor && showing_signature_help && !showing_completions",
+    "bindings": {
+      "ctrl-n": "editor::SignatureHelpNext",
+      "ctrl-p": "editor::SignatureHelpPrevious"
+    }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "alt-x": "command_palette::Toggle",
+      "ctrl-x 0": "pane::CloseActiveItem",
+      "ctrl-x 1": "pane::CloseOtherItems",
+      "ctrl-x 2": "pane::SplitDown",
+      "ctrl-x 3": "pane::SplitRight",
+      "ctrl-x 5 0": "workspace::CloseWindow",
+      "ctrl-x 5 2": "workspace::NewWindow",
+      "ctrl-x b": "tab_switcher::Toggle",
+      "ctrl-x ctrl-b": "tab_switcher::Toggle",
+      "ctrl-x ctrl-c": "zed::Quit",
+      "ctrl-x ctrl-f": "file_finder::Toggle",
+      "ctrl-x ctrl-s": "workspace::Save",
+      "ctrl-x ctrl-w": "workspace::SaveAs",
+      "ctrl-x k": "pane::CloseActiveItem",
+      "ctrl-x o": "workspace::ActivateNextPane",
+      "ctrl-x s": "workspace::SaveAll"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-x ctrl-c": null,
+      "ctrl-x ctrl-f": null,
+      "ctrl-x ctrl-s": null,
+      "ctrl-x ctrl-w": null,
+      "ctrl-x s": null
+    }
+  },
+  {
+    "context": "BufferSearchBar > Editor",
+    "bindings": {
+      "ctrl-g": "buffer_search::Dismiss",
+      "ctrl-r": "search::SelectPreviousMatch",
+      "ctrl-s": "search::SelectNextMatch"
+    }
+  },
+  {
+    "context": "Pane",
+    "bindings": {
+      "ctrl-alt-left": "pane::GoBack",
+      "ctrl-alt-right": "pane::GoForward"
+    }
+  }
+]

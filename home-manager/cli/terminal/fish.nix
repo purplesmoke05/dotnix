@@ -245,6 +245,13 @@
             end
 
             echo "VSCode configuration updated successfully."
+
+            echo "Updating Zed keymap from VSCode keybindings..."
+            if not uv run python $HOME/.nix/home-manager/gui/editor/zed/keymap_from_vscode.py --input $HOME/.nix/home-manager/gui/editor/vscode/vscode-keybindings.json
+              echo "Error: Failed to update Zed keymap. Aborting."
+              return 1
+            end
+            echo "Zed keymap updated successfully."
           else
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
@@ -282,6 +289,13 @@
             end
 
             echo "VSCode configuration updated successfully."
+
+            echo "Updating Zed keymap from VSCode keybindings..."
+            if not uv run python $HOME/.nix/home-manager/gui/editor/zed/keymap_from_vscode.py --input $HOME/.nix/home-manager/gui/editor/vscode/vscode-keybindings.json
+              echo "Error: Failed to update Zed keymap. Aborting."
+              return 1
+            end
+            echo "Zed keymap updated successfully."
           else
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
