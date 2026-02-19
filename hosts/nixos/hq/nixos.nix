@@ -93,7 +93,7 @@
       };
       # Tailscale VPN / Tailscale VPN
       "tailscale0" = {
-        allowedTCPPorts = [ 4000 18789 ]; # LiteLLM Proxy, OpenClaw Gateway
+        allowedTCPPorts = [ 4000 ]; # LiteLLM Proxy
       };
     };
 
@@ -176,8 +176,7 @@
     "d /var/lib/litellm 0750 root root -"
     "d /var/lib/litellm/pgdata 0750 root root -"
     "d /var/lib/openclaw 0750 root root -"
-    "d /var/lib/openclaw/data 0750 root root -"
-    "d /var/lib/openclaw/npm-cache 0750 root root -"
+    "d /var/lib/openclaw/root 0750 root root -"
   ];
 
   # Realtek rtw88_usb tuning / Realtek rtw88_usb 調整
@@ -235,23 +234,23 @@
       cmd = [ "--config" "/app/config.yaml" "--port" "4000" ];
     };
     containers.openclaw = {
-      image = "docker.io/library/node:22-bookworm";
+      image = "docker.io/library/node:22-trixie";
       environmentFiles = [
         config.sops.secrets."openclaw-env".path
       ];
       environment = {
-        OPENCLAW_CONFIG_PATH = "/app/config/openclaw.json";
+        OPENCLAW_SKIP_SERVICE_CHECK = "true";
+        NPM_CONFIG_PREFIX = "/root/.npm-global";
+        PATH = "/root/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
       };
       volumes = [
-        # 設定ファイル（read-only）
-        "${./openclaw-config.json}:/app/config/openclaw.json:ro"
-        # ランタイム状態（read-write）
-        "/var/lib/openclaw/data:/root/.openclaw"
-        # npm キャッシュ永続化（npx 再ダウンロード回避）
-        "/var/lib/openclaw/npm-cache:/root/.npm"
+        # 設定テンプレート（read-only、起動時にデータ領域へコピー）
+        "${./openclaw-config.json}:/app/config/openclaw-template.json:ro"
+        # ホームディレクトリ丸ごと永続化
+        "/var/lib/openclaw/root:/root"
       ];
       extraOptions = [ "--network=host" ];
-      cmd = [ "npx" "-y" "openclaw@2026.2.17" "gateway" "start" ];
+      cmd = [ "sh" "-c" "cp /app/config/openclaw-template.json /root/.openclaw/openclaw.json && exec npx -y openclaw@2026.2.17 gateway" ];
     };
   };
 
@@ -263,6 +262,9 @@
   systemd.services."podman-openclaw" = {
     after = [ "sops-nix.service" ];
     wants = [ "sops-nix.service" ];
+    restartTriggers = [
+      config.sops.secrets."openclaw-env".sopsFile
+    ];
   };
 
   # Host-specific system packages. / ホスト専用の追加システムパッケージ。

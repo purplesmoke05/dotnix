@@ -1,36 +1,43 @@
 {
   "models": {
+    "mode": "merge",
     "providers": {
-      "anthropic": { "apiKey": "${ANTHROPIC_API_KEY}" },
-      "google": { "apiKey": "${GOOGLE_API_KEY}" },
       "minimax": {
         "baseUrl": "https://api.minimax.io/anthropic",
         "apiKey": "${MINIMAX_API_KEY}",
-        "api": "anthropic-messages"
+        "api": "anthropic-messages",
+        "models": [
+          { "id": "MiniMax-M2.5", "name": "MiniMax M2.5" }
+        ]
       }
     }
   },
   "agents": {
     "defaults": {
       "model": {
-        "primary": "anthropic/claude-opus-4-20250514",
+        "primary": "anthropic/claude-opus-4-6",
         "fallbacks": [
-          "google/gemini-3-pro",
+          "anthropic/claude-sonnet-4-5-20250929",
           "minimax/MiniMax-M2.5"
         ]
       }
     }
   },
   "gateway": {
+    "mode": "local",
     "port": 18789,
+    "bind": "loopback",
     "auth": {
       "mode": "token"
     },
-    "configReload": "off"
+    "controlUi": {
+      "allowInsecureAuth": true
+    }
   },
   "channels": {
     "telegram": {
-      "enabled": true
+      "enabled": true,
+      "dmPolicy": "pairing"
     }
   }
 }
