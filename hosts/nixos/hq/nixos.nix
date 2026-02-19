@@ -93,7 +93,7 @@
       };
       # Tailscale VPN / Tailscale VPN
       "tailscale0" = {
-        allowedTCPPorts = [ 4000 ]; # LiteLLM Proxy
+        allowedTCPPorts = [ 4000 18789 ]; # LiteLLM Proxy, OpenClaw Gateway
       };
     };
 
@@ -175,6 +175,9 @@
     "d /var/lib/hostapd 0750 root root -"
     "d /var/lib/litellm 0750 root root -"
     "d /var/lib/litellm/pgdata 0750 root root -"
+    "d /var/lib/openclaw 0750 root root -"
+    "d /var/lib/openclaw/data 0750 root root -"
+    "d /var/lib/openclaw/npm-cache 0750 root root -"
   ];
 
   # Realtek rtw88_usb tuning / Realtek rtw88_usb 調整
@@ -193,6 +196,10 @@
     secrets."llm-proxy-env" = { };
     secrets."litellm-db-password" = {
       sopsFile = ../../../secrets/hq/litellm-db-password.env;
+      format = "dotenv";
+    };
+    secrets."openclaw-env" = {
+      sopsFile = ../../../secrets/hq/openclaw.env;
       format = "dotenv";
     };
   };
@@ -227,11 +234,34 @@
       extraOptions = [ "--network=host" ];
       cmd = [ "--config" "/app/config.yaml" "--port" "4000" ];
     };
+    containers.openclaw = {
+      image = "docker.io/library/node:22-bookworm";
+      environmentFiles = [
+        config.sops.secrets."openclaw-env".path
+      ];
+      environment = {
+        OPENCLAW_CONFIG_PATH = "/app/config/openclaw.json";
+      };
+      volumes = [
+        # 設定ファイル（read-only）
+        "${./openclaw-config.json}:/app/config/openclaw.json:ro"
+        # ランタイム状態（read-write）
+        "/var/lib/openclaw/data:/root/.openclaw"
+        # npm キャッシュ永続化（npx 再ダウンロード回避）
+        "/var/lib/openclaw/npm-cache:/root/.npm"
+      ];
+      extraOptions = [ "--network=host" ];
+      cmd = [ "npx" "-y" "openclaw@2026.2.17" "gateway" "start" ];
+    };
   };
 
   # Ensure containers start after secrets are decrypted. / シークレット復号後にコンテナを起動。
   systemd.services."podman-litellm" = {
     after = [ "sops-nix.service" "podman-litellm-db.service" ];
+    wants = [ "sops-nix.service" ];
+  };
+  systemd.services."podman-openclaw" = {
+    after = [ "sops-nix.service" ];
     wants = [ "sops-nix.service" ];
   };
 
