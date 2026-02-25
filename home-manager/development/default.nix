@@ -17,6 +17,7 @@
     sqlite
     volta
     codex
+    gemini-cli
     clawzero
     claude-code
     ctop
