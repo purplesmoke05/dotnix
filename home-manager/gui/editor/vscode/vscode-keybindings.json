@@ -1286,7 +1286,7 @@
     "key": "ctrl+enter"
   },
   {
-    "key": "ctrl+enter",
-    "command": "workbench.action.chat.attachSelection"
+    "command": "workbench.action.chat.attachSelection",
+    "key": "ctrl+enter"
   }
 ]
