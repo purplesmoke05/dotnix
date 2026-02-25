@@ -1,0 +1,407 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONTAINER="${OPENCLAW_CONTAINER:-openclaw}"
+OPENCLAW_PKG="${OPENCLAW_PKG:-openclaw@2026.2.21-2}"
+AUTH_CHOICE="${OPENCLAW_AUTH_CHOICE:-openai-codex}"
+DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-openai-codex/gpt-5.3-codex}"
+SERVICE_UNIT="${OPENCLAW_SERVICE_UNIT:-podman-${CONTAINER}.service}"
+RESTART_AFTER_ONBOARD="${OPENCLAW_RESTART_AFTER_ONBOARD:-1}"
+SET_DEFAULT_MODEL="${OPENCLAW_SET_DEFAULT_MODEL:-1}"
+CLEAR_SESSION_OVERRIDE="${OPENCLAW_CLEAR_SESSION_OVERRIDE:-1}"
+CLEAR_PREEXISTING_COOLDOWN="${OPENCLAW_CLEAR_PREEXISTING_COOLDOWN:-1}"
+PREPEND_AUTH_ORDER="${OPENCLAW_PREPEND_AUTH_ORDER:-1}"
+AUTH_PROVIDER_OVERRIDE="${OPENCLAW_AUTH_PROVIDER:-}"
+AUTH_PROFILE_OVERRIDE="${OPENCLAW_AUTH_PROFILE:-}"
+AUTH_PROFILES_JSON="${OPENCLAW_AUTH_PROFILES_JSON:-}"
+SESSION_KEY="${OPENCLAW_SESSION_KEY:-agent:main:main}"
+SESSIONS_JSON="${OPENCLAW_SESSIONS_JSON:-}"
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  cat <<'EOF'
+Usage: ./scripts/openclaw-onboard-codex [extra onboard args...]
+
+Environment overrides:
+  OPENCLAW_CONTAINER      Podman container name (default: openclaw)
+  OPENCLAW_PKG            npx package spec (default: openclaw@2026.2.21-2)
+  OPENCLAW_AUTH_CHOICE    auth choice for onboard (default: openai-codex)
+  OPENCLAW_DEFAULT_MODEL  default model id after onboard
+                          (default: openai-codex/gpt-5.3-codex)
+  OPENCLAW_SET_DEFAULT_MODEL
+                          set default model after onboard (default: 1)
+  OPENCLAW_CLEAR_PREEXISTING_COOLDOWN
+                          clear profile cooldown after onboard if it existed
+                          before auth (default: 1)
+  OPENCLAW_PREPEND_AUTH_ORDER
+                          prepend resolved auth profile to store.order after
+                          onboard (default: 1)
+  OPENCLAW_AUTH_PROVIDER  provider id used for cooldown cleanup
+                          (default: resolved from --auth-choice)
+  OPENCLAW_AUTH_PROFILE   profile id used for cooldown cleanup
+                          (default: <provider>:default)
+  OPENCLAW_AUTH_PROFILES_JSON
+                          explicit auth-profiles.json path
+  OPENCLAW_CLEAR_SESSION_OVERRIDE
+                          remove sticky session key after onboard (default: 1)
+  OPENCLAW_SESSION_KEY    session override key (default: agent:main:main)
+  OPENCLAW_SESSIONS_JSON  explicit sessions.json path
+  OPENCLAW_SERVICE_UNIT   systemd unit name (default: podman-<container>.service)
+  OPENCLAW_RESTART_AFTER_ONBOARD
+                          Restart unit after successful onboard (default: 1)
+EOF
+  exit 0
+fi
+
+if systemctl --user is-active --quiet openclaw-gateway.service; then
+  cat >&2 <<'EOF'
+Detected active user service: openclaw-gateway.service
+This conflicts with podman-openclaw on port 18789.
+Stop it first:
+  systemctl --user disable --now openclaw-gateway.service
+EOF
+  exit 1
+fi
+
+if ! podman container exists "$CONTAINER"; then
+  echo "Container \"$CONTAINER\" does not exist." >&2
+  exit 1
+fi
+
+if [[ "$(podman inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || true)" != "true" ]]; then
+  echo "Container \"$CONTAINER\" is not running." >&2
+  echo "Start it with: systemctl start podman-${CONTAINER}.service" >&2
+  exit 1
+fi
+
+find_auth_profiles_json() {
+  local candidates=()
+  if [[ -n "$AUTH_PROFILES_JSON" ]]; then
+    candidates+=("$AUTH_PROFILES_JSON")
+  fi
+  candidates+=(
+    "/var/lib/openclaw-rootless/root/.openclaw/agents/main/agent/auth-profiles.json"
+    "/var/lib/openclaw/root/.openclaw/agents/main/agent/auth-profiles.json"
+  )
+
+  local path
+  for path in "${candidates[@]}"; do
+    if [[ -f "$path" ]]; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+    if sudo test -f "$path" >/dev/null 2>&1; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+  done
+  return 1
+}
+
+read_provider_profile_ids() {
+  local auth_file="$1"
+  local provider="$2"
+  if [[ -r "$auth_file" ]]; then
+    jq -r --arg provider "$provider" '
+      (.profiles // {})
+      | to_entries
+      | map(select((.value.provider // "") == $provider))
+      | .[].key
+    ' "$auth_file"
+  else
+    sudo jq -r --arg provider "$provider" '
+      (.profiles // {})
+      | to_entries
+      | map(select((.value.provider // "") == $provider))
+      | .[].key
+    ' "$auth_file"
+  fi
+}
+
+read_last_good_profile() {
+  local auth_file="$1"
+  local provider="$2"
+  if [[ -r "$auth_file" ]]; then
+    jq -r --arg provider "$provider" '.lastGood[$provider] // empty' "$auth_file"
+  else
+    sudo jq -r --arg provider "$provider" '.lastGood[$provider] // empty' "$auth_file"
+  fi
+}
+
+prepend_auth_order_profile() {
+  local auth_file="$1"
+  local provider="$2"
+  local profile="$3"
+  local backup_path tmp_json
+
+  backup_path="${auth_file}.bak.$(date +%Y%m%d-%H%M%S)"
+  tmp_json="$(mktemp)"
+
+  if [[ -w "$auth_file" ]]; then
+    cp -a "$auth_file" "$backup_path"
+    jq --arg provider "$provider" --arg profile "$profile" '
+      .order = (.order // {})
+      | .order[$provider] = (
+          [$profile] + (
+            ((.order[$provider] // []) | map(tostring))
+            | map(select(. != $profile))
+          )
+        )
+    ' "$auth_file" > "$tmp_json"
+    mv "$tmp_json" "$auth_file"
+  else
+    sudo cp -a "$auth_file" "$backup_path"
+    sudo jq --arg provider "$provider" --arg profile "$profile" '
+      .order = (.order // {})
+      | .order[$provider] = (
+          [$profile] + (
+            ((.order[$provider] // []) | map(tostring))
+            | map(select(. != $profile))
+          )
+        )
+    ' "$auth_file" > "$tmp_json"
+    sudo mv "$tmp_json" "$auth_file"
+    sudo chown --reference="$backup_path" "$auth_file"
+    sudo chmod --reference="$backup_path" "$auth_file"
+  fi
+  rm -f "$tmp_json"
+
+  echo "Prepended auth order for ${provider}: ${profile} (backup: ${backup_path})"
+}
+
+read_profile_cooldown_until() {
+  local auth_file="$1"
+  local auth_profile="$2"
+  if [[ -r "$auth_file" ]]; then
+    jq -r --arg profile "$auth_profile" '.usageStats[$profile].cooldownUntil // empty' "$auth_file"
+  else
+    sudo jq -r --arg profile "$auth_profile" '.usageStats[$profile].cooldownUntil // empty' "$auth_file"
+  fi
+}
+
+clear_profile_cooldown() {
+  local auth_file="$1"
+  local auth_profile="$2"
+  local auth_provider="$3"
+  local backup_path tmp_json
+
+  backup_path="${auth_file}.bak.$(date +%Y%m%d-%H%M%S)"
+  tmp_json="$(mktemp)"
+
+  if [[ -w "$auth_file" ]]; then
+    cp -a "$auth_file" "$backup_path"
+    jq --arg profile "$auth_profile" --arg provider "$auth_provider" \
+      'del(.usageStats[$profile]) | .lastGood[$provider] = $profile' \
+      "$auth_file" > "$tmp_json"
+    mv "$tmp_json" "$auth_file"
+  else
+    sudo cp -a "$auth_file" "$backup_path"
+    sudo jq --arg profile "$auth_profile" --arg provider "$auth_provider" \
+      'del(.usageStats[$profile]) | .lastGood[$provider] = $profile' \
+      "$auth_file" > "$tmp_json"
+    sudo mv "$tmp_json" "$auth_file"
+    sudo chown --reference="$backup_path" "$auth_file"
+    sudo chmod --reference="$backup_path" "$auth_file"
+  fi
+  rm -f "$tmp_json"
+
+  echo "Cleared pre-existing cooldown for ${auth_profile} (backup: ${backup_path})"
+}
+
+AUTH_ARGS=(--auth-choice "$AUTH_CHOICE")
+EFFECTIVE_AUTH_CHOICE="$AUTH_CHOICE"
+for ((i = 1; i <= $#; i++)); do
+  arg="${!i}"
+  case "$arg" in
+    --auth-choice)
+      AUTH_ARGS=()
+      if (( i < $# )); then
+        next_index=$((i + 1))
+        EFFECTIVE_AUTH_CHOICE="${!next_index}"
+      fi
+      ;;
+    --auth-choice=*)
+      AUTH_ARGS=()
+      EFFECTIVE_AUTH_CHOICE="${arg#--auth-choice=}"
+      ;;
+  esac
+done
+
+AUTH_PROVIDER="${AUTH_PROVIDER_OVERRIDE:-$EFFECTIVE_AUTH_CHOICE}"
+AUTH_PROFILE="${AUTH_PROFILE_OVERRIDE:-${AUTH_PROVIDER}:default}"
+PREEXISTING_COOLDOWN=0
+AUTH_FILE_PATH=""
+AUTH_FILE_PATH_FOR_ORDER=""
+BEFORE_PROVIDER_PROFILES=""
+
+if [[ "$CLEAR_PREEXISTING_COOLDOWN" == "1" || "$PREPEND_AUTH_ORDER" == "1" ]]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq is required to update auth profile metadata." >&2
+    exit 1
+  fi
+fi
+
+if [[ "$CLEAR_PREEXISTING_COOLDOWN" == "1" ]]; then
+  AUTH_FILE_PATH="$(find_auth_profiles_json || true)"
+  if [[ -n "$AUTH_FILE_PATH" ]]; then
+    cooldown_until="$(read_profile_cooldown_until "$AUTH_FILE_PATH" "$AUTH_PROFILE" || true)"
+    if [[ "$cooldown_until" =~ ^[0-9]+$ ]] && (( cooldown_until > 0 )); then
+      PREEXISTING_COOLDOWN=1
+      echo "Detected pre-existing cooldown for ${AUTH_PROFILE}."
+    fi
+  fi
+fi
+
+if [[ "$PREPEND_AUTH_ORDER" == "1" ]]; then
+  AUTH_FILE_PATH_FOR_ORDER="${AUTH_FILE_PATH:-$(find_auth_profiles_json || true)}"
+  if [[ -n "$AUTH_FILE_PATH_FOR_ORDER" ]]; then
+    BEFORE_PROVIDER_PROFILES="$(read_provider_profile_ids "$AUTH_FILE_PATH_FOR_ORDER" "$AUTH_PROVIDER" || true)"
+  fi
+fi
+
+podman exec -e OPENCLAW_SKIP_SERVICE_CHECK=true -it "$CONTAINER" \
+  npx -y "$OPENCLAW_PKG" onboard "${AUTH_ARGS[@]}" "$@"
+
+if [[ "$CLEAR_PREEXISTING_COOLDOWN" == "1" && "$PREEXISTING_COOLDOWN" == "1" ]]; then
+  if [[ -z "$AUTH_FILE_PATH" ]]; then
+    echo "Warning: auth-profiles.json not found. Skipping cooldown cleanup." >&2
+  else
+    clear_profile_cooldown "$AUTH_FILE_PATH" "$AUTH_PROFILE" "$AUTH_PROVIDER"
+  fi
+fi
+
+if [[ "$PREPEND_AUTH_ORDER" == "1" ]]; then
+  AUTH_FILE_PATH_FOR_ORDER="${AUTH_FILE_PATH_FOR_ORDER:-$(find_auth_profiles_json || true)}"
+  if [[ -z "$AUTH_FILE_PATH_FOR_ORDER" ]]; then
+    echo "Warning: auth-profiles.json not found. Skipping auth order prepend." >&2
+  else
+    AFTER_PROVIDER_PROFILES="$(read_provider_profile_ids "$AUTH_FILE_PATH_FOR_ORDER" "$AUTH_PROVIDER" || true)"
+    mapfile -t before_profiles_arr < <(printf '%s\n' "$BEFORE_PROVIDER_PROFILES" | sed '/^$/d')
+    mapfile -t after_profiles_arr < <(printf '%s\n' "$AFTER_PROVIDER_PROFILES" | sed '/^$/d')
+
+    declare -A before_profiles_map=()
+    for profile_id in "${before_profiles_arr[@]}"; do
+      before_profiles_map["$profile_id"]=1
+    done
+
+    new_profiles_arr=()
+    for profile_id in "${after_profiles_arr[@]}"; do
+      [[ -n "${before_profiles_map[$profile_id]:-}" ]] || new_profiles_arr+=("$profile_id")
+    done
+
+    profile_to_prepend=""
+    if [[ -n "$AUTH_PROFILE_OVERRIDE" ]]; then
+      for profile_id in "${after_profiles_arr[@]}"; do
+        if [[ "$profile_id" == "$AUTH_PROFILE_OVERRIDE" ]]; then
+          profile_to_prepend="$AUTH_PROFILE_OVERRIDE"
+          break
+        fi
+      done
+    fi
+
+    if [[ -z "$profile_to_prepend" && ${#new_profiles_arr[@]} -gt 0 ]]; then
+      profile_to_prepend="${new_profiles_arr[0]}"
+    fi
+
+    if [[ -z "$profile_to_prepend" ]]; then
+      for profile_id in "${after_profiles_arr[@]}"; do
+        if [[ "$profile_id" == "$AUTH_PROFILE" ]]; then
+          profile_to_prepend="$AUTH_PROFILE"
+          break
+        fi
+      done
+    fi
+
+    if [[ -z "$profile_to_prepend" ]]; then
+      last_good_profile="$(read_last_good_profile "$AUTH_FILE_PATH_FOR_ORDER" "$AUTH_PROVIDER" || true)"
+      if [[ -n "$last_good_profile" ]]; then
+        for profile_id in "${after_profiles_arr[@]}"; do
+          if [[ "$profile_id" == "$last_good_profile" ]]; then
+            profile_to_prepend="$last_good_profile"
+            break
+          fi
+        done
+      fi
+    fi
+
+    if [[ -n "$profile_to_prepend" ]]; then
+      prepend_auth_order_profile "$AUTH_FILE_PATH_FOR_ORDER" "$AUTH_PROVIDER" "$profile_to_prepend"
+    else
+      echo "Warning: no profile resolved for ${AUTH_PROVIDER}; skipped auth order prepend." >&2
+    fi
+  fi
+fi
+
+if [[ "$SET_DEFAULT_MODEL" == "1" ]]; then
+  podman exec "$CONTAINER" \
+    npx -y "$OPENCLAW_PKG" models set "$DEFAULT_MODEL"
+fi
+
+find_sessions_json() {
+  local candidates=()
+  if [[ -n "$SESSIONS_JSON" ]]; then
+    candidates+=("$SESSIONS_JSON")
+  fi
+  candidates+=(
+    "/var/lib/openclaw-rootless/root/.openclaw/agents/main/sessions/sessions.json"
+    "/var/lib/openclaw/root/.openclaw/agents/main/sessions/sessions.json"
+  )
+
+  local path
+  for path in "${candidates[@]}"; do
+    if [[ -f "$path" ]]; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+    if sudo test -f "$path" >/dev/null 2>&1; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [[ "$CLEAR_SESSION_OVERRIDE" == "1" ]]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "jq is required to clear session override." >&2
+    exit 1
+  fi
+
+  session_file="$(find_sessions_json || true)"
+  if [[ -z "$session_file" ]]; then
+    echo "Warning: sessions.json not found. Skipping override cleanup." >&2
+  else
+    backup_path="${session_file}.bak.$(date +%Y%m%d-%H%M%S)"
+    tmp_json="$(mktemp)"
+    trap 'rm -f "$tmp_json"' EXIT
+
+    if [[ -w "$session_file" ]]; then
+      cp -a "$session_file" "$backup_path"
+      jq --arg key "$SESSION_KEY" 'del(.[$key])' "$session_file" > "$tmp_json"
+      mv "$tmp_json" "$session_file"
+    else
+      sudo cp -a "$session_file" "$backup_path"
+      sudo jq --arg key "$SESSION_KEY" 'del(.[$key])' "$session_file" > "$tmp_json"
+      sudo mv "$tmp_json" "$session_file"
+      sudo chown --reference="$backup_path" "$session_file"
+      sudo chmod --reference="$backup_path" "$session_file"
+    fi
+    trap - EXIT
+    rm -f "$tmp_json"
+  fi
+fi
+
+if [[ "$RESTART_AFTER_ONBOARD" == "1" ]]; then
+  if ! systemctl restart "$SERVICE_UNIT" >/dev/null 2>&1; then
+    sudo systemctl restart "$SERVICE_UNIT"
+  fi
+  if systemctl status --no-pager "$SERVICE_UNIT" >/dev/null 2>&1; then
+    systemctl status --no-pager "$SERVICE_UNIT" | sed -n '1,12p'
+  else
+    sudo systemctl status --no-pager "$SERVICE_UNIT" | sed -n '1,12p'
+  fi
+fi
+
+if command -v jq >/dev/null 2>&1; then
+  podman exec "$CONTAINER" \
+    npx -y "$OPENCLAW_PKG" models status --json | jq '{defaultModel, resolvedDefault}'
+fi
