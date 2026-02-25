@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -i bash -p curl jq common-updater-scripts coreutils gnused nix gh nix-prefetch-github
+#!nix-shell -i bash -p curl jq common-updater-scripts coreutils gnused nix gh nix-prefetch-github prefetch-npm-deps
 
 set -euo pipefail
 
@@ -28,8 +28,7 @@ echo "Latest version on GitHub: $latestVersion"
 
 # Check if we need to update
 if [[ "$latestVersion" == "$currentVersion" ]]; then
-  echo "Already up to date!"
-  exit 0
+  echo "Already on latest version; refreshing hashes."
 fi
 
 echo "Updating from $currentVersion to $latestVersion..."
@@ -37,54 +36,50 @@ echo "Updating from $currentVersion to $latestVersion..."
 # Update version in default.nix
 sed -i 's/version = "[^"]*";/version = "'${latestVersion}'";/' "$DEFAULT_NIX_FILE"
 
-# Update the source hash
-echo "Fetching new source hash..."
-# Use the tag for nix-prefetch-github to get the correct source hash
-newHash=$(nix-prefetch-github ${REPO_OWNER} ${REPO_NAME} --rev "${latestRelease}" 2>/dev/null | jq -r '.hash')
+# Update source hash and npmDepsHash
+echo "Fetching source metadata..."
+prefetchData=$(nix-prefetch-github ${REPO_OWNER} ${REPO_NAME} --rev "${latestRelease}" 2>/dev/null)
+newHash=$(echo "$prefetchData" | jq -r '.hash')
 
 if [[ -z "$newHash" || "$newHash" == "null" ]]; then
-  echo "Error: Could not fetch source hash. Aborting."
+  echo "Error: Could not fetch source metadata. Aborting."
   exit 1
 fi
 
 echo "New source hash: $newHash"
 sed -i 's|hash = "[^"]*";|hash = "'${newHash}'";|' "$DEFAULT_NIX_FILE"
 
-# Now we need to update the npmDepsHash
-echo "Building to get new npmDepsHash..."
-echo "This will fail if the npmDepsHash is incorrect, but we'll get the correct hash from the error message."
+tmpdir=$(mktemp -d)
+cleanup() {
+  rm -rf "$tmpdir"
+}
+trap cleanup EXIT
 
-# Create a temporary file to capture the error
-tmpfile=$(mktemp)
+srcArchive="$tmpdir/src.tar.gz"
+srcDir="$tmpdir/src"
+mkdir -p "$srcDir"
 
-# Try to build the package directly using callPackage to get npmDepsHash error
-if nix-build --expr "with import <nixpkgs> {}; callPackage $DEFAULT_NIX_FILE {}" 2>&1 | tee "$tmpfile"; then
-  echo "Build succeeded unexpectedly. The npmDepsHash might already be correct or the package is not using npmDepsHash."
-else
-  # Extract the correct hash from the error message
-  # The hash format typically is 'got: sha256-YYYYY'
-  correctHash=$(grep -o 'got:[[:space:]]*sha256-[^[:space:]]*' "$tmpfile" | sed 's/got:[[:space:]]*//' | head -n1)
-  
-  if [[ -n "$correctHash" ]]; then
-    echo "Updating npmDepsHash to: $correctHash"
-    sed -i 's|npmDepsHash = "[^"]*";|npmDepsHash = "'${correctHash}'";|' "$DEFAULT_NIX_FILE"
-    
-    # Try building again to verify
-    echo "Verifying the update..."
-    if nix-build --expr "with import <nixpkgs> {}; callPackage $DEFAULT_NIX_FILE {}"; then
-      echo "Successfully updated gemini-cli to version $latestVersion!"
-    else
-      echo "Error: Build still failing after hash update. Please check manually."
-      exit 1
-    fi
-  else
-    echo "Error: Could not extract correct npmDepsHash from error message."
-    echo "Please update it manually."
-    exit 1
-  fi
+echo "Downloading source archive for lockfile..."
+curl -L -sSf "https://github.com/${REPO_OWNER}/${REPO_NAME}/archive/refs/tags/${latestRelease}.tar.gz" -o "$srcArchive"
+tar -xzf "$srcArchive" -C "$srcDir" --strip-components=1
+
+lockFilePath="$srcDir/package-lock.json"
+if [[ ! -f "$lockFilePath" ]]; then
+  echo "Error: package-lock.json not found in source archive."
+  exit 1
 fi
 
-# Clean up
-rm -f "$tmpfile"
+echo "Calculating npmDepsHash from lockfile..."
+npmDepsHash=$(prefetch-npm-deps "$lockFilePath")
+if [[ -z "$npmDepsHash" ]]; then
+  echo "Error: Could not calculate npmDepsHash."
+  exit 1
+fi
+
+echo "New npmDepsHash: $npmDepsHash"
+sed -i 's|npmDepsHash = "[^"]*";|npmDepsHash = "'${npmDepsHash}'";|' "$DEFAULT_NIX_FILE"
+
+echo "Successfully updated gemini-cli to version $latestVersion!"
+echo "Skipped post-update verification build for speed."
 
 echo "Update complete!"

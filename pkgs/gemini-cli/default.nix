@@ -3,6 +3,7 @@
 , buildNpmPackage
 , fetchFromGitHub
 , jq
+, nodejs_22
 , pkg-config
 , libsecret
 , ripgrep
@@ -13,16 +14,17 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "gemini-cli";
-  version = "0.23.0";
+  version = "0.29.7";
+  nodejs = nodejs_22;
 
   src = fetchFromGitHub {
     owner = "google-gemini";
     repo = "gemini-cli";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-tl9Iy1M0YxPvUpbIQRl7/P2iRIb5n1cvHEqK2k3OR5I=";
+    hash = "sha256-d2ft7rEB0IgehMKjPhfLR8mgXq2qkV0yXNFN30IGRkM=";
   };
 
-  npmDepsHash = "sha256-gPmH/Ym6+UxbpH8CEuDmdZtbR6HqWPjMchs1zlDELDU=";
+  npmDepsHash = "sha256-acE4AAWEIJVL6KQN2S0VjGPRwOqlJKPLixcCc6a7CtM=";
 
   nativeBuildInputs = [
     jq
@@ -41,26 +43,10 @@ buildNpmPackage (finalAttrs: {
   '';
 
   postPatch = ''
-    # Remove node-pty dependency from package.json
-    ${jq}/bin/jq 'del(.optionalDependencies."node-pty")' package.json > package.json.tmp && mv package.json.tmp package.json
-
-    # Remove node-pty dependency from packages/core/package.json
-    ${jq}/bin/jq 'del(.optionalDependencies."node-pty")' packages/core/package.json > packages/core/package.json.tmp && mv packages/core/package.json.tmp packages/core/package.json
-
-    # Ideal method to disable auto-update
-    sed -i '/disableAutoUpdate: {/,/}/ s/default: false/default: true/' packages/cli/src/config/settingsSchema.ts
-
-    # Disable auto-update for real because the default value in settingsSchema isn't cleanly applied
-    # https://github.com/google-gemini/gemini-cli/issues/13569
-    substituteInPlace packages/cli/src/utils/handleAutoUpdate.ts \
-      --replace-fail "settings.merged.general?.disableAutoUpdate ?? false" "settings.merged.general?.disableAutoUpdate ?? true" \
-      --replace-fail "settings.merged.general?.disableAutoUpdate" "(settings.merged.general?.disableAutoUpdate ?? true)"
-    substituteInPlace packages/cli/src/ui/utils/updateCheck.ts \
-      --replace-fail "settings.merged.general?.disableUpdateNag" "(settings.merged.general?.disableUpdateNag ?? true)"
+    # Disable auto-update and update notifications by default.
+    sed -i '/enableAutoUpdate: {/,/}/ s/default: true/default: false/' packages/cli/src/config/settingsSchema.ts
+    sed -i '/enableAutoUpdateNotification: {/,/}/ s/default: true/default: false/' packages/cli/src/config/settingsSchema.ts
   '';
-
-  # Prevent npmDeps from getting into the closure
-  disallowedReferences = [ finalAttrs.npmDeps ];
 
   installPhase = ''
     runHook preInstall
