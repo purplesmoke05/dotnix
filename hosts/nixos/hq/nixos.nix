@@ -1,5 +1,33 @@
 { inputs, config, pkgs, username, ... }:
 
+let
+  lib = pkgs.lib;
+
+  # OpenClaw egress routing knobs. / OpenClaw の外向き経路切替設定。
+  openclawTailscale = {
+    enable = false;
+    containerName = "openclaw-ts";
+    # Use a stable Tailnet IP or MagicDNS FQDN. / Tailnet IP または MagicDNS FQDN を指定。
+    exitNode = "100.64.0.10";
+    allowLanAccess = true;
+    stateDir = "/var/lib/openclaw-rootless/tailscale";
+  };
+
+  openclawNetworkMode =
+    if openclawTailscale.enable then
+      "container:${openclawTailscale.containerName}"
+    else
+      "host";
+
+  openclawTailscaleExtraArgs = lib.concatStringsSep " " (
+    [
+      "--accept-dns=false"
+      "--accept-routes=true"
+      "--exit-node=${openclawTailscale.exitNode}"
+    ]
+    ++ lib.optionals openclawTailscale.allowLanAccess [ "--exit-node-allow-lan-access=true" ]
+  );
+in
 {
   # Hardware configuration / ハードウェア設定
   # Import hardware definitions and tuning modules. / ハードウェア定義と最適化モジュールを取り込む。
@@ -21,6 +49,7 @@
   users.users.${username} = {
     isNormalUser = true;
     description = "Yosuke Otosu";
+    linger = true;
     extraGroups = [ "networkmanager" "wheel" "docker" "i2c" ];
     packages = with pkgs; [
     ];
@@ -175,8 +204,10 @@
     "d /var/lib/hostapd 0750 root root -"
     "d /var/lib/litellm 0750 root root -"
     "d /var/lib/litellm/pgdata 0750 root root -"
-    "d /var/lib/openclaw 0750 root root -"
-    "d /var/lib/openclaw/root 0750 root root -"
+    "d /var/lib/openclaw-rootless 0750 ${username} users -"
+    "d /var/lib/openclaw-rootless/root 0750 ${username} users -"
+  ] ++ lib.optionals openclawTailscale.enable [
+    "d ${openclawTailscale.stateDir} 0750 ${username} users -"
   ];
 
   # Realtek rtw88_usb tuning / Realtek rtw88_usb 調整
@@ -200,6 +231,9 @@
     secrets."openclaw-env" = {
       sopsFile = ../../../secrets/hq/openclaw.env;
       format = "dotenv";
+      owner = username;
+      group = "users";
+      mode = "0400";
     };
   };
 
@@ -235,22 +269,66 @@
     };
     containers.openclaw = {
       image = "docker.io/library/node:22-trixie";
+      dependsOn = lib.optionals openclawTailscale.enable [ openclawTailscale.containerName ];
+      podman = {
+        user = username;
+      };
       environmentFiles = [
         config.sops.secrets."openclaw-env".path
       ];
       environment = {
         OPENCLAW_SKIP_SERVICE_CHECK = "true";
+        OPENCLAW_STATE_DIR = "/root/.openclaw";
+        NODE_OPTIONS = "--dns-result-order=ipv4first";
         NPM_CONFIG_PREFIX = "/root/.npm-global";
         PATH = "/root/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
       };
       volumes = [
-        # 設定テンプレート（read-only、起動時にデータ領域へコピー）
-        "${./openclaw-config.json}:/app/config/openclaw-template.json:ro"
-        # ホームディレクトリ丸ごと永続化
-        "/var/lib/openclaw/root:/root"
+        "/var/lib/openclaw-rootless/root:/root"
       ];
-      extraOptions = [ "--network=host" ];
-      cmd = [ "sh" "-c" "cp /app/config/openclaw-template.json /root/.openclaw/openclaw.json && exec npx -y openclaw@2026.2.17 gateway" ];
+      extraOptions = [ "--network=${openclawNetworkMode}" ];
+      cmd = [
+        "sh"
+        "-lc"
+        ''
+          test -f /root/.openclaw/openclaw.json || { echo 'missing openclaw.json'; exit 1; }
+          if ! command -v jq >/dev/null 2>&1; then
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            apt-get install -y -qq jq
+          fi
+          exec npx -y openclaw@2026.2.21-2 gateway
+        ''
+      ];
+    };
+    containers.${openclawTailscale.containerName} = lib.mkIf openclawTailscale.enable {
+      image = "docker.io/tailscale/tailscale:stable";
+      podman = {
+        user = username;
+      };
+      # Provide TS_AUTHKEY from the same sops env file. / 同じ sops 環境変数ファイルから TS_AUTHKEY を読み込む。
+      environmentFiles = [
+        config.sops.secrets."openclaw-env".path
+      ];
+      environment = {
+        TS_AUTH_ONCE = "true";
+        TS_STATE_DIR = "/var/lib/tailscale";
+        TS_SOCKET = "/tmp/tailscaled.sock";
+        TS_USERSPACE = "false";
+        TS_EXTRA_ARGS = openclawTailscaleExtraArgs;
+      };
+      ports = [
+        "127.0.0.1:18789:18789"
+      ];
+      volumes = [
+        "${openclawTailscale.stateDir}:/var/lib/tailscale"
+        "/dev/net/tun:/dev/net/tun"
+      ];
+      extraOptions = [
+        "--cap-add=NET_ADMIN"
+        "--cap-add=NET_RAW"
+        "--device=/dev/net/tun"
+      ];
     };
   };
 
@@ -260,15 +338,33 @@
     wants = [ "sops-nix.service" ];
   };
   systemd.services."podman-openclaw" = {
-    after = [ "sops-nix.service" ];
-    wants = [ "sops-nix.service" ];
+    after = [ "sops-nix.service" ] ++ lib.optionals openclawTailscale.enable [ "podman-${openclawTailscale.containerName}.service" ];
+    wants = [ "sops-nix.service" ] ++ lib.optionals openclawTailscale.enable [ "podman-${openclawTailscale.containerName}.service" ];
+    startLimitIntervalSec = 0;
     restartTriggers = [
       config.sops.secrets."openclaw-env".sopsFile
     ];
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
+  };
+  systemd.services."podman-${openclawTailscale.containerName}" = lib.mkIf openclawTailscale.enable {
+    after = [ "sops-nix.service" ];
+    wants = [ "sops-nix.service" ];
+    startLimitIntervalSec = 0;
+    restartTriggers = [
+      config.sops.secrets."openclaw-env".sopsFile
+    ];
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
   };
 
   # Host-specific system packages. / ホスト専用の追加システムパッケージ。
   environment.systemPackages = with pkgs; [
     gamescope
+    telegram-desktop
   ];
 }
