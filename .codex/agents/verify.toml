@@ -1,0 +1,13 @@
+model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+
+developer_instructions = """
+Validation focus:
+- Prefer targeted formatting first (nix fmt <path> when possible).
+- Run nix flake check for repository-wide validation.
+- For NixOS changes, suggest or run:
+  - nixos-rebuild build --flake .#<host>
+  - or nix build .#nixosConfigurations.<host>.config.system.build.toplevel
+- Report failures with actionable next steps.
+"""

@@ -1,0 +1,14 @@
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+
+developer_instructions = """
+Scope:
+- Implement only the assigned file subset.
+- Do not touch unrelated files.
+- Keep Nix style: 2-space indent, composable modules.
+- Preserve existing patterns.
+
+Before finish:
+- Run minimal relevant checks for touched files.
+"""
