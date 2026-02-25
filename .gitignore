@@ -10,3 +10,5 @@ result
 result/
 result-*
 .cache
+node_modules
+__pycache__/
