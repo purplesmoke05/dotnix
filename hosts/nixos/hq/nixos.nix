@@ -10,7 +10,7 @@ let
     # Use a stable Tailnet IP or MagicDNS FQDN. / Tailnet IP または MagicDNS FQDN を指定。
     exitNode = "100.64.0.10";
     allowLanAccess = true;
-    stateDir = "/var/lib/openclaw-rootless/tailscale";
+    stateDir = "/mnt/data/openclaw/tailscale";
   };
 
   openclawNetworkMode =
@@ -204,10 +204,10 @@ in
     "d /var/lib/hostapd 0750 root root -"
     "d /var/lib/litellm 0750 root root -"
     "d /var/lib/litellm/pgdata 0750 root root -"
-    "d /var/lib/openclaw-rootless 0750 ${username} users -"
-    "d /var/lib/openclaw-rootless/root 0750 ${username} users -"
+    "d /mnt/data/openclaw 0750 ${username} users -"
+    "d /mnt/data/openclaw/root 0750 ${username} users -"
   ] ++ lib.optionals openclawTailscale.enable [
-    "d ${openclawTailscale.stateDir} 0750 ${username} users -"
+    "d /mnt/data/openclaw/tailscale 0750 ${username} users -"
   ];
 
   # Realtek rtw88_usb tuning / Realtek rtw88_usb 調整
@@ -284,7 +284,7 @@ in
         PATH = "/root/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
       };
       volumes = [
-        "/var/lib/openclaw-rootless/root:/root"
+        "/mnt/data/openclaw/root:/root"
       ];
       extraOptions = [ "--network=${openclawNetworkMode}" ];
       cmd = [
