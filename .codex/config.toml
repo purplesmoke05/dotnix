@@ -1,9 +1,6 @@
 [features]
 multi_agent = true
 
-[agents]
-max_depth = 1
-
 [agents.explorer]
 description = "Read-only codebase scout for impact analysis in this Nix monorepo"
 config_file = ".codex/agents/explorer.toml"
