@@ -27,7 +27,7 @@ in
   # Required packages for Hyprpanel functionality
   home.packages = with pkgs; [
     jq # JSON processor for updates module
-    # vulnix # Security vulnerability scanner
+    vulnix # Security vulnerability scanner
     pavucontrol # PulseAudio volume control
     pulseaudio # Audio system
     brightnessctl # Brightness control
@@ -67,7 +67,6 @@ in
               "volume" # Volume control
               "network" # Network status
               "bluetooth" # Bluetooth status
-              "systray" # System tray
               "clock" # Clock
               "notifications" # Notification center
             ];
@@ -87,7 +86,6 @@ in
               "volume"
               "network"
               "bluetooth"
-              "systray"
             ];
           };
           # Empty layout definition
@@ -109,8 +107,10 @@ in
       "theme.name" = "catppuccin_mocha";
 
       # Updates module configuration
-      "bar.customModules.updates.pollingInterval" = 1440000; # Check updates every 24 hours
-      "bar.customModules.updates.updateCommand" = "jq '[.[].cvssv3_basescore | to_entries | add | select(.value > 5)] | length' <<< $(vulnix -S --json)";
+      "bar.customModules.updates.pollingInterval" = 86400000; # Check updates every 24 hours
+      "bar.customModules.updates.updateCommand" = "jq '[.[].cvssv3_basescore | to_entries | add | select(.value > 5)] | length' <<< $(${pkgs.vulnix}/bin/vulnix -S --json)";
+      "bar.customModules.updates.updateTooltipCommand" = "echo";
+      "bar.customModules.updates.extendedTooltip" = false;
       "bar.customModules.updates.icon.updated" = "󰋼"; # Icon for up-to-date system
       "bar.customModules.updates.icon.pending" = "󰋼"; # Icon for pending updates
 

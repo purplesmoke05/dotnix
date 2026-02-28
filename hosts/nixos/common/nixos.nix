@@ -289,6 +289,10 @@ in
 
   # Key Remapping / キーカスタマイズ
   # Define CapsLock-to-Ctrl and Emacs-style bindings. / CapsLock→Ctrl や Emacs 互換操作を定義。
+  # Ensure xremap starts after the graphical session (Wayland compositor) is ready,
+  # so keymap processing can connect to the compositor. WantedBy alone does not imply ordering.
+  systemd.user.services.xremap.after = [ "graphical-session.target" ];
+
   services.xremap = {
     enable = true;
     userName = username;
@@ -310,12 +314,6 @@ in
           name = "Remap RO to Shift_L-RO";
           remap = {
             KEY_RO = "KEY_LEFTSHIFT-KEY_RO";
-          };
-        }
-        {
-          name = "Fix underscore/backslash key (JIS keyboard)";
-          remap = {
-            # Map the 102nd key to Shift+RO so it emits underscore. / 102番キーをShift+ROに再割当してアンダースコアを出力。
             KEY_102ND = "KEY_LEFTSHIFT-KEY_RO";
           };
         }
