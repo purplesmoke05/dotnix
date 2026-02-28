@@ -14,8 +14,8 @@ let
     (lib.importJSON ./sources.json)."${hostPlatform.system}"
       or (throw "antigravity: unsupported system ${hostPlatform.system}");
 
-  version = "1.13.3-4533425205018624";
-  vscodeVersion = "1.104.0";
+  version = "1.19.6-6514342219874304";
+  vscodeVersion = "1.107.0";
   vscodeGeneric = callPackage vscode-generic { };
 in
 vscodeGeneric {
