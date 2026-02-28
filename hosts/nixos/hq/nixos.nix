@@ -204,6 +204,7 @@ in
     "d /var/lib/hostapd 0750 root root -"
     "d /var/lib/litellm 0750 root root -"
     "d /var/lib/litellm/pgdata 0750 root root -"
+    "d /var/lib/codex-lb 0750 1000 1000 -"
     "d /mnt/data/openclaw 0750 ${username} users -"
     "d /mnt/data/openclaw/root 0750 ${username} users -"
   ] ++ lib.optionals openclawTailscale.enable [
@@ -234,6 +235,10 @@ in
       owner = username;
       group = "users";
       mode = "0400";
+    };
+    secrets."codex-lb-env" = {
+      sopsFile = ../../../secrets/hq/codex-lb.env;
+      format = "dotenv";
     };
   };
 
@@ -297,9 +302,23 @@ in
             apt-get update -qq
             apt-get install -y -qq jq
           fi
-          exec npx -y openclaw@2026.2.21-2 gateway
+          exec npx -y openclaw@2026.2.26 gateway
         ''
       ];
+    };
+    containers.codex-lb = {
+      image = "ghcr.io/soju06/codex-lb@sha256:31289465635aaf633a9311d68527347a2f91e1672ec54f5465382fda1f33f88f";
+      ports = [
+        "127.0.0.1:2455:2455"
+        "127.0.0.1:1455:1455"
+      ];
+      environmentFiles = [
+        config.sops.secrets."codex-lb-env".path
+      ];
+      volumes = [
+        "/var/lib/codex-lb:/var/lib/codex-lb"
+      ];
+      extraOptions = [ "--pull=missing" ];
     };
     containers.${openclawTailscale.containerName} = lib.mkIf openclawTailscale.enable {
       image = "docker.io/tailscale/tailscale:stable";
@@ -343,6 +362,18 @@ in
     startLimitIntervalSec = 0;
     restartTriggers = [
       config.sops.secrets."openclaw-env".sopsFile
+    ];
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
+  };
+  systemd.services."podman-codex-lb" = {
+    after = [ "sops-nix.service" ];
+    wants = [ "sops-nix.service" ];
+    startLimitIntervalSec = 0;
+    restartTriggers = [
+      config.sops.secrets."codex-lb-env".sopsFile
     ];
     serviceConfig = {
       Restart = lib.mkForce "always";
