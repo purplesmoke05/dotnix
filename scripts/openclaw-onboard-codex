@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CONTAINER="${OPENCLAW_CONTAINER:-openclaw}"
-OPENCLAW_PKG="${OPENCLAW_PKG:-openclaw@2026.2.21-2}"
+OPENCLAW_PKG="${OPENCLAW_PKG:-openclaw@2026.2.26}"
 AUTH_CHOICE="${OPENCLAW_AUTH_CHOICE:-openai-codex}"
 DEFAULT_MODEL="${OPENCLAW_DEFAULT_MODEL:-openai-codex/gpt-5.3-codex}"
 SERVICE_UNIT="${OPENCLAW_SERVICE_UNIT:-podman-${CONTAINER}.service}"
@@ -23,7 +23,7 @@ Usage: ./scripts/openclaw-onboard-codex [extra onboard args...]
 
 Environment overrides:
   OPENCLAW_CONTAINER      Podman container name (default: openclaw)
-  OPENCLAW_PKG            npx package spec (default: openclaw@2026.2.21-2)
+  OPENCLAW_PKG            npx package spec (default: openclaw@2026.2.26)
   OPENCLAW_AUTH_CHOICE    auth choice for onboard (default: openai-codex)
   OPENCLAW_DEFAULT_MODEL  default model id after onboard
                           (default: openai-codex/gpt-5.3-codex)

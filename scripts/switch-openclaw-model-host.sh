@@ -3,7 +3,7 @@ set -euo pipefail
 
 CONTAINER="${OPENCLAW_CONTAINER:-openclaw}"
 SERVICE_UNIT="${OPENCLAW_SERVICE:-podman-${CONTAINER}.service}"
-OPENCLAW_CLI_VERSION="${OPENCLAW_CLI_VERSION:-2026.2.21-2}"
+OPENCLAW_CLI_VERSION="${OPENCLAW_CLI_VERSION:-2026.2.26}"
 SESSION_KEY="${OPENCLAW_SESSION_KEY:-agent:main:main}"
 SESSIONS_JSON="${OPENCLAW_SESSIONS_JSON:-}"
 AUTO_PATCH_GEMINI31="${OPENCLAW_AUTO_PATCH_GEMINI31:-1}"
@@ -20,7 +20,7 @@ Usage: ./scripts/switch-openclaw-model-host.sh <model-id>
 Environment overrides:
   OPENCLAW_CONTAINER     Podman container name (default: openclaw)
   OPENCLAW_SERVICE       systemd unit name (default: podman-<container>.service)
-  OPENCLAW_CLI_VERSION   openclaw npx version (default: 2026.2.21-2)
+  OPENCLAW_CLI_VERSION   openclaw npx version (default: 2026.2.26)
   OPENCLAW_SESSION_KEY   sticky session key to clear (default: agent:main:main)
   OPENCLAW_SESSIONS_JSON explicit sessions.json path
   OPENCLAW_AUTO_PATCH_GEMINI31 auto-patch google-gemini-cli/gemini-3.1-pro-preview (default: 1)

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CONTAINER="${OPENCLAW_CONTAINER:-openclaw}"
-OPENCLAW_CLI_VERSION="${OPENCLAW_CLI_VERSION:-2026.2.21-2}"
+OPENCLAW_CLI_VERSION="${OPENCLAW_CLI_VERSION:-2026.2.26}"
 TARGET_MODEL_ID="${OPENCLAW_GEMINI31_MODEL_ID:-gemini-3.1-pro-preview}"
 
 usage() {
@@ -11,7 +11,7 @@ Usage: ./scripts/patch-openclaw-gemini31-cli-model.sh
 
 Environment overrides:
   OPENCLAW_CONTAINER         Podman container name (default: openclaw)
-  OPENCLAW_CLI_VERSION       openclaw npx version (default: 2026.2.21-2)
+  OPENCLAW_CLI_VERSION       openclaw npx version (default: 2026.2.26)
   OPENCLAW_GEMINI31_MODEL_ID model id to add under google-gemini-cli (default: gemini-3.1-pro-preview)
 EOF
 }
