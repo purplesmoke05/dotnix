@@ -151,6 +151,15 @@
           # sui package / sui パッケージ
           sui = final.callPackage ./pkgs/sui { };
 
+          # StreamController package override with local patches. / ローカルパッチ適用版 StreamController。
+          streamcontroller = prev.streamcontroller.overrideAttrs (old: {
+            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.perl ];
+            postPatch = (old.postPatch or "") + ''
+              perl -0pi -e 's|deck_controller = DeckController\(self, deck\)\n\s*self\.deck_controller\.append\(deck_controller\)|try:\n                deck_controller = DeckController(self, deck)\n            except Exception:\n                log.exception("Failed to initialize deck controller. Skipping deck until reconnect.")\n                try:\n                    deck.close()\n                except Exception:\n                    pass\n                try:\n                    self.reset_all_decks()\n                except Exception:\n                    pass\n                continue\n            self.deck_controller.append(deck_controller)|s' src/backend/DeckManagement/DeckManager.py
+              perl -0pi -e 's|def add_newly_connected_deck\(self, deck:StreamDeck, is_fake: bool = False\):\n\s*deck_controller = DeckController\(self, deck\)|def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):\n        try:\n            deck_controller = DeckController(self, deck)\n        except Exception:\n            log.exception("Failed to initialize newly connected deck.")\n            try:\n                deck.close()\n            except Exception:\n                pass\n            try:\n                self.reset_all_decks()\n            except Exception:\n                pass\n            return|s' src/backend/DeckManagement/DeckManager.py
+            '';
+          });
+
           # StreamController OSPlugin patch / StreamController OSPlugin パッチ
           streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
 
