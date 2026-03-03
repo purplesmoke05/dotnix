@@ -4,29 +4,55 @@ let
   lib = pkgs.lib;
 
   # OpenClaw egress routing knobs. / OpenClaw の外向き経路切替設定。
-  openclawTailscale = {
-    enable = false;
-    containerName = "openclaw-ts";
-    # Use a stable Tailnet IP or MagicDNS FQDN. / Tailnet IP または MagicDNS FQDN を指定。
-    exitNode = "100.64.0.10";
+  tailscaleSidecar = {
+    enable = true;
+    containerName = "tailscale-network";
+    # Use an advertised exit node identifier. / 広告済み exit node の識別子を指定。
+    exitNode = "oci-micro-tokyo";
     allowLanAccess = true;
     stateDir = "/mnt/data/openclaw/tailscale";
   };
 
   openclawNetworkMode =
-    if openclawTailscale.enable then
-      "container:${openclawTailscale.containerName}"
+    if tailscaleSidecar.enable then
+      "container:${tailscaleSidecar.containerName}"
     else
       "host";
 
-  openclawTailscaleExtraArgs = lib.concatStringsSep " " (
-    [
-      "--accept-dns=false"
-      "--accept-routes=true"
-      "--exit-node=${openclawTailscale.exitNode}"
-    ]
-    ++ lib.optionals openclawTailscale.allowLanAccess [ "--exit-node-allow-lan-access=true" ]
-  );
+  tailscaleSidecarExtraArgs = lib.concatStringsSep " " [
+    "--accept-dns=false"
+    "--accept-routes=true"
+  ];
+
+  # Set exit node after tailscale connects (node names need control plane). / 接続後に exit node を設定（ノード名は制御サーバーが必要）。
+  tailscaleSidecarPostStart = lib.optionalString (tailscaleSidecar.exitNode != null) ''
+    timeout=60; elapsed=0
+    until ${pkgs.podman}/bin/podman exec ${tailscaleSidecar.containerName} tailscale status --json 2>/dev/null | ${pkgs.jq}/bin/jq -e '.BackendState == "Running"' >/dev/null 2>&1; do
+      sleep 2
+      elapsed=$((elapsed + 2))
+      if [ "$elapsed" -ge "$timeout" ]; then
+        echo "tailscale-set-exit-node: timed out waiting for tailscale to connect" >&2
+        exit 1
+      fi
+    done
+    ${pkgs.podman}/bin/podman exec ${tailscaleSidecar.containerName} tailscale set --exit-node=${tailscaleSidecar.exitNode}${lib.optionalString tailscaleSidecar.allowLanAccess " --exit-node-allow-lan-access=true"}
+  '';
+
+  cloudflareDnsServers = [
+    "1.1.1.1"
+    "1.0.0.1"
+    "2606:4700:4700::1111"
+    "2606:4700:4700::1001"
+  ];
+
+  tailscaleSidecarDnsExtraOptions = map (server: "--dns=${server}") cloudflareDnsServers;
+
+  openclawExtraOptions = [ "--network=${openclawNetworkMode}" ];
+
+  codexLbExtraOptions = [
+    "--pull=missing"
+    "--userns=keep-id"
+  ] ++ lib.optionals tailscaleSidecar.enable [ "--network=container:${tailscaleSidecar.containerName}" ];
 in
 {
   # Hardware configuration / ハードウェア設定
@@ -207,7 +233,7 @@ in
     "d /var/lib/codex-lb 0750 1000 1000 -"
     "d /mnt/data/openclaw 0750 ${username} users -"
     "d /mnt/data/openclaw/root 0750 ${username} users -"
-  ] ++ lib.optionals openclawTailscale.enable [
+  ] ++ lib.optionals tailscaleSidecar.enable [
     "d /mnt/data/openclaw/tailscale 0750 ${username} users -"
   ];
 
@@ -236,9 +262,19 @@ in
       group = "users";
       mode = "0400";
     };
+    secrets."tailscale-env" = {
+      sopsFile = ../../../secrets/hq/tailscale.env;
+      format = "dotenv";
+      owner = username;
+      group = "users";
+      mode = "0400";
+    };
     secrets."codex-lb-env" = {
       sopsFile = ../../../secrets/hq/codex-lb.env;
       format = "dotenv";
+      owner = username;
+      group = "users";
+      mode = "0400";
     };
   };
 
@@ -274,7 +310,7 @@ in
     };
     containers.openclaw = {
       image = "docker.io/library/node:22-trixie";
-      dependsOn = lib.optionals openclawTailscale.enable [ openclawTailscale.containerName ];
+      dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
       podman = {
         user = username;
       };
@@ -291,7 +327,7 @@ in
       volumes = [
         "/mnt/data/openclaw/root:/root"
       ];
-      extraOptions = [ "--network=${openclawNetworkMode}" ];
+      extraOptions = openclawExtraOptions;
       cmd = [
         "sh"
         "-lc"
@@ -307,8 +343,12 @@ in
       ];
     };
     containers.codex-lb = {
-      image = "ghcr.io/soju06/codex-lb@sha256:31289465635aaf633a9311d68527347a2f91e1672ec54f5465382fda1f33f88f";
-      ports = [
+      image = "ghcr.io/soju06/codex-lb@sha256:7c73df883829212eec91c099e5be339a936474e8b6e4b9c7fc6dbcb5d54e3d01";
+      dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
+      podman = {
+        user = username;
+      };
+      ports = lib.optionals (!tailscaleSidecar.enable) [
         "127.0.0.1:2455:2455"
         "127.0.0.1:1455:1455"
       ];
@@ -318,36 +358,39 @@ in
       volumes = [
         "/var/lib/codex-lb:/var/lib/codex-lb"
       ];
-      extraOptions = [ "--pull=missing" ];
+      extraOptions = codexLbExtraOptions;
     };
-    containers.${openclawTailscale.containerName} = lib.mkIf openclawTailscale.enable {
+    containers.${tailscaleSidecar.containerName} = lib.mkIf tailscaleSidecar.enable {
       image = "docker.io/tailscale/tailscale:stable";
       podman = {
         user = username;
       };
-      # Provide TS_AUTHKEY from the same sops env file. / 同じ sops 環境変数ファイルから TS_AUTHKEY を読み込む。
+      # Provide TS_AUTHKEY from dedicated sops env file. / 専用の sops 環境変数ファイルから TS_AUTHKEY を読み込む。
       environmentFiles = [
-        config.sops.secrets."openclaw-env".path
+        config.sops.secrets."tailscale-env".path
       ];
       environment = {
         TS_AUTH_ONCE = "true";
         TS_STATE_DIR = "/var/lib/tailscale";
         TS_SOCKET = "/tmp/tailscaled.sock";
         TS_USERSPACE = "false";
-        TS_EXTRA_ARGS = openclawTailscaleExtraArgs;
+        TS_DEBUG_FIREWALL_MODE = "nftables";
+        TS_EXTRA_ARGS = tailscaleSidecarExtraArgs;
       };
       ports = [
+        "127.0.0.1:2455:2455"
+        "127.0.0.1:1455:1455"
         "127.0.0.1:18789:18789"
       ];
       volumes = [
-        "${openclawTailscale.stateDir}:/var/lib/tailscale"
+        "${tailscaleSidecar.stateDir}:/var/lib/tailscale"
         "/dev/net/tun:/dev/net/tun"
       ];
       extraOptions = [
         "--cap-add=NET_ADMIN"
         "--cap-add=NET_RAW"
         "--device=/dev/net/tun"
-      ];
+      ] ++ tailscaleSidecarDnsExtraOptions;
     };
   };
 
@@ -357,8 +400,8 @@ in
     wants = [ "sops-nix.service" ];
   };
   systemd.services."podman-openclaw" = {
-    after = [ "sops-nix.service" ] ++ lib.optionals openclawTailscale.enable [ "podman-${openclawTailscale.containerName}.service" ];
-    wants = [ "sops-nix.service" ] ++ lib.optionals openclawTailscale.enable [ "podman-${openclawTailscale.containerName}.service" ];
+    after = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
+    wants = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
     startLimitIntervalSec = 0;
     restartTriggers = [
       config.sops.secrets."openclaw-env".sopsFile
@@ -369,8 +412,8 @@ in
     };
   };
   systemd.services."podman-codex-lb" = {
-    after = [ "sops-nix.service" ];
-    wants = [ "sops-nix.service" ];
+    after = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
+    wants = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
     startLimitIntervalSec = 0;
     restartTriggers = [
       config.sops.secrets."codex-lb-env".sopsFile
@@ -380,16 +423,28 @@ in
       RestartSec = 5;
     };
   };
-  systemd.services."podman-${openclawTailscale.containerName}" = lib.mkIf openclawTailscale.enable {
+  systemd.services."podman-${tailscaleSidecar.containerName}" = lib.mkIf tailscaleSidecar.enable {
     after = [ "sops-nix.service" ];
     wants = [ "sops-nix.service" ];
     startLimitIntervalSec = 0;
     restartTriggers = [
-      config.sops.secrets."openclaw-env".sopsFile
+      config.sops.secrets."tailscale-env".sopsFile
     ];
     serviceConfig = {
       Restart = lib.mkForce "always";
       RestartSec = 5;
+    };
+  };
+  # Set exit node after the sidecar is connected. / サイドカー接続後に exit node を設定。
+  systemd.services."tailscale-set-exit-node" = lib.mkIf (tailscaleSidecar.enable && tailscaleSidecar.exitNode != null) {
+    description = "Set Tailscale exit node for sidecar";
+    after = [ "podman-${tailscaleSidecar.containerName}.service" ];
+    requires = [ "podman-${tailscaleSidecar.containerName}.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = username;
+      ExecStart = pkgs.writeShellScript "tailscale-set-exit-node" tailscaleSidecarPostStart;
     };
   };
 
