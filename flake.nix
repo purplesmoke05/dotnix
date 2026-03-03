@@ -154,9 +154,6 @@
           # StreamController OSPlugin patch / StreamController OSPlugin パッチ
           streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
 
-          # qSpeak app (deb extraction) / qSpeak アプリ（deb 展開）
-          qspeak = final.callPackage ./pkgs/qspeak { };
-
           # Antigravity IDE / Antigravity IDE
           antigravity = final.callPackage ./pkgs/antigravity {
             vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
