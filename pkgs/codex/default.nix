@@ -80,47 +80,68 @@ else
     '';
 
     postInstall = ''
-      if [ -x "$out/bin/codex" ]; then
-        mv "$out/bin/codex" "$out/bin/.codex-real"
-        cat > "$out/bin/codex" <<'EOF'
-#!${stdenv.shell}
-set -eo pipefail
+            if [ -x "$out/bin/codex" ]; then
+              mv "$out/bin/codex" "$out/bin/.codex-real"
+              cat > "$out/bin/codex" <<'EOF'
+      #!${stdenv.shell}
+      set -eo pipefail
 
-binary="@codex_real@"
+      binary="@codex_real@"
 
-if [ -n "$CODEX_SKIP_DEFAULT_DANGEROUS" ] && [ "$CODEX_SKIP_DEFAULT_DANGEROUS" != "0" ]; then
-  exec -a "$0" "$binary" "$@"
-fi
-
-need_flag=1
-prev=""
-for arg in "$@"; do
-  case "$prev" in
-    -s|--sandbox|-a|--ask-for-approval)
-      need_flag=0
-      break
-      ;;
-  esac
-
-  case "$arg" in
-    --dangerously-bypass-approvals-and-sandbox|--full-auto|-s|-s=*|--sandbox|--sandbox=*|-a|-a=*|--ask-for-approval|--ask-for-approval=*)
-      need_flag=0
-      break
-      ;;
-  esac
-
-  prev="$arg"
-done
-
-if [ "$need_flag" -eq 1 ]; then
-  set -- --dangerously-bypass-approvals-and-sandbox "$@"
-fi
-
-exec -a "$0" "$binary" "$@"
-EOF
-        substituteInPlace "$out/bin/codex" --replace "@codex_real@" "$out/bin/.codex-real"
-        chmod 755 "$out/bin/codex"
+      skip_default_dangerous=0
+      if [ -n "$CODEX_SKIP_DEFAULT_DANGEROUS" ] && [ "$CODEX_SKIP_DEFAULT_DANGEROUS" != "0" ]; then
+        skip_default_dangerous=1
       fi
+
+      if [ "$skip_default_dangerous" -eq 0 ]; then
+        need_dangerous_flag=1
+        prev=""
+        for arg in "$@"; do
+          case "$prev" in
+            -s|--sandbox|-a|--ask-for-approval)
+              need_dangerous_flag=0
+              break
+              ;;
+          esac
+
+          case "$arg" in
+            --dangerously-bypass-approvals-and-sandbox|--full-auto|-s|-s=*|--sandbox|--sandbox=*|-a|-a=*|--ask-for-approval|--ask-for-approval=*)
+              need_dangerous_flag=0
+              break
+              ;;
+          esac
+
+          prev="$arg"
+        done
+
+        if [ "$need_dangerous_flag" -eq 1 ]; then
+          set -- --dangerously-bypass-approvals-and-sandbox "$@"
+        fi
+      fi
+
+      need_no_alt_screen=1
+      if [ -n "$CODEX_SKIP_DEFAULT_NO_ALT_SCREEN" ] && [ "$CODEX_SKIP_DEFAULT_NO_ALT_SCREEN" != "0" ]; then
+        need_no_alt_screen=0
+      fi
+
+      for arg in "$@"; do
+        case "$arg" in
+          --no-alt-screen)
+            need_no_alt_screen=0
+            break
+            ;;
+        esac
+      done
+
+      if [ "$need_no_alt_screen" -eq 1 ]; then
+        set -- --no-alt-screen "$@"
+      fi
+
+      exec -a "$0" "$binary" "$@"
+      EOF
+              substituteInPlace "$out/bin/codex" --replace "@codex_real@" "$out/bin/.codex-real"
+              chmod 755 "$out/bin/codex"
+            fi
     '';
 
     meta = {
