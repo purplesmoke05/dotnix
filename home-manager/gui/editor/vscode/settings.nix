@@ -77,6 +77,7 @@
   tools = {
   terminal = {
   autoApprove = {
+  command = true;
 };
 };
 };

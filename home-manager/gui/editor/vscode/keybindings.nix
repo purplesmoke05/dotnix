@@ -958,10 +958,6 @@
       key = "ctrl+q";
     }
     {
-      command = "roo-cline.SidebarProvider.focus";
-      key = "ctrl+shift+r";
-    }
-    {
       command = "editor.action.clipboardPasteAction";
       key = "ctrl+y";
     }

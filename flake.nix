@@ -131,8 +131,10 @@
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
 
-          # zellij package / zellij パッケージ
-          zellij = final.callPackage ./pkgs/zellij { };
+          # Zed package / Zed パッケージ
+          zed-editor = final.callPackage ./pkgs/zed {
+            zed-editor = prev.zed-editor;
+          };
 
           # VSCode package / VSCode パッケージ
           vscode = final.callPackage ./pkgs/vscode {

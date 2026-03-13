@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "context": "Workspace",
+    "bindings": {
+      "ctrl-x b": "pane::ActivatePreviousItem",
+      "ctrl-x ctrl-b": "file_finder::Toggle",
+      "ctrl-x ctrl-c": "pane::CloseActiveItem"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-x ctrl-c": "pane::CloseActiveItem"
+    }
+  }
+]

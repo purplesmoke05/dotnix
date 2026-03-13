@@ -1,6 +1,7 @@
 import argparse
 import json
 import platform
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -99,6 +100,7 @@ COMMAND_MAP: Dict[str, Any] = {
     "editor.action.outdentLines": "editor::Outdent",
     "editor.action.quickFix": "editor::ToggleCodeActions",
     "editor.action.rename": "editor::Rename",
+    "editor.action.referenceSearch.trigger": "editor::FindAllReferences",
     "editor.action.selectAll": "editor::SelectAll",
     "editor.action.startFindReplaceAction": "buffer_search::DeployReplace",
     "editor.action.triggerSuggest": "editor::ShowCompletions",
@@ -114,6 +116,7 @@ COMMAND_MAP: Dict[str, Any] = {
     "editor.foldLevel5": "editor::FoldAtLevel_5",
     "editor.foldLevel6": "editor::FoldAtLevel_6",
     "editor.foldLevel7": "editor::FoldAtLevel_7",
+    "editor.action.goToReferences": "editor::FindAllReferences",
     "editor.unfold": "editor::UnfoldLines",
     "emacs-mcx.backwardWord": "editor::MoveToPreviousWordStart",
     "emacs-mcx.cancel": "editor::Cancel",
@@ -121,15 +124,15 @@ COMMAND_MAP: Dict[str, Any] = {
     "emacs-mcx.forwardWord": "editor::MoveToNextWordEnd",
     "emacs-mcx.isearchExit": "editor::Cancel",
     "emacs-mcx.paredit.pareditKill": "editor::KillRingCut",
-    "emacs-mcx.scrollDownCommand": "editor::MovePageDown",
+    "emacs-mcx.scrollDownCommand": "editor::MovePageUp",
     "emacs-mcx.setMarkCommand": "editor::SetMark",
     "emacs-mcx.yank": "editor::Paste",
     "explorer.newFile": "project_panel::NewFile",
-    "explorer.openToSide": "project_panel::Open",
+    "explorer.openToSide": "project_panel::OpenSplitVertical",
     "filesExplorer.copy": "project_panel::Copy",
     "filesExplorer.cut": "project_panel::Cut",
     "filesExplorer.paste": "project_panel::Paste",
-    "github.copilot.chat.attachSelection": "agent::AddSelectionToThread",
+    "github.copilot.chat.attachSelection": "agent::OpenAddContextMenu",
     "gitlens.toggleFileBlame": "git::Blame",
     "go-to-next-change.go-to-next-scm-change": "editor::GoToNextChange",
     "go-to-next-change.go-to-previous-scm-change": "editor::GoToPreviousChange",
@@ -156,7 +159,7 @@ COMMAND_MAP: Dict[str, Any] = {
     "welcome.goBack": "pane::GoBack",
     "welcome.showNewFileEntries": "workspace::NewFile",
     "workbench.action.chat.attachFile": "agent::OpenAddContextMenu",
-    "workbench.action.chat.attachSelection": "agent::AddSelectionToThread",
+    "workbench.action.chat.attachSelection": "agent::OpenAddContextMenu",
     "workbench.action.chat.history": "agent::OpenHistory",
     "workbench.action.chat.openAgent": "agent::Chat",
     "workbench.action.chat.openInSidebar": "agent::Chat",
@@ -175,7 +178,7 @@ COMMAND_MAP: Dict[str, Any] = {
     "workbench.action.files.newUntitledFile": "workspace::NewFile",
     "workbench.action.files.save": "workspace::Save",
     "workbench.action.findInFiles": "pane::DeploySearch",
-    "workbench.action.focusActiveEditorGroup": "pane::ActivateItem",
+    "workbench.action.focusActiveEditorGroup": "editor::ToggleFocus",
     "workbench.action.hideComment": "editor::Cancel",
     "workbench.action.hideInterfaceOverview": "editor::Cancel",
     "workbench.action.lastEditorInGroup": "pane::ActivateLastItem",
@@ -192,7 +195,7 @@ COMMAND_MAP: Dict[str, Any] = {
     "workbench.action.quit": "zed::Quit",
     "workbench.action.showAllEditorsByMostRecentlyUsed": "tab_switcher::Toggle",
     "workbench.action.showCommands": "command_palette::Toggle",
-    "workbench.action.switchWindow": "workspace::SwitchProject",
+    "workbench.action.switchWindow": "projects::OpenRecent",
     "workbench.action.terminal.focus": "terminal_panel::Toggle",
     "workbench.action.terminal.pasteSelection": "terminal::Paste",
     "workbench.action.togglePanel": "workspace::ToggleBottomDock",
@@ -208,6 +211,65 @@ COMMAND_MAP: Dict[str, Any] = {
 SPECIAL_RUN_COMMANDS_MAP: Dict[Tuple[str, ...], Any] = {
     ("actions.findWithSelection", "actions.find"): "buffer_search::Deploy",
     ("workbench.view.explorer", "workbench.files.action.focusFilesExplorer"): "project_panel::ToggleFocus",
+}
+EDITOR_FALLBACK_BINDINGS: Dict[str, Any] = {
+    "alt-n": "editor::MoveToStartOfNextExcerpt",
+    "alt-p": [
+        "action::Sequence",
+        [
+            "editor::MoveToEndOfPreviousExcerpt",
+            "editor::MoveToStartOfExcerpt",
+        ],
+    ],
+    "shift-f12": "editor::FindAllReferences",
+}
+PROJECT_PANEL_FALLBACK_BINDINGS: Dict[str, Any] = {
+    "ctrl-[": "editor::ToggleFocus",
+    "ctrl-b": "project_panel::CollapseSelectedEntry",
+    "ctrl-f": "project_panel::ExpandSelectedEntry",
+    "ctrl-n": "menu::SelectNext",
+    "ctrl-p": "menu::SelectPrevious",
+    "enter": "project_panel::OpenPermanent",
+}
+WORKSPACE_FALLBACK_BINDINGS: Dict[str, Any] = {
+    "ctrl-b": None,
+    "ctrl-n": None,
+    "ctrl-p": None,
+}
+IGNORED_COMMANDS = {
+    "composerMode.agent",
+}
+IGNORED_COMMAND_PREFIXES = (
+    "keybindings.",
+)
+IGNORED_WHEN_TOKENS = [
+    "bannerfocused",
+    "callhierarchyvisible",
+    "commenteditorfocused",
+    "commentsfilterfocus",
+    "iconselectboxfocus",
+    "inkeybindings",
+    "inreferencesearcheditor",
+    "insettingseditor",
+    "inwelcome",
+    "interfaceoverviewvisible",
+    "messagevisible",
+    "replaceinputboxfocus",
+    "referencesearchvisible",
+    "resourcescheme == 'vscode-interactive'",
+    "searchviewletvisible",
+    "statusbarfocused",
+    "stickyscrollfocused",
+    "webviewfindwidgetvisible",
+]
+EMACS_BASE_PRESERVE_RULES = {
+    ("Workspace", "ctrl-x b", "workbench.action.quickOpen"): "preserve Emacs base buffer switcher",
+    ("Workspace", "ctrl-x ctrl-b", "workbench.action.quickOpen"): "preserve Emacs base buffer switcher",
+    ("Workspace", "ctrl-x ctrl-c", "workbench.action.closeEditorsAndGroup"): "preserve Emacs base quit binding",
+}
+KEYED_IGNORE_RULES = {
+    ("Editor && mode == full", "ctrl-k", "editor.action.deleteLines"): "superseded by Emacs kill-line binding",
+    ("Editor && mode == full", "ctrl-.", "editor.action.triggerSuggest"): "superseded by later quick-fix binding",
 }
 
 
@@ -226,6 +288,14 @@ class Collision:
     previous: Any
     current: Any
     source_index: int
+
+
+@dataclass
+class IgnoredBinding:
+    index: int
+    key: str
+    command: str
+    reason: str
 
 
 def get_default_vscode_keybindings_path() -> Optional[Path]:
@@ -295,19 +365,61 @@ def normalize_keybinding_key(key: str) -> Optional[str]:
     return " ".join(normalized)
 
 
+def has_when_token(when_text: str, token: str) -> bool:
+    pattern = rf"(?<![A-Za-z0-9_!]){re.escape(token)}(?![A-Za-z0-9_])"
+    return re.search(pattern, when_text) is not None
+
+
+def should_ignore_binding(command: str, when: Optional[str]) -> Optional[str]:
+    when_text = (when or "").lower()
+
+    if command == "":
+        return "empty VSCode command placeholder"
+
+    if command.startswith("-"):
+        return "VSCode-only unbind entry"
+
+    if command in IGNORED_COMMANDS:
+        return "no known Zed equivalent"
+
+    if any(command.startswith(prefix) for prefix in IGNORED_COMMAND_PREFIXES):
+        return "VSCode-only keybinding editor command"
+
+    if any(has_when_token(when_text, token) for token in IGNORED_WHEN_TOKENS):
+        return "VSCode-only UI context"
+
+    return None
+
+
 def infer_context(when: Optional[str], command: str) -> str:
     when_text = (when or "").lower()
     base_command = command.lstrip("-")
 
+    if has_when_token(when_text, "findwidgetvisible"):
+        return "BufferSearchBar > Editor"
+
+    if has_when_token(when_text, "parameterhintsvisible"):
+        return "Editor && showing_signature_help && !showing_completions"
+
+    if has_when_token(when_text, "suggestwidgetvisible") or has_when_token(when_text, "codeactionmenuvisible"):
+        return "Editor && (showing_code_actions || showing_completions)"
+
     if (
-        "terminalfocus" in when_text
+        has_when_token(when_text, "editorhasselection")
+        or has_when_token(when_text, "selectionanchorset")
+        or has_when_token(when_text, "emacs-mcx.inmarkmode")
+    ):
+        return "Editor && selection_mode"
+
+    if (
+        has_when_token(when_text, "terminalfocus")
         or base_command.startswith("workbench.action.terminal")
         or base_command.startswith("terminal.")
     ):
         return "Terminal"
 
     if (
-        any(token in when_text for token in PROJECT_WHEN_TOKENS)
+        any(has_when_token(when_text, token) for token in PROJECT_WHEN_TOKENS)
         or base_command.startswith("explorer.")
         or base_command.startswith("filesExplorer.")
         or base_command.startswith("workbench.files.action")
@@ -315,11 +427,11 @@ def infer_context(when: Optional[str], command: str) -> str:
     ):
         return "ProjectPanel && not_editing"
 
-    if any(token in when_text for token in MENU_WHEN_TOKENS) or base_command.startswith("list."):
+    if any(has_when_token(when_text, token) for token in MENU_WHEN_TOKENS) or base_command.startswith("list."):
         return "menu"
 
     if (
-        any(token in when_text for token in EDITOR_WHEN_TOKENS)
+        any(has_when_token(when_text, token) for token in EDITOR_WHEN_TOKENS)
         or base_command.startswith("editor.")
         or base_command.startswith("actions.find")
         or base_command.startswith("delete")
@@ -345,7 +457,10 @@ def map_command(command: str, args: Any) -> Tuple[bool, Optional[Any], Optional[
     if not isinstance(command, str):
         return False, None, "command is not string"
 
-    if command == "" or command.startswith("-"):
+    if command == "":
+        return True, None, None
+
+    if command.startswith("-"):
         return True, None, None
 
     if command == "runCommands":
@@ -442,6 +557,30 @@ def merge_grouped(
     return merged
 
 
+def apply_project_panel_fallback_bindings(
+    grouped: Dict[Optional[str], Dict[str, Any]],
+) -> None:
+    bindings = grouped.setdefault("ProjectPanel && not_editing", {})
+    for key, value in PROJECT_PANEL_FALLBACK_BINDINGS.items():
+        bindings[key] = value
+
+
+def apply_editor_fallback_bindings(
+    grouped: Dict[Optional[str], Dict[str, Any]],
+) -> None:
+    bindings = grouped.setdefault("Editor", {})
+    for key, value in EDITOR_FALLBACK_BINDINGS.items():
+        bindings[key] = value
+
+
+def apply_workspace_fallback_bindings(
+    grouped: Dict[Optional[str], Dict[str, Any]],
+) -> None:
+    bindings = grouped.setdefault("Workspace", {})
+    for key, value in WORKSPACE_FALLBACK_BINDINGS.items():
+        bindings[key] = value
+
+
 def build_report(
     source: Path,
     final_output: Path,
@@ -452,6 +591,7 @@ def build_report(
     total: int,
     mapped: int,
     unbound: int,
+    ignored: List[IgnoredBinding],
     skipped: List[SkippedBinding],
     collisions: List[Collision],
 ) -> str:
@@ -468,11 +608,23 @@ def build_report(
         f"- Total bindings: `{total}`",
         f"- Converted bindings: `{mapped}`",
         f"- Unbound bindings: `{unbound}`",
+        f"- Ignored bindings: `{len(ignored)}`",
         f"- Skipped bindings: `{len(skipped)}`",
         f"- Key collisions: `{len(collisions)}`",
         "",
     ]
 
+    lines.append("## Ignored Bindings")
+    lines.append("")
+    if not ignored:
+        lines.append("- None")
+    else:
+        for item in ignored:
+            lines.append(
+                f"- #{item.index}: key=`{item.key}` command=`{item.command}` reason=`{item.reason}`"
+            )
+
+    lines.append("")
     lines.append("## Skipped Bindings")
     lines.append("")
     if not skipped:
@@ -518,6 +670,7 @@ def convert(
         for context, bindings in base_grouped.items():
             auto_grouped[context].update(bindings)
 
+    ignored: List[IgnoredBinding] = []
     skipped: List[SkippedBinding] = []
     collisions: List[Collision] = []
     mapped_count = 0
@@ -540,6 +693,29 @@ def convert(
         raw_command = binding.get("command", "")
         when = binding.get("when")
         args = binding.get("args")
+
+        if not isinstance(raw_command, str):
+            skipped.append(
+                SkippedBinding(
+                    index=index,
+                    key=str(raw_key),
+                    command=str(raw_command),
+                    reason="command is not string",
+                )
+            )
+            continue
+
+        ignore_reason = should_ignore_binding(raw_command, when if isinstance(when, str) else None)
+        if ignore_reason is not None:
+            ignored.append(
+                IgnoredBinding(
+                    index=index,
+                    key=str(raw_key),
+                    command=raw_command,
+                    reason=ignore_reason,
+                )
+            )
+            continue
 
         if not isinstance(raw_key, str) or not raw_key.strip():
             skipped.append(
@@ -564,18 +740,19 @@ def convert(
             )
             continue
 
-        if not isinstance(raw_command, str):
-            skipped.append(
-                SkippedBinding(
+        context = infer_context(when if isinstance(when, str) else None, raw_command)
+        keyed_ignore_reason = KEYED_IGNORE_RULES.get((context, normalized_key, raw_command))
+        if keyed_ignore_reason is not None:
+            ignored.append(
+                IgnoredBinding(
                     index=index,
                     key=raw_key,
-                    command=str(raw_command),
-                    reason="command is not string",
+                    command=raw_command,
+                    reason=keyed_ignore_reason,
                 )
             )
             continue
 
-        context = infer_context(when if isinstance(when, str) else None, raw_command)
         ok, mapped, reason = map_command(raw_command, args)
         if not ok:
             skipped.append(
@@ -584,6 +761,21 @@ def convert(
                     key=raw_key,
                     command=raw_command,
                     reason=reason or "unknown conversion error",
+                )
+            )
+            continue
+
+        if raw_command == "runCommands" and mapped == "project_panel::ToggleFocus" and normalized_key == "ctrl-q":
+            context = None
+
+        preserve_reason = EMACS_BASE_PRESERVE_RULES.get((context, normalized_key, raw_command))
+        if preserve_reason is not None and normalized_key in auto_grouped[context]:
+            ignored.append(
+                IgnoredBinding(
+                    index=index,
+                    key=raw_key,
+                    command=raw_command,
+                    reason=preserve_reason,
                 )
             )
             continue
@@ -607,6 +799,10 @@ def convert(
             mapped_count += 1
 
     auto_data = build_output(auto_grouped, preferred_context_order)
+    apply_editor_fallback_bindings(auto_grouped)
+    apply_project_panel_fallback_bindings(auto_grouped)
+    apply_workspace_fallback_bindings(auto_grouped)
+    auto_data = build_output(auto_grouped, preferred_context_order)
     write_json(auto_output, auto_data)
 
     manual_grouped: Dict[Optional[str], Dict[str, Any]] = {}
@@ -617,6 +813,9 @@ def convert(
         manual_loaded = True
 
     final_grouped = merge_grouped(auto_grouped, manual_grouped)
+    apply_editor_fallback_bindings(final_grouped)
+    apply_project_panel_fallback_bindings(final_grouped)
+    apply_workspace_fallback_bindings(final_grouped)
     final_context_order = preferred_context_order.copy()
     for context in manual_context_order:
         if context not in final_context_order:
@@ -635,13 +834,14 @@ def convert(
         total=len(raw_bindings),
         mapped=mapped_count,
         unbound=unbound_count,
+        ignored=ignored,
         skipped=skipped,
         collisions=collisions,
     )
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(report_text, encoding="utf-8")
 
-    print(f"Converted {mapped_count} bindings, unbound {unbound_count}, skipped {len(skipped)}")
+    print(f"Converted {mapped_count} bindings, unbound {unbound_count}, ignored {len(ignored)}, skipped {len(skipped)}")
     print(f"Wrote auto keymap: {auto_output}")
     print(f"Wrote final keymap: {final_output}")
     print(f"Wrote report: {report}")

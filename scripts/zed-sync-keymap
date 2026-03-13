@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEFAULT_INPUT="$REPO_ROOT/home-manager/gui/editor/vscode/vscode-keybindings.json"
+HAS_INPUT=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --input|--input=*)
+      HAS_INPUT=1
+      ;;
+  esac
+done
+
+if [[ "$HAS_INPUT" -eq 1 ]]; then
+  exec uv run python "$REPO_ROOT/home-manager/gui/editor/zed/keymap_from_vscode.py" "$@"
+fi
+
+exec uv run python "$REPO_ROOT/home-manager/gui/editor/zed/keymap_from_vscode.py" --input "$DEFAULT_INPUT" "$@"

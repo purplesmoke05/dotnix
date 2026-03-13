@@ -217,9 +217,16 @@
             return 1
           end
 
+          echo "Updating Zed settings..."
+          if not $HOME/.nix/scripts/zed-sync-settings
+            echo "Error: Failed to update Zed settings. Aborting."
+            return 1
+          end
+          echo "Zed settings updated successfully."
+
           if test $skip_vscode -ne 1
             echo "Updating VSCode settings and keybindings..."
-            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py
+            if not $HOME/.nix/scripts/vscode-sync-settings
               echo "Error: Failed to update VSCode settings. Aborting."
               return 1
             end
@@ -229,7 +236,7 @@
               if not __confirm_vscode_keybind_update
                 echo "Skipping VSCode keybindings update as requested. / 要求に応じてVSCodeキーバインド更新をスキップします。"
               else
-                if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py
+                if not $HOME/.nix/scripts/vscode-sync-keybindings
                   echo "Error: Failed to update VSCode keybindings. Aborting."
                   return 1
                 end
@@ -237,7 +244,7 @@
               end
             else
               # No keybind differences detected, proceed with update / キーバインド差分が検出されない場合、更新を実行
-              if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py
+              if not $HOME/.nix/scripts/vscode-sync-keybindings
                 echo "Error: Failed to update VSCode keybindings. Aborting."
                 return 1
               end
@@ -247,7 +254,7 @@
             echo "VSCode configuration updated successfully."
 
             echo "Updating Zed keymap from VSCode keybindings..."
-            if not uv run python $HOME/.nix/home-manager/gui/editor/zed/keymap_from_vscode.py --input $HOME/.nix/home-manager/gui/editor/vscode/vscode-keybindings.json
+            if not $HOME/.nix/scripts/zed-sync-keymap
               echo "Error: Failed to update Zed keymap. Aborting."
               return 1
             end
@@ -261,9 +268,16 @@
         else
           echo "Detected non-macOS (assuming NixOS/Linux)."
 
+          echo "Updating Zed settings..."
+          if not $HOME/.nix/scripts/zed-sync-settings
+            echo "Error: Failed to update Zed settings. Aborting."
+            return 1
+          end
+          echo "Zed settings updated successfully."
+
           if test $skip_vscode -ne 1
             echo "Updating VSCode settings and keybindings..."
-            if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/settings.py
+            if not $HOME/.nix/scripts/vscode-sync-settings
               echo "Error: Failed to update VSCode settings. Aborting."
               return 1
             end
@@ -273,7 +287,7 @@
               if not __confirm_vscode_keybind_update
                 echo "Skipping VSCode keybindings update as requested. / 要求に応じてVSCodeキーバインド更新をスキップします。"
               else
-                if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py
+                if not $HOME/.nix/scripts/vscode-sync-keybindings
                   echo "Error: Failed to update VSCode keybindings. Aborting."
                   return 1
                 end
@@ -281,7 +295,7 @@
               end
             else
               # No keybind differences detected, proceed with update / キーバインド差分が検出されない場合、更新を実行
-              if not uv run python $HOME/.nix/home-manager/gui/editor/vscode/keybindings.py
+              if not $HOME/.nix/scripts/vscode-sync-keybindings
                 echo "Error: Failed to update VSCode keybindings. Aborting."
                 return 1
               end
@@ -291,7 +305,7 @@
             echo "VSCode configuration updated successfully."
 
             echo "Updating Zed keymap from VSCode keybindings..."
-            if not uv run python $HOME/.nix/home-manager/gui/editor/zed/keymap_from_vscode.py --input $HOME/.nix/home-manager/gui/editor/vscode/vscode-keybindings.json
+            if not $HOME/.nix/scripts/zed-sync-keymap
               echo "Error: Failed to update Zed keymap. Aborting."
               return 1
             end

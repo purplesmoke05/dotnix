@@ -1,0 +1,21 @@
+{
+  "base_keymap": "VSCode",
+  "buffer_font_size": 15,
+  "icon_theme": "Zed (Default)",
+  "project_panel": {
+    "auto_reveal_entries": false
+  },
+  "session": {
+    "trust_all_worktrees": true
+  },
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false
+  },
+  "theme": {
+    "dark": "Ayu Dark",
+    "light": "One Light",
+    "mode": "dark"
+  },
+  "ui_font_size": 16
+}

@@ -76,7 +76,9 @@
     },
     "tools": {
       "terminal": {
-        "autoApprove": {}
+        "autoApprove": {
+          "command": true
+        }
       }
     }
   },
@@ -423,5 +425,6 @@
     "view": {
       "alwaysShowHeaderActions": true
     }
-  }
+  },
+  "workbench.iconTheme": "catppuccin-mocha"
 }
