@@ -27,6 +27,7 @@ Responses must be in Japanese. / 返答は日本語のみで行うこと。
 - Scope / 置き場所: host-specific → `hosts/nixos/<host>/`、shared → `hosts/nixos/common/`・`home-manager/*`。
 - Run `nix fmt` before commits; avoid unrelated churn / コミット前に `nix fmt`、無関係変更は避ける。
 - Bilingual comments: write `English sentence. / 日本語訳。` on a single line; delete stale or redundant comments. / バイリンガルコメントは1行に「英語文。/ 日本語訳。」の順で記述し、冗長・陳腐化したコメントは削除する。
+- Avoid comments that explain why a change was made; keep only durable comments that help understand the current code or configuration. / 変更理由を説明するコメントは避け、現在のコードや設定の理解に必要な持続性のあるコメントだけを残す。
 
 ## Testing Guidelines / テスト指針
 - Always run / 常に実行: `nix flake check`。

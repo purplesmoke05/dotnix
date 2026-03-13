@@ -80,7 +80,7 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 │   ├── sui
 │   └── whisper-typing
 ├── tasks                   # Maintainer workflows / 運用ワークフロー
-├── scripts                 # Utility scripts (現在は空) / ユーティリティスクリプト（空）
+├── scripts                 # Utility scripts / ユーティリティスクリプト
 ├── logs                    # ログ収集（例: hotspot_debug）
 └── AGENTS.md, README.md, Dockerfile, etc.
 ```
@@ -100,6 +100,23 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 - `nixos-rebuild build --flake .#<host>` — ドライラン。
 - `sudo nixos-rebuild switch --flake .#<host>` — システム適用。
 - `nix flake update` — 依存更新。
+
+## Utility Scripts / ユーティリティスクリプト
+
+- `scripts/playwright-login-autofill.py` — 自社管理のログイン画面に対する Playwright 自動入力。/ Playwright autofill for self-managed login pages.
+
+```bash
+nix develop .#py312 -c python scripts/playwright-login-autofill.py \
+  --url https://login.example.internal \
+  --email tester@example.internal \
+  --allowed-host login.example.internal \
+  --success-url-contains /dashboard \
+  --headed
+```
+
+- `LOGIN_AUTOFILL_PASSWORD` 未指定時はメールの `@` より前をパスワードとして利用。/ If `LOGIN_AUTOFILL_PASSWORD` is unset, the local-part before `@` is used as the password.
+- `LOGIN_AUTOFILL_ALLOWED_HOSTS` または `--allowed-host` で許可ホストを必須指定。/ An explicit allowlist via `LOGIN_AUTOFILL_ALLOWED_HOSTS` or `--allowed-host` is required.
+- `--email-selector` などは `css=...`, `label=...`, `placeholder=...`, `button=...` をカンマ区切りで指定可能。/ `--email-selector` and related options accept comma-separated `css=...`, `label=...`, `placeholder=...`, and `button=...` locators.
 
 ## Secrets & Security / シークレットとセキュリティ
 
