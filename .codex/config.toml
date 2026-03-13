@@ -3,12 +3,12 @@ multi_agent = true
 
 [agents.explorer]
 description = "Read-only codebase scout for impact analysis in this Nix monorepo"
-config_file = ".codex/agents/explorer.toml"
+config_file = "agents/explorer.toml"
 
 [agents.worker]
 description = "Implementation agent for scoped file edits in this repository"
-config_file = ".codex/agents/worker.toml"
+config_file = "agents/worker.toml"
 
 [agents.verify]
 description = "Validation agent focused on nix fmt / flake check / host build checks"
-config_file = ".codex/agents/verify.toml"
+config_file = "agents/verify.toml"

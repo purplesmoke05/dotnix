@@ -48,6 +48,7 @@ let
   tailscaleSidecarDnsExtraOptions = map (server: "--dns=${server}") cloudflareDnsServers;
 
   openclawExtraOptions = [ "--network=${openclawNetworkMode}" ];
+  openclawGatewayPkg = "openclaw@2026.3.8";
 
   codexLbExtraOptions = [
     "--pull=missing"
@@ -338,12 +339,12 @@ in
             apt-get update -qq
             apt-get install -y -qq jq
           fi
-          exec npx -y openclaw@2026.2.26 gateway
+          exec npx -y ${openclawGatewayPkg} gateway
         ''
       ];
     };
     containers.codex-lb = {
-      image = "ghcr.io/soju06/codex-lb@sha256:7c73df883829212eec91c099e5be339a936474e8b6e4b9c7fc6dbcb5d54e3d01";
+      image = "ghcr.io/soju06/codex-lb@sha256:d0b36caa318d1949190c27323a0cf1f23a2a002b407393e9a0456b9175e75d80";
       dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
       podman = {
         user = username;
