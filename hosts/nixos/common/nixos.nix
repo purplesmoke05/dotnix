@@ -92,11 +92,12 @@ in
   };
 
   # Japanese Input Method / 日本語入力
-  # Fcitx5 + Mozc を GTK/Qt 双方へ統合。 / Provide Fcitx5 + Mozc integration across GTK and Qt.
+  # Fcitx5 + Hazkey + Mozc を GTK/Qt 双方へ統合。 / Provide Fcitx5 + Hazkey + Mozc integration across GTK and Qt.
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
     fcitx5.addons = with pkgs; [
+      fcitx5-hazkey
       fcitx5-mozc
       fcitx5-gtk
       libsForQt5.fcitx5-qt
@@ -298,6 +299,7 @@ in
     userName = username;
     serviceMode = "user";
     withWlroots = true;
+    watch = true;
     debug = false;
     config = {
       keypress_delay_ms = 10;
@@ -517,6 +519,7 @@ in
     slurp
     wl-clipboard
     any-nix-shell
+    fcitx5-hazkey
     fcitx5-mozc
     fcitx5-gtk
     libsForQt5.fcitx5-qt
@@ -728,9 +731,11 @@ in
       XDG_CURRENT_DESKTOP = "Hyprland";
       XDG_SESSION_TYPE = "wayland";
       XDG_SESSION_DESKTOP = "Hyprland";
-      FCITX_ADDON_DIRS = "${pkgs.qt6Packages.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
+      FCITX_ADDON_DIRS = "${pkgs.qt6Packages.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-hazkey}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
       DISABLE_KWALLET = "1";
       FCITX_LOG_LEVEL = "debug";
+      GGML_BACKEND_DIR = "${pkgs.fcitx5-hazkey}/lib/hazkey/libllama/backends";
+      HAZKEY_DICTIONARY = "${pkgs.fcitx5-hazkey}/share/hazkey/Dictionary";
       GTK_IM_MODULE = "fcitx";
       QT_IM_MODULE = "fcitx";
       GLFW_IM_MODULE = "fcitx";

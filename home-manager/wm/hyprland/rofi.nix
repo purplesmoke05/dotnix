@@ -5,7 +5,7 @@
       enable = true;
       # rofi-wayland is merged upstream; nixpkgs variant fails. / rofi-wayland は rofi に統合済み（nixpkgs 版はエラー）
       package = pkgs.rofi; # Wayland support comes from core rofi. / Wayland 対応は rofi 本体が提供
-      terminal = "${pkgs.foot}/bin/foot -e zellij"; # Default terminal for terminal commands
+      terminal = "term-main"; # Default terminal for terminal commands
       theme = builtins.toString ./rofi.rasi; # Custom theme file
 
       # Additional configuration options

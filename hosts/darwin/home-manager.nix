@@ -5,7 +5,6 @@
     ./../../home-manager/cli/git
     ./../../home-manager/cli/terminal/alacritty.nix
     ./../../home-manager/cli/terminal/starship.nix
-    ./../../home-manager/cli/terminal/zellij.nix
     ./../../home-manager/cli/terminal/ghostty.nix
     ./../../home-manager/cli/terminal/carapace.nix
     ./../../home-manager/cli/terminal/nushell.nix
@@ -45,7 +44,7 @@
     postgresql
     libpq
     libpq.pg_config
-    copilot-cli  # AWS Copilot CLI
+    copilot-cli # AWS Copilot CLI
     wtp
 
     # GUIツール

@@ -1,11 +1,46 @@
 { config, pkgs, ... }:
+let
+  # Mozc config DB / Mozc 設定 DB
+  # Build config1.db from textproto and keymap sources. / textproto とキーマップから config1.db を生成する。
+  mozcConfigDb =
+    let
+      mozcProtoRoot = "${pkgs.mozc.src}/src";
+    in
+    pkgs.runCommand "mozc-config1.db"
+      {
+        nativeBuildInputs = with pkgs; [
+          gawk
+          protobuf
+        ];
+      } ''
+      keymap_table="$(
+        awk '{
+          gsub(/\\/,"\\\\");
+          gsub(/"/,"\\\"");
+          gsub(/\t/,"\\t");
+          printf "%s\\n", $0;
+        }' ${./mozc/keymap.tsv}
+      )"
 
+      {
+        cat ${./mozc/config-base.textproto}
+        printf 'custom_keymap_table: "%s"\n' "$keymap_table"
+      } > config.textproto
+
+      protoc \
+        -I ${mozcProtoRoot} \
+        --encode=mozc.config.Config \
+        ${mozcProtoRoot}/protocol/config.proto \
+        < config.textproto > "$out"
+    '';
+in
 {
   # User packages / ユーザーパッケージ
-  # Provide Fcitx5 + Mozc and desktop tooling. / Fcitx5 + Mozc やテーマ関連を揃える。
+  # Provide Fcitx5 + Hazkey + Mozc and desktop tooling. / Fcitx5 + Hazkey + Mozc やテーマ関連を揃える。
   home.packages = with pkgs; [
     papirus-icon-theme
     mozc
+    fcitx5-hazkey
     fcitx5-mozc
     fcitx5-gtk
     libsForQt5.fcitx5-qt
@@ -23,9 +58,11 @@
     XDG_CURRENT_DESKTOP = "Hyprland";
     XDG_SESSION_TYPE = "wayland";
     XDG_SESSION_DESKTOP = "Hyprland";
-    FCITX_ADDON_DIRS = "${pkgs.qt6Packages.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
+    FCITX_ADDON_DIRS = "${pkgs.qt6Packages.fcitx5-with-addons}/lib/fcitx5:${pkgs.fcitx5-hazkey}/lib/fcitx5:${pkgs.fcitx5-mozc}/lib/fcitx5";
     DISABLE_KWALLET = "1";
     FCITX_LOG_LEVEL = "debug";
+    GGML_BACKEND_DIR = "${pkgs.fcitx5-hazkey}/lib/hazkey/libllama/backends";
+    HAZKEY_DICTIONARY = "${pkgs.fcitx5-hazkey}/share/hazkey/Dictionary";
     QT_IM_MODULE = "fcitx";
     GLFW_IM_MODULE = "fcitx";
     SDL_IM_MODULE = "fcitx";
@@ -45,7 +82,7 @@
   };
 
   # Input method config / 入力メソッド設定
-  # Provide detailed Fcitx5 and Mozc configs. / Fcitx5 と Mozc の詳細設定を提供。
+  # Provide detailed Fcitx5, Hazkey, and Mozc configs. / Fcitx5 と Hazkey と Mozc の詳細設定を提供。
   xdg.configFile = {
     # Input method profile / 入力メソッドプロファイル
     # Set default layout and IM. / 既定レイアウトと IM を指定。
@@ -58,9 +95,15 @@
         # Layout / レイアウト
         Default Layout=jp
         # Default input method / 既定 IM
-        DefaultIM=mozc
+        DefaultIM=hazkey
 
         [Groups/0/Items/0]
+        # Name / 名前
+        Name=hazkey
+        # Layout / レイアウト
+        Layout=jp
+
+        [Groups/0/Items/1]
         # Name / 名前
         Name=mozc
         # Layout / レイアウト
@@ -81,7 +124,7 @@
         TriggerKeys=
 
         [Behavior]
-        DefaultInputMethod=mozc
+        DefaultInputMethod=hazkey
         ShareInputState=All
       '';
     };
@@ -98,23 +141,6 @@
       '';
     };
 
-    # Mozc key bindings / Mozc キーバインド
-    # Toggle IME via Henkan/Muhenkan. / 変換キーで IME を切替。
-    "mozc/keymap.tsv" = {
-      force = true;
-      text = ''
-        status	key	command
-        DirectInput	Henkan	IMEOn
-        Composition	Henkan	IMEOn
-        Conversion	Henkan	IMEOn
-        Precomposition	Henkan	IMEOn
-        DirectInput	Muhenkan	IMEOff
-        Composition	Muhenkan	IMEOff
-        Conversion	Muhenkan	IMEOff
-        Precomposition	Muhenkan	IMEOff
-      '';
-    };
-
     # XIM config / XIM 設定
     # Maintain legacy app compatibility. / 旧来アプリ互換を確保。
     "fcitx5/conf/xim.conf" = {
@@ -125,10 +151,10 @@
     };
 
     # Mozc database / Mozc データベース
-    # Provide preconfigured DB. / 事前設定済み DB を配備。
+    # Store Mozc's durable keymap and behavior settings. / Mozc の持続設定とキーマップを保持する。
     "mozc/config1.db" = {
       force = true;
-      source = ./mozc/config1.db;
+      source = mozcConfigDb;
     };
 
     # Mozc config / Mozc 設定

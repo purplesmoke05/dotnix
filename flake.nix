@@ -183,6 +183,9 @@
           # Codex CLI (prebuilt) / Codex CLI（バイナリ）
           codex = final.callPackage ./pkgs/codex { };
 
+          # Hazkey package / Hazkey パッケージ
+          fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
+
           # hints package (NixOS only) / hints パッケージ（NixOS 限定）
           hints = final.callPackage ./pkgs/hints {
             python3Packages = final.python312Packages;
@@ -191,8 +194,7 @@
           # StreamController Hyprland wrapper. / StreamController の Hyprland ラッパー。
           streamcontroller-hypr = final.callPackage ./pkgs/streamcontroller-hypr { };
 
-          # hyprpanel
-          hyprpanel = inputs.hyprpanel.packages.${prev.system}.default;
+          hyprpanel = prev.hyprpanel;
         };
 
         # default overlay / default オーバーレイ
@@ -439,6 +441,7 @@
           hints = pkgs.callPackage ./pkgs/hints {
             python3Packages = pkgs.python312Packages;
           };
+          fcitx5-hazkey = pkgs.fcitx5-hazkey;
           clawzero = pkgs.clawzero;
           uv = pkgs.uv;
           wtp = pkgs.wtp;

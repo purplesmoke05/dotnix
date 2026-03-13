@@ -38,39 +38,75 @@
     bluez
     (pkgs.writeShellApplication {
       name = "quick-term";
-      runtimeInputs = with pkgs; [ jq foot zellij ];
+      runtimeInputs = with pkgs; [ jq ghostty ];
       bashOptions = [ "pipefail" ];
       text = ''
+        place_quick_term_for_active_monitor() {
+          _active_monitor="$(hyprctl activeworkspace -j | jq -r '.monitor // empty')"
+          if [ -z "$_active_monitor" ]; then
+            _active_monitor="$(hyprctl monitors -j | jq -r 'first(.[] | select(.focused == true) | .name) // empty')"
+          fi
+
+          if [ -z "$_active_monitor" ]; then
+            return 0
+          fi
+
+          _geometry="$(
+            hyprctl monitors -j | jq -r --arg monitor "$_active_monitor" '
+              first(.[] | select(.name == $monitor)) as $m
+              | ($m.scale | tonumber) as $scale
+              | ($m.transform | tonumber) as $transform
+              | (if ($transform % 2) == 1 then ($m.height / $scale) else ($m.width / $scale) end | floor) as $logical_w
+              | (if ($transform % 2) == 1 then ($m.width / $scale) else ($m.height / $scale) end | floor) as $logical_h
+              | (($logical_w * 98 / 100) | floor) as $w
+              | (($logical_h * 40 / 100) | floor) as $h
+              | (($m.x + ($logical_w * 1 / 100)) | floor) as $x
+              | (($m.y + ($logical_h * 55 / 100)) | floor) as $y
+              | "\($x) \($y) \($w) \($h)"
+            '
+          )"
+
+          if [ -z "$_geometry" ]; then
+            return 0
+          fi
+
+          read -r _x _y _w _h <<< "$_geometry"
+
+          hyprctl dispatch resizewindowpixel "exact $_w $_h,pid:$_pid" >/dev/null 2>&1
+          hyprctl dispatch movewindowpixel "exact $_x $_y,pid:$_pid" >/dev/null 2>&1
+        }
+
         ensure_quick_term_pinned() {
           _focused_class_now="$(hyprctl activewindow -j | jq -r '.class // ""')"
-          _is_pinned_now="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .pinned)')"
-          if [ "$_focused_class_now" = "foot-quick" ] && [ "$_is_pinned_now" = "false" ]; then
+          _is_pinned_now="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .pinned)')"
+          if [ "$_focused_class_now" = "com.mitchellh.ghostty.quick" ] && [ "$_is_pinned_now" = "false" ]; then
             hyprctl dispatch pin >/dev/null 2>&1
           fi
         }
 
-        _pid="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .pid)')"
+        _pid="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .pid)')"
 
         if [ -n "$_pid" ] && [ "$_pid" != "null" ]; then
-          _ws="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .workspace.name)')"
+          _ws="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .workspace.name)')"
           _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // ""')"
           _focused_class="$(hyprctl activewindow -j | jq -r '.class // ""')"
 
-          if [ "$_focused_class" = "foot-quick" ]; then
-            _is_pinned="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "foot-quick") | .pinned)')"
+          if [ "$_focused_class" = "com.mitchellh.ghostty.quick" ]; then
+            _is_pinned="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .pinned)')"
             if [ "$_is_pinned" = "true" ]; then
               hyprctl dispatch pin >/dev/null 2>&1
             fi
-            hyprctl dispatch movetoworkspacesilent "special:quickterm,pid:$_pid" >/dev/null 2>&1
+            hyprctl dispatch movetoworkspacesilent "special:quickterm-ghostty,pid:$_pid" >/dev/null 2>&1
           else
             if [ "$_ws" != "$_active_ws" ]; then
               hyprctl dispatch movetoworkspace "$_active_ws,pid:$_pid" >/dev/null 2>&1
             fi
+            place_quick_term_for_active_monitor
             hyprctl dispatch focuswindow pid:"$_pid" >/dev/null 2>&1
             ensure_quick_term_pinned
           fi
         else
-          foot -a "foot-quick" -e zellij attach -c quick-term >/dev/null 2>&1 &
+          ghostty --class=com.mitchellh.ghostty.quick --gtk-single-instance=false >/dev/null 2>&1 &
           exit 0
         fi
       '';
@@ -87,6 +123,23 @@
         lock_file="$lock_dir/hints-overlay.lock"
         exec ${pkgs.util-linux}/bin/flock -n "$lock_file" \
           env HINTS_WINDOW_SYSTEM=hyprland ${pkgs.hints}/bin/hints -m hint
+      '';
+    })
+
+    (pkgs.writeShellApplication {
+      name = "toggle-japanese-im";
+      runtimeInputs = with pkgs; [ fcitx5 ];
+      bashOptions = [ "errexit" "nounset" "pipefail" ];
+      text = ''
+        current_im="$(fcitx5-remote -n 2>/dev/null || true)"
+
+        fcitx5-remote -o >/dev/null 2>&1 || true
+
+        if [ "$current_im" = "hazkey" ]; then
+          exec fcitx5-remote -s mozc
+        fi
+
+        exec fcitx5-remote -s hazkey
       '';
     })
 
@@ -110,7 +163,7 @@
 
       # Basic Hyprland config / Hyprland 基本設定
       "$mainMod" = "ALT";
-      "$term" = "foot -e zellij";
+      "$term" = "term-main";
 
       # Hyprsplit config / Hyprsplit 設定
       "plugin:hyprsplit:persistent_workspaces" = true;
@@ -175,7 +228,7 @@
         "float,class:^(pavucontrol)$"
         "float,class:^()$,title:^(Playwright Inspector)$"
 
-        # rulev2 for foot / foot 向け rulev2
+        # Opaque rules / 不透明ルール
         "opaque, class:(code)"
         "opaque, class:(Code)"
         "opaque, class:(thunar)"
@@ -188,13 +241,12 @@
         "opaque, class:(zen)"
         "opaque, class:(firefox)"
         "opaque, class:(Firefox)"
-        "opacity 0.9 0.9, class:^(foot-quick)$"
-        "float, class:^(foot-quick)$"
-        "size 98% 40%, class:^(foot-quick)$"
-        "move 1% 55%, class:^(foot-quick)$"
-        "noshadow, class:^(foot-quick)$"
-        "pin,class:^(foot-quick)$"
-        "animation slide bottom,class:^(foot-quick)$"
+        "float, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
+        "size 98% 40%, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
+        "move 1% 55%, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
+        "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
+        "pin,class:^(com\\.mitchellh\\.ghostty\\.quick)$"
+        "animation slide bottom,class:^(com\\.mitchellh\\.ghostty\\.quick)$"
 
         # Street Fighter 6 on DP-2 fullscreen. / Street Fighter 6 を DP-2 でフルスクリーン。
         "monitor DP-2, class:^(steam_app_1364780)$"
@@ -214,12 +266,14 @@
         "$mainMod SHIFT, P, pin"
         "$mainMod,E,exec,nautilus"
         "CTRL, 4, exec,rofi -show drun"
+        "CTRL SHIFT, 4, exec, term-ghostty"
         "CTRL, 1, exec,bemoji -t -c -e -n"
         "CTRL, 2, exec, hints-once"
         "$mainMod,P,pseudo,"
 
         # Utility controls / ユーティリティ操作
         "$mainMod SHIFT, c, exec, hyprpicker --autocopy"
+        "CTRL SHIFT, Space, exec, toggle-japanese-im"
 
         # Window focus / フォーカス移動
         "$mainMod, j, movefocus, l"
@@ -298,7 +352,7 @@
 
       "exec-once" = [
         "hyprctl dispatch exec [workspace 1 silent] ${pkgs.brave}/bin/brave"
-        "hyprctl dispatch exec [workspace 2 silent] ${pkgs.foot}/bin/foot"
+        "hyprctl dispatch exec [workspace 2 silent] term-main"
         "${pkgs.discord-ptb}/bin/discordptb"
       ];
 
