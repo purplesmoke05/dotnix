@@ -1,4 +1,7 @@
 { config, pkgs, lib, ... }:
+let
+  ghosttyExe = lib.getExe config.programs.ghostty.package;
+in
 {
   programs.ghostty = {
     enable = true;
@@ -20,7 +23,7 @@
         background-opacity = 0.3;
         background-opacity-cells = true;
         background-blur = false;
-        scrollback-limit = 200000;
+        scrollback-limit = 100000000;
         desktop-notifications = true;
         font-family = [
           "Hack Nerd Font"
@@ -153,6 +156,42 @@
       window.window tabbar .end-action {
         padding: 2px 3px;
       }
+    '';
+  };
+
+  xdg.dataFile = lib.mkIf pkgs.stdenv.isLinux {
+    "applications/com.mitchellh.ghostty.quick.left.desktop".text = ''
+      [Desktop Entry]
+      Version=1.0
+      Type=Application
+      Name=Ghostty Quick Left
+      Comment=Quick terminal window
+      TryExec=${ghosttyExe}
+      Exec=${ghosttyExe} --gtk-single-instance=false
+      Icon=com.mitchellh.ghostty
+      Categories=System;TerminalEmulator;
+      Keywords=terminal;tty;pty;
+      StartupNotify=true
+      StartupWMClass=com.mitchellh.ghostty.quick.left
+      Terminal=false
+      NoDisplay=true
+    '';
+
+    "applications/com.mitchellh.ghostty.quick.right.desktop".text = ''
+      [Desktop Entry]
+      Version=1.0
+      Type=Application
+      Name=Ghostty Quick Right
+      Comment=Quick terminal window
+      TryExec=${ghosttyExe}
+      Exec=${ghosttyExe} --gtk-single-instance=false
+      Icon=com.mitchellh.ghostty
+      Categories=System;TerminalEmulator;
+      Keywords=terminal;tty;pty;
+      StartupNotify=true
+      StartupWMClass=com.mitchellh.ghostty.quick.right
+      Terminal=false
+      NoDisplay=true
     '';
   };
 }

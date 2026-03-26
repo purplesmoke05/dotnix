@@ -22,6 +22,7 @@
     claude-code
     ctop
     iftop
+    btop
     radeontop
     grim
     slurp

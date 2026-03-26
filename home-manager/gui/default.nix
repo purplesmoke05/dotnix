@@ -16,15 +16,11 @@
     ./streamcontroller.nix
   ];
 
-  # Additional GUI applications
-  # - Totem: Video player
-  # - Evince: PDF viewer
-  # - Parsec: Remote desktop
-  # - Remmina: Remote desktop client
-  # - Slack: Team communication
+  # Additional GUI applications. / 追加の GUI アプリケーション。
   home.packages = with pkgs; [
     totem
     evince
+    loupe
     parsec-bin
     remmina
     slack

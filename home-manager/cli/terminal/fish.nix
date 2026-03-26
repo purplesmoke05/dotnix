@@ -41,6 +41,31 @@
         if type -q wtp
           wtp shell-init fish | source
         end
+
+        function __codex_title_preexec --on-event fish_preexec
+          set -l cmdline (string trim -- $argv[1])
+          set -e __codex_terminal_label
+
+          if test -z "$cmdline"
+            return
+          end
+
+          if not string match -rq '^([[:alpha:]_][[:alnum:]_]*=[^[:space:]]+[[:space:]]+)*(env[[:space:]]+)?([[:alpha:]_][[:alnum:]_]*=[^[:space:]]+[[:space:]]+)*(command[[:space:]]+)?([^[:space:]]*/)?(codex|\\.codex-real)([[:space:];|&]|$)' -- $cmdline
+            return
+          end
+
+          set -g __codex_terminal_label "[Codex]"
+          __codex_emit_terminal_title
+        end
+
+        function __codex_title_postexec --on-event fish_postexec
+          if not set -q __codex_terminal_label
+            return
+          end
+
+          set -e __codex_terminal_label
+          __codex_emit_terminal_title
+        end
       '';
 
     # Shell abbreviations / 共通コマンドの短縮形
@@ -93,6 +118,35 @@
 
     # Functions and key bindings / 関数とキーバインド
     functions = {
+      __codex_terminal_title = ''
+        if set -q __codex_terminal_label
+          echo -- "$__codex_terminal_label" (prompt_pwd -d 1 -D 1)
+          return
+        end
+
+        set -l ssh
+        set -q SSH_TTY
+        and set ssh "["(prompt_hostname | string sub -l 10 | string collect)"]"
+
+        if set -q argv[1]
+          echo -- $ssh (string sub -l 20 -- $argv[1]) (prompt_pwd -d 1 -D 1)
+        else
+          set -l command (status current-command)
+          if test "$command" = fish
+            set command
+          end
+          echo -- $ssh (string sub -l 20 -- $command) (prompt_pwd -d 1 -D 1)
+        end
+      '';
+
+      __codex_emit_terminal_title = ''
+        printf '\e]2;%s\a' (__codex_terminal_title $argv)
+      '';
+
+      fish_title = ''
+        __codex_terminal_title $argv
+      '';
+
       # VSCode keybind diff checker / VSCode keybind 差分チェッカー
       __check_vscode_keybind_diff = ''
         function __check_vscode_keybind_diff

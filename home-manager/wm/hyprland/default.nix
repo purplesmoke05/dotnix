@@ -1,7 +1,7 @@
 { pkgs, inputs, lib, hyprsplit, ... }: {
   imports = [
     ./rofi.nix
-    ./hyprpanel.nix
+    ./ironbar.nix
     ./gtk.nix
     ./wpaperd.nix
     ./hypridle.nix
@@ -37,32 +37,246 @@
     networkmanagerapplet
     bluez
     (pkgs.writeShellApplication {
-      name = "quick-term";
-      runtimeInputs = with pkgs; [ jq ghostty ];
-      bashOptions = [ "pipefail" ];
+      name = "hypr-media";
+      runtimeInputs = with pkgs; [
+        brightnessctl
+        coreutils
+        gawk
+        libnotify
+        pamixer
+      ];
+      bashOptions = [ "nounset" "pipefail" ];
       text = ''
-        place_quick_term_for_active_monitor() {
+        action="''${1:-}"
+        volume_notification_id=991049
+        brightness_notification_id=991050
+
+        send_notification() {
+          _replace_id="$1"
+          _icon="$2"
+          _summary="$3"
+          _body="$4"
+          _value="$5"
+
+          notify-send \
+            --app-name="hypr-media" \
+            --urgency=low \
+            --expire-time=1000 \
+            --replace-id="$_replace_id" \
+            --icon="$_icon" \
+            --hint=int:value:"$_value" \
+            --transient \
+            "$_summary" "$_body"
+        }
+
+        notify_volume() {
+          if [ "$(pamixer --get-mute)" = "true" ]; then
+            send_notification "$volume_notification_id" "audio-volume-muted-symbolic" "Volume" "Muted" 0
+            return 0
+          fi
+
+          _volume="$(pamixer --get-volume)"
+
+          case "$_volume" in
+            ""|*[!0-9]*)
+              return 0
+              ;;
+          esac
+
+          _icon="audio-volume-low-symbolic"
+          if [ "$_volume" -ge 67 ]; then
+            _icon="audio-volume-high-symbolic"
+          elif [ "$_volume" -ge 34 ]; then
+            _icon="audio-volume-medium-symbolic"
+          fi
+
+          send_notification "$volume_notification_id" "$_icon" "Volume" "$_volume%" "$_volume"
+        }
+
+        has_backlight() {
+          [ -d /sys/class/backlight ] && [ -n "$(ls -A /sys/class/backlight 2>/dev/null)" ]
+        }
+
+        get_brightness_percentage() {
+          brightnessctl -m -c backlight info 2>/dev/null | awk -F, 'NR == 1 { gsub(/%/, "", $4); print $4 }'
+        }
+
+        notify_brightness() {
+          if ! has_backlight; then
+            return 0
+          fi
+
+          _brightness="$(get_brightness_percentage)"
+
+          case "$_brightness" in
+            ""|*[!0-9]*)
+              return 0
+              ;;
+          esac
+
+          send_notification "$brightness_notification_id" "display-brightness-symbolic" "Brightness" "$_brightness%" "$_brightness"
+        }
+
+        case "$action" in
+          volume-down)
+            pamixer -ud 3
+            notify_volume
+            ;;
+          volume-up)
+            pamixer -ui 3
+            notify_volume
+            ;;
+          volume-mute)
+            pamixer --toggle-mute
+            notify_volume
+            ;;
+          brightness-up)
+            if has_backlight; then
+              brightnessctl -q -c backlight s +5%
+              notify_brightness
+            fi
+            ;;
+          brightness-down)
+            if has_backlight; then
+              brightnessctl -q -c backlight s 5%-
+              notify_brightness
+            fi
+            ;;
+          *)
+            printf 'unknown action: %s\n' "$action" >&2
+            exit 1
+            ;;
+        esac
+      '';
+    })
+    (pkgs.writeShellApplication {
+      name = "quick-term";
+      runtimeInputs = with pkgs; [ coreutils jq ghostty ];
+      bashOptions = [ "nounset" "pipefail" ];
+      text = ''
+        left_class="com.mitchellh.ghostty.quick.left"
+        right_class="com.mitchellh.ghostty.quick.right"
+        hidden_workspace="99"
+        state_file="''${XDG_RUNTIME_DIR:-/tmp}/quick-term-last-focused-$UID"
+
+        get_client_pid() {
+          _class="$1"
+          hyprctl clients -j | jq -r --arg class "$_class" 'first(.[] | select(.class == $class) | .pid) // empty'
+        }
+
+        get_client_workspace() {
+          _class="$1"
+          hyprctl clients -j | jq -r --arg class "$_class" 'first(.[] | select(.class == $class) | .workspace.name) // empty'
+        }
+
+        get_client_pinned() {
+          _class="$1"
+          hyprctl clients -j | jq -r --arg class "$_class" 'first(.[] | select(.class == $class) | (.pinned | tostring)) // empty'
+        }
+
+        is_quick_term_class() {
+          case "$1" in
+            "$left_class"|"$right_class")
+              return 0
+              ;;
+            *)
+              return 1
+              ;;
+          esac
+        }
+
+        remember_last_focused_quick_term() {
+          _class="$1"
+
+          if is_quick_term_class "$_class"; then
+            printf '%s\n' "$_class" > "$state_file"
+          fi
+        }
+
+        get_preferred_quick_term_class() {
+          _class=""
+
+          if [ -r "$state_file" ]; then
+            IFS= read -r _class < "$state_file" || true
+          fi
+
+          if is_quick_term_class "$_class"; then
+            printf '%s\n' "$_class"
+            return 0
+          fi
+
+          printf '%s\n' "$left_class"
+        }
+
+        get_alternate_quick_term_class() {
+          case "$1" in
+            "$right_class")
+              printf '%s\n' "$left_class"
+              ;;
+            *)
+              printf '%s\n' "$right_class"
+              ;;
+          esac
+        }
+
+        launch_quick_term() {
+          _class="$1"
+          ghostty \
+            --class="$_class" \
+            --gtk-single-instance=false \
+            --background-opacity=0.85 \
+            --background-opacity-cells=false \
+            >/dev/null 2>&1 &
+        }
+
+        wait_for_client() {
+          _class="$1"
+          _attempt=0
+
+          while [ "$_attempt" -lt 100 ]; do
+            if [ -n "$(get_client_pid "$_class")" ]; then
+              return 0
+            fi
+
+            sleep 0.05
+            _attempt=$((_attempt + 1))
+          done
+
+          return 1
+        }
+
+        get_active_monitor() {
           _active_monitor="$(hyprctl activeworkspace -j | jq -r '.monitor // empty')"
           if [ -z "$_active_monitor" ]; then
             _active_monitor="$(hyprctl monitors -j | jq -r 'first(.[] | select(.focused == true) | .name) // empty')"
           fi
+
+          printf '%s\n' "$_active_monitor"
+        }
+
+        get_quick_term_geometry_for_active_monitor() {
+          _side="$1"
+          _active_monitor="$(get_active_monitor)"
 
           if [ -z "$_active_monitor" ]; then
             return 0
           fi
 
           _geometry="$(
-            hyprctl monitors -j | jq -r --arg monitor "$_active_monitor" '
+            hyprctl monitors -j | jq -r --arg monitor "$_active_monitor" --arg side "$_side" '
               first(.[] | select(.name == $monitor)) as $m
               | ($m.scale | tonumber) as $scale
               | ($m.transform | tonumber) as $transform
               | (if ($transform % 2) == 1 then ($m.height / $scale) else ($m.width / $scale) end | floor) as $logical_w
               | (if ($transform % 2) == 1 then ($m.width / $scale) else ($m.height / $scale) end | floor) as $logical_h
-              | (($logical_w * 98 / 100) | floor) as $w
+              | (($logical_w * 1 / 100) | floor) as $margin_x
+              | (($logical_w * 1 / 100) | floor) as $gap
+              | (((($logical_w - (2 * $margin_x) - $gap) / 2)) | floor) as $w
               | (($logical_h * 40 / 100) | floor) as $h
-              | (($m.x + ($logical_w * 1 / 100)) | floor) as $x
+              | (($m.x + $margin_x) | floor) as $left_x
+              | (($left_x + $w + $gap) | floor) as $right_x
               | (($m.y + ($logical_h * 55 / 100)) | floor) as $y
-              | "\($x) \($y) \($w) \($h)"
+              | "\((if $side == "left" then $left_x else $right_x end) | floor) \($y) \($w) \($h)"
             '
           )"
 
@@ -70,44 +284,138 @@
             return 0
           fi
 
-          read -r _x _y _w _h <<< "$_geometry"
-
-          hyprctl dispatch resizewindowpixel "exact $_w $_h,pid:$_pid" >/dev/null 2>&1
-          hyprctl dispatch movewindowpixel "exact $_x $_y,pid:$_pid" >/dev/null 2>&1
+          printf '%s\n' "$_geometry"
         }
 
-        ensure_quick_term_pinned() {
-          _focused_class_now="$(hyprctl activewindow -j | jq -r '.class // ""')"
-          _is_pinned_now="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .pinned)')"
-          if [ "$_focused_class_now" = "com.mitchellh.ghostty.quick" ] && [ "$_is_pinned_now" = "false" ]; then
-            hyprctl dispatch pin >/dev/null 2>&1
+        append_batch_command() {
+          _command="$1"
+
+          if [ -z "$_command" ]; then
+            return 0
+          fi
+
+          if [ -n "''${_batch_commands:-}" ]; then
+            _batch_commands="$_batch_commands ; "
+          fi
+
+          _batch_commands="$_batch_commands$_command"
+        }
+
+        append_quick_term_pin_state_commands() {
+          _desired="$1"
+          shift
+
+          for _class in "$@"; do
+            _pid="$(get_client_pid "$_class")"
+            _is_pinned_now="$(get_client_pinned "$_class")"
+
+            if [ -z "$_pid" ]; then
+              continue
+            fi
+
+            if [ "$_desired" = "true" ] && [ "$_is_pinned_now" != "true" ]; then
+              append_batch_command "dispatch pin pid:$_pid"
+            fi
+
+            if [ "$_desired" = "false" ] && [ "$_is_pinned_now" = "true" ]; then
+              append_batch_command "dispatch pin pid:$_pid"
+            fi
+          done
+        }
+
+        append_quick_term_show_commands() {
+          _class="$1"
+          _geometry="$2"
+          _active_ws="$3"
+          _pid="$(get_client_pid "$_class")"
+
+          if [ -z "$_pid" ]; then
+            return 0
+          fi
+
+          _ws="$(get_client_workspace "$_class")"
+          if [ -n "$_active_ws" ] && [ "$_ws" != "$_active_ws" ]; then
+            append_batch_command "dispatch movetoworkspacesilent $_active_ws,pid:$_pid"
+          fi
+
+          if [ -n "$_geometry" ]; then
+            read -r _x _y _w _h <<< "$_geometry"
+            append_batch_command "dispatch resizewindowpixel exact $_w $_h,pid:$_pid"
+            append_batch_command "dispatch movewindowpixel exact $_x $_y,pid:$_pid"
           fi
         }
 
-        _pid="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .pid)')"
+        append_quick_term_hide_commands() {
+          _class="$1"
+          _pid="$(get_client_pid "$_class")"
 
-        if [ -n "$_pid" ] && [ "$_pid" != "null" ]; then
-          _ws="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .workspace.name)')"
-          _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // ""')"
-          _focused_class="$(hyprctl activewindow -j | jq -r '.class // ""')"
-
-          if [ "$_focused_class" = "com.mitchellh.ghostty.quick" ]; then
-            _is_pinned="$(hyprctl clients -j | jq -r 'first(.[] | select(.class == "com.mitchellh.ghostty.quick") | .pinned)')"
-            if [ "$_is_pinned" = "true" ]; then
-              hyprctl dispatch pin >/dev/null 2>&1
-            fi
-            hyprctl dispatch movetoworkspacesilent "special:quickterm-ghostty,pid:$_pid" >/dev/null 2>&1
-          else
-            if [ "$_ws" != "$_active_ws" ]; then
-              hyprctl dispatch movetoworkspace "$_active_ws,pid:$_pid" >/dev/null 2>&1
-            fi
-            place_quick_term_for_active_monitor
-            hyprctl dispatch focuswindow pid:"$_pid" >/dev/null 2>&1
-            ensure_quick_term_pinned
+          if [ -z "$_pid" ]; then
+            return 0
           fi
-        else
-          ghostty --class=com.mitchellh.ghostty.quick --gtk-single-instance=false >/dev/null 2>&1 &
+
+          append_batch_command "dispatch movetoworkspacesilent $hidden_workspace,pid:$_pid"
+        }
+
+        _focused_class="$(hyprctl activewindow -j | jq -r '.class // ""')"
+
+        if is_quick_term_class "$_focused_class"; then
+          remember_last_focused_quick_term "$_focused_class"
+          _batch_commands=""
+          append_quick_term_pin_state_commands "false" "$right_class" "$left_class"
+          append_quick_term_hide_commands "$left_class"
+          append_quick_term_hide_commands "$right_class"
+          if [ -n "$_batch_commands" ]; then
+            hyprctl --batch "$_batch_commands" >/dev/null 2>&1
+          fi
           exit 0
+        fi
+
+        _need_wait_left=0
+        _need_wait_right=0
+
+        if [ -z "$(get_client_pid "$left_class")" ]; then
+          launch_quick_term "$left_class"
+          _need_wait_left=1
+        fi
+
+        if [ -z "$(get_client_pid "$right_class")" ]; then
+          launch_quick_term "$right_class"
+          _need_wait_right=1
+        fi
+
+        if [ "$_need_wait_left" -eq 1 ]; then
+          wait_for_client "$left_class" || true
+        fi
+
+        if [ "$_need_wait_right" -eq 1 ]; then
+          wait_for_client "$right_class" || true
+        fi
+
+        _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // empty')"
+        _left_geometry="$(get_quick_term_geometry_for_active_monitor "left")"
+        _right_geometry="$(get_quick_term_geometry_for_active_monitor "right")"
+
+        _batch_commands=""
+        append_quick_term_show_commands "$left_class" "$_left_geometry" "$_active_ws"
+        append_quick_term_show_commands "$right_class" "$_right_geometry" "$_active_ws"
+        append_quick_term_pin_state_commands "true" "$right_class" "$left_class"
+
+        _preferred_class="$(get_preferred_quick_term_class)"
+        _preferred_pid="$(get_client_pid "$_preferred_class")"
+        if [ -n "$_preferred_pid" ]; then
+          append_batch_command "dispatch focuswindow pid:$_preferred_pid"
+          remember_last_focused_quick_term "$_preferred_class"
+        else
+          _alternate_class="$(get_alternate_quick_term_class "$_preferred_class")"
+          _alternate_pid="$(get_client_pid "$_alternate_class")"
+          if [ -n "$_alternate_pid" ]; then
+            append_batch_command "dispatch focuswindow pid:$_alternate_pid"
+            remember_last_focused_quick_term "$_alternate_class"
+          fi
+        fi
+
+        if [ -n "$_batch_commands" ]; then
+          hyprctl --batch "$_batch_commands" >/dev/null 2>&1
         fi
       '';
     })
@@ -241,12 +549,10 @@
         "opaque, class:(zen)"
         "opaque, class:(firefox)"
         "opaque, class:(Firefox)"
-        "float, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
-        "size 98% 40%, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
-        "move 1% 55%, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
-        "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick)$"
-        "pin,class:^(com\\.mitchellh\\.ghostty\\.quick)$"
-        "animation slide bottom,class:^(com\\.mitchellh\\.ghostty\\.quick)$"
+        "float, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
+        "workspace 99 silent,class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
+        "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
+        "noanim, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
 
         # Street Fighter 6 on DP-2 fullscreen. / Street Fighter 6 を DP-2 でフルスクリーン。
         "monitor DP-2, class:^(steam_app_1364780)$"
@@ -261,7 +567,7 @@
         # System controls / システム操作
         "$mainMod,Return,exec,$term"
         "$mainMod SHIFT,Q,killactive,"
-        "$mainMod SHIFT, E, exec, ${pkgs.hyprpanel}/bin/hyprpanel -t powerdropdownmenu"
+        "$mainMod SHIFT, E, exec, ironbar-toggle-power-menu"
         "$mainMod SHIFT, F,fullscreen,"
         "$mainMod SHIFT, P, pin"
         "$mainMod,E,exec,nautilus"
@@ -304,9 +610,9 @@
         ''$mainMod SHIFT, s, exec, killall -s SIGINT wf-recorder''
 
         # Volume controls / 音量調整
-        ", XF86AudioLowerVolume, exec, pamixer -ud 3 && pamixer --get-volume > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
-        ", XF86AudioRaiseVolume, exec, pamixer -ui 3 && pamixer --get-volume > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
-        ", XF86AudioMute, exec, amixer sset Master toggle | sed -En '/\[on\]/ s/.*\[([0-9]+)%\].*/\1/ p; /\[off\]/ s/.*/0/p' | head -1 > /tmp/$HYPRLAND_INSTANCE_SIGNATURE.wob"
+        ", XF86AudioLowerVolume, exec, hypr-media volume-down"
+        ", XF86AudioRaiseVolume, exec, hypr-media volume-up"
+        ", XF86AudioMute, exec, hypr-media volume-mute"
 
         # Media playback / メディア操作
         ", XF86AudioPlay, exec, playerctl play-pause"
@@ -314,8 +620,8 @@
         ", XF86AudioPrev, exec, playerctl previous"
 
         # Brightness / 輝度調整
-        ", XF86MonBrightnessUp, exec, brightnessctl s +5%"
-        ", XF86MonBrightnessDown, exec, brightnessctl s 5%-"
+        ", XF86MonBrightnessUp, exec, hypr-media brightness-up"
+        ", XF86MonBrightnessDown, exec, hypr-media brightness-down"
 
         # Quick terminal / クイックターミナル
         "CTRL, 3, exec, quick-term"
