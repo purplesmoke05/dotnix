@@ -13,6 +13,78 @@ let
     stateDir = "/mnt/data/openclaw/tailscale";
   };
 
+  tailscaleSocksProxy = {
+    enable = tailscaleSidecar.enable;
+    containerName = "tailscale-socks-proxy";
+    image = "localhost/tailscale-socks-proxy:latest";
+    listenPort = 1080;
+  };
+
+  tailscaleForwardSlots = {
+    slot1 = {
+      containerName = "tailscale-forward-slot1";
+      listenPort = 1081;
+      remoteHost = "100.98.97.41";
+      remotePort = 11081;
+    };
+    slot2 = {
+      containerName = "tailscale-forward-slot2";
+      listenPort = 1082;
+      remoteHost = "100.98.97.41";
+      remotePort = 11082;
+    };
+    slot3 = {
+      containerName = "tailscale-forward-slot3";
+      listenPort = 1083;
+      remoteHost = "100.98.97.41";
+      remotePort = 11083;
+    };
+  };
+
+  # Local SOCKS5 image for the Tailscale sidecar namespace. / Tailscale サイドカー名前空間向けのローカル SOCKS5 イメージ。
+  tailscaleSocksProxyImage = pkgs.dockerTools.streamLayeredImage {
+    name = "localhost/tailscale-socks-proxy";
+    tag = "latest";
+    contents = [
+      pkgs.microsocks
+    ];
+    config = {
+      Entrypoint = [ "${pkgs.microsocks}/bin/microsocks" ];
+    };
+  };
+
+  tailscaleTcpForwarderImage = pkgs.dockerTools.streamLayeredImage {
+    name = "localhost/tailscale-tcp-forwarder";
+    tag = "latest";
+    contents = [
+      pkgs.socat
+    ];
+    config = {
+      Entrypoint = [ "${pkgs.socat}/bin/socat" ];
+    };
+  };
+
+  tailscaleForwardSlotContainers = lib.mapAttrs'
+    (_: forward:
+      lib.nameValuePair forward.containerName {
+        image = "localhost/tailscale-tcp-forwarder:latest";
+        imageStream = tailscaleTcpForwarderImage;
+        pull = "never";
+        dependsOn = [ tailscaleSidecar.containerName ];
+        podman = {
+          user = username;
+        };
+        cmd = [
+          "-d"
+          "-d"
+          "TCP-LISTEN:${toString forward.listenPort},bind=0.0.0.0,reuseaddr,fork"
+          "TCP:${forward.remoteHost}:${toString forward.remotePort}"
+        ];
+        extraOptions = [ "--network=container:${tailscaleSidecar.containerName}" ];
+      }
+    )
+    tailscaleForwardSlots;
+
   openclawNetworkMode =
     if tailscaleSidecar.enable then
       "container:${tailscaleSidecar.containerName}"
@@ -46,6 +118,19 @@ let
   ];
 
   tailscaleSidecarDnsExtraOptions = map (server: "--dns=${server}") cloudflareDnsServers;
+  tailscaleSidecarPublishedPorts = [
+    "127.0.0.1:2455:2455"
+    "127.0.0.1:1455:1455"
+    "127.0.0.1:18789:18789"
+  ] ++ lib.optionals tailscaleSocksProxy.enable [
+    "127.0.0.1:${toString tailscaleSocksProxy.listenPort}:${toString tailscaleSocksProxy.listenPort}"
+  ] ++ lib.optionals tailscaleSidecar.enable (
+    lib.mapAttrsToList
+      (_: forward:
+        "127.0.0.1:${toString forward.listenPort}:${toString forward.listenPort}"
+      )
+      tailscaleForwardSlots
+  );
 
   openclawExtraOptions = [ "--network=${openclawNetworkMode}" ];
   openclawGatewayPkg = "openclaw@2026.3.8";
@@ -147,10 +232,6 @@ in
         allowedUDPPorts = [ 53 67 68 ]; # AdGuard DNS と DHCP / AdGuard DNS and DHCP
         allowedTCPPorts = [ 53 ]; # AdGuard DNS / AdGuard DNS
       };
-      # Tailscale VPN / Tailscale VPN
-      "tailscale0" = {
-        allowedTCPPorts = [ 4000 ]; # LiteLLM Proxy
-      };
     };
 
     # Default rules / 既定ルール
@@ -229,8 +310,6 @@ in
   systemd.tmpfiles.rules = [
     # path mode user group age / パス モード ユーザー グループ age
     "d /var/lib/hostapd 0750 root root -"
-    "d /var/lib/litellm 0750 root root -"
-    "d /var/lib/litellm/pgdata 0750 root root -"
     "d /var/lib/codex-lb 0750 1000 1000 -"
     "d /mnt/data/openclaw 0750 ${username} users -"
     "d /mnt/data/openclaw/root 0750 ${username} users -"
@@ -248,14 +327,7 @@ in
   # Secrets management / シークレット管理
   # Decrypt secrets via sops-nix using the host SSH key. / ホスト SSH 鍵で sops-nix による復号を実行。
   sops = {
-    defaultSopsFile = ../../../secrets/hq/llm-proxy.env;
-    defaultSopsFormat = "dotenv";
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-    secrets."llm-proxy-env" = { };
-    secrets."litellm-db-password" = {
-      sopsFile = ../../../secrets/hq/litellm-db-password.env;
-      format = "dotenv";
-    };
     secrets."openclaw-env" = {
       sopsFile = ../../../secrets/hq/openclaw.env;
       format = "dotenv";
@@ -279,127 +351,112 @@ in
     };
   };
 
-  # LiteLLM Proxy container / LiteLLM Proxy コンテナ
-  # Run LiteLLM gateway via Podman with sops-decrypted env and config.yaml. / sops 復号済み env と config.yaml で LiteLLM ゲートウェイを稼働。
+  # Application containers / アプリケーションコンテナ
+  # Run user-facing services with Podman and sops-managed env files. / Podman と sops 管理の env ファイルでユーザー向けサービスを稼働。
   virtualisation.oci-containers = {
     backend = "podman";
-    containers.litellm-db = {
-      image = "docker.io/library/postgres:16-alpine";
-      ports = [ "127.0.0.1:5433:5432" ];
-      environment = {
-        POSTGRES_DB = "litellm";
-        POSTGRES_USER = "litellm";
+    containers = {
+      openclaw = {
+        image = "docker.io/library/node:22-trixie";
+        dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
+        podman = {
+          user = username;
+        };
+        environmentFiles = [
+          config.sops.secrets."openclaw-env".path
+        ];
+        environment = {
+          OPENCLAW_SKIP_SERVICE_CHECK = "true";
+          OPENCLAW_STATE_DIR = "/root/.openclaw";
+          NODE_OPTIONS = "--dns-result-order=ipv4first";
+          NPM_CONFIG_PREFIX = "/root/.npm-global";
+          PATH = "/root/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+        };
+        volumes = [
+          "/mnt/data/openclaw/root:/root"
+        ];
+        extraOptions = openclawExtraOptions;
+        cmd = [
+          "sh"
+          "-lc"
+          ''
+            test -f /root/.openclaw/openclaw.json || { echo 'missing openclaw.json'; exit 1; }
+            if ! command -v jq >/dev/null 2>&1; then
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y -qq jq
+            fi
+            exec npx -y ${openclawGatewayPkg} gateway
+          ''
+        ];
       };
-      environmentFiles = [
-        config.sops.secrets."litellm-db-password".path
-      ];
-      volumes = [
-        "/var/lib/litellm/pgdata:/var/lib/postgresql/data"
-      ];
-    };
-    containers.litellm = {
-      image = "ghcr.io/berriai/litellm:main-latest";
-      dependsOn = [ "litellm-db" ];
-      environmentFiles = [
-        config.sops.secrets."llm-proxy-env".path
-      ];
-      volumes = [
-        "${./litellm-config.yaml}:/app/config.yaml:ro"
-      ];
-      extraOptions = [ "--network=host" ];
-      cmd = [ "--config" "/app/config.yaml" "--port" "4000" ];
-    };
-    containers.openclaw = {
-      image = "docker.io/library/node:22-trixie";
-      dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
-      podman = {
-        user = username;
+      codex-lb = {
+        image = "ghcr.io/soju06/codex-lb@sha256:835049086b8d58bc4acdd82a820a7ca7a7d813f4c5ed57fe6f9ae1fbcb8cabe0";
+        dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
+        podman = {
+          user = username;
+        };
+        ports = lib.optionals (!tailscaleSidecar.enable) [
+          "127.0.0.1:2455:2455"
+          "127.0.0.1:1455:1455"
+        ];
+        environmentFiles = [
+          config.sops.secrets."codex-lb-env".path
+        ];
+        volumes = [
+          "/var/lib/codex-lb:/var/lib/codex-lb"
+        ];
+        extraOptions = codexLbExtraOptions;
       };
-      environmentFiles = [
-        config.sops.secrets."openclaw-env".path
-      ];
-      environment = {
-        OPENCLAW_SKIP_SERVICE_CHECK = "true";
-        OPENCLAW_STATE_DIR = "/root/.openclaw";
-        NODE_OPTIONS = "--dns-result-order=ipv4first";
-        NPM_CONFIG_PREFIX = "/root/.npm-global";
-        PATH = "/root/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+      "${tailscaleSocksProxy.containerName}" = lib.mkIf tailscaleSocksProxy.enable {
+        image = tailscaleSocksProxy.image;
+        imageStream = tailscaleSocksProxyImage;
+        pull = "never";
+        dependsOn = [ tailscaleSidecar.containerName ];
+        podman = {
+          user = username;
+        };
+        cmd = [
+          "-q"
+          "-i"
+          "0.0.0.0"
+          "-p"
+          (toString tailscaleSocksProxy.listenPort)
+        ];
+        extraOptions = [ "--network=container:${tailscaleSidecar.containerName}" ];
       };
-      volumes = [
-        "/mnt/data/openclaw/root:/root"
-      ];
-      extraOptions = openclawExtraOptions;
-      cmd = [
-        "sh"
-        "-lc"
-        ''
-          test -f /root/.openclaw/openclaw.json || { echo 'missing openclaw.json'; exit 1; }
-          if ! command -v jq >/dev/null 2>&1; then
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update -qq
-            apt-get install -y -qq jq
-          fi
-          exec npx -y ${openclawGatewayPkg} gateway
-        ''
-      ];
-    };
-    containers.codex-lb = {
-      image = "ghcr.io/soju06/codex-lb@sha256:d0b36caa318d1949190c27323a0cf1f23a2a002b407393e9a0456b9175e75d80";
-      dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
-      podman = {
-        user = username;
+      "${tailscaleSidecar.containerName}" = lib.mkIf tailscaleSidecar.enable {
+        image = "docker.io/tailscale/tailscale:stable";
+        podman = {
+          user = username;
+        };
+        # Provide TS_AUTHKEY from dedicated sops env file. / 専用の sops 環境変数ファイルから TS_AUTHKEY を読み込む。
+        environmentFiles = [
+          config.sops.secrets."tailscale-env".path
+        ];
+        environment = {
+          TS_AUTH_ONCE = "true";
+          TS_STATE_DIR = "/var/lib/tailscale";
+          TS_SOCKET = "/tmp/tailscaled.sock";
+          TS_USERSPACE = "false";
+          TS_DEBUG_FIREWALL_MODE = "nftables";
+          TS_EXTRA_ARGS = tailscaleSidecarExtraArgs;
+        };
+        ports = tailscaleSidecarPublishedPorts;
+        volumes = [
+          "${tailscaleSidecar.stateDir}:/var/lib/tailscale"
+          "/dev/net/tun:/dev/net/tun"
+        ];
+        extraOptions = [
+          "--cap-add=NET_ADMIN"
+          "--cap-add=NET_RAW"
+          "--device=/dev/net/tun"
+        ] ++ tailscaleSidecarDnsExtraOptions;
       };
-      ports = lib.optionals (!tailscaleSidecar.enable) [
-        "127.0.0.1:2455:2455"
-        "127.0.0.1:1455:1455"
-      ];
-      environmentFiles = [
-        config.sops.secrets."codex-lb-env".path
-      ];
-      volumes = [
-        "/var/lib/codex-lb:/var/lib/codex-lb"
-      ];
-      extraOptions = codexLbExtraOptions;
-    };
-    containers.${tailscaleSidecar.containerName} = lib.mkIf tailscaleSidecar.enable {
-      image = "docker.io/tailscale/tailscale:stable";
-      podman = {
-        user = username;
-      };
-      # Provide TS_AUTHKEY from dedicated sops env file. / 専用の sops 環境変数ファイルから TS_AUTHKEY を読み込む。
-      environmentFiles = [
-        config.sops.secrets."tailscale-env".path
-      ];
-      environment = {
-        TS_AUTH_ONCE = "true";
-        TS_STATE_DIR = "/var/lib/tailscale";
-        TS_SOCKET = "/tmp/tailscaled.sock";
-        TS_USERSPACE = "false";
-        TS_DEBUG_FIREWALL_MODE = "nftables";
-        TS_EXTRA_ARGS = tailscaleSidecarExtraArgs;
-      };
-      ports = [
-        "127.0.0.1:2455:2455"
-        "127.0.0.1:1455:1455"
-        "127.0.0.1:18789:18789"
-      ];
-      volumes = [
-        "${tailscaleSidecar.stateDir}:/var/lib/tailscale"
-        "/dev/net/tun:/dev/net/tun"
-      ];
-      extraOptions = [
-        "--cap-add=NET_ADMIN"
-        "--cap-add=NET_RAW"
-        "--device=/dev/net/tun"
-      ] ++ tailscaleSidecarDnsExtraOptions;
-    };
+    } // lib.optionalAttrs tailscaleSidecar.enable tailscaleForwardSlotContainers;
   };
 
   # Ensure containers start after secrets are decrypted. / シークレット復号後にコンテナを起動。
-  systemd.services."podman-litellm" = {
-    after = [ "sops-nix.service" "podman-litellm-db.service" ];
-    wants = [ "sops-nix.service" ];
-  };
   systemd.services."podman-openclaw" = {
     after = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
     wants = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];

@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [ $# -eq 0 ]; then
   echo "Usage: $0 <path-to-sops-file>"
-  echo "Example: $0 secrets/hq/llm-proxy.env"
+  echo "Example: $0 secrets/hq/openclaw.env"
   exit 1
 fi
 
