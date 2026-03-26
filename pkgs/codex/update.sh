@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -i bash -p curl jq git coreutils gnused nix python3
+#!nix-shell -i bash -p curl git coreutils gnused nix python3
 
 set -euo pipefail
 
@@ -14,23 +14,48 @@ fi
 current_version=$(grep -m1 'version = "' "$DEFAULT_NIX" | sed 's/.*"\([^"]*\)".*/\1/')
 echo "Current version: ${current_version:-<unknown>}"
 
+release_channel="${CODEX_RELEASE_CHANNEL:-stable}"
+case "$release_channel" in
+  stable|alpha)
+    ;;
+  *)
+    echo "Error: CODEX_RELEASE_CHANNEL must be 'stable' or 'alpha'." >&2
+    exit 1
+    ;;
+esac
+
 if [[ -n "${CODEX_VERSION_OVERRIDE:-}" ]]; then
-  latest_tag="$CODEX_VERSION_OVERRIDE"
+  latest_tag="${CODEX_VERSION_OVERRIDE#rust-v}"
   echo "Using override version: rust-v${latest_tag}"
 else
-  echo "Fetching latest rust tag from openai/codex..."
-  latest_tag=$(git ls-remote --tags --refs https://github.com/openai/codex.git \
-    | awk -F/ '/refs\/tags\/rust-v[0-9]+\.[0-9]+\.[0-9]+$/ {print $NF}' \
-    | sed 's/^rust-v//' \
-    | sort -V \
-    | tail -n1)
+  echo "Fetching latest ${release_channel} release from openai/codex..."
+  if [[ "$release_channel" == "stable" ]]; then
+    tag_pattern='refs/tags/rust-v[0-9]+[.][0-9]+[.][0-9]+$'
+  else
+    tag_pattern='refs/tags/rust-v[0-9]+[.][0-9]+[.][0-9]+-alpha[.][0-9]+$'
+  fi
+
+  representative_artifact="codex-x86_64-unknown-linux-gnu.tar.gz"
+  latest_tag=$(
+    git ls-remote --tags --refs https://github.com/openai/codex.git \
+    | awk -v pattern="$tag_pattern" '$2 ~ pattern { print $2 }' \
+    | sed 's#^refs/tags/rust-v##' \
+    | sort -Vr \
+    | while read -r candidate; do
+        url="https://github.com/openai/codex/releases/download/rust-v${candidate}/${representative_artifact}"
+        if curl -fsIL "$url" >/dev/null; then
+          echo "$candidate"
+          break
+        fi
+      done
+  )
 
   if [[ -z "$latest_tag" ]]; then
-    echo "Error: unable to determine latest tag." >&2
+    echo "Error: unable to determine latest ${release_channel} release." >&2
     exit 1
   fi
 
-  echo "Latest tag: rust-v${latest_tag}"
+  echo "Latest ${release_channel} release: rust-v${latest_tag}"
 fi
 
 if [[ "$latest_tag" == "$current_version" ]]; then
@@ -51,7 +76,7 @@ for entry in "${artifacts[@]}"; do
   url="https://github.com/openai/codex/releases/download/rust-v${latest_tag}/${artifact}"
   echo "Prefetching ${system} artifact: ${artifact}"
   base32_hash=$(nix-prefetch-url --type sha256 "$url")
-  sri_hash=$(nix hash to-sri --type sha256 "$base32_hash")
+  sri_hash=$(nix hash convert --hash-algo sha256 --from nix32 --to sri "$base32_hash")
   hashes[$system]="$sri_hash"
   echo "  -> $sri_hash"
 done
