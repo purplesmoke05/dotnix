@@ -131,6 +131,8 @@
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
 
+          # confluence-cli package / confluence-cli パッケージ
+          confluence-cli = final.callPackage ./pkgs/confluence-cli { };
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
@@ -445,6 +447,7 @@
           };
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
           clawzero = pkgs.clawzero;
+          confluence-cli = pkgs.confluence-cli;
           uv = pkgs.uv;
           wtp = pkgs.wtp;
         };

@@ -25,6 +25,7 @@
     iftop
     ctop
     dive
+    confluence-cli
     uv
     foundry
 

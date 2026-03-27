@@ -19,6 +19,7 @@
     codex
     gemini-cli
     clawzero
+    confluence-cli
     claude-code
     ctop
     iftop
