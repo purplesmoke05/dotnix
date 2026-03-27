@@ -2,5 +2,34 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HAS_INPUT=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --input|--input=*)
+      HAS_INPUT=1
+      ;;
+  esac
+done
+
+if [[ "$HAS_INPUT" -eq 0 ]]; then
+  case "$(uname -s)" in
+    Darwin)
+      DEFAULT_INPUT="$HOME/Library/Application Support/Zed/settings.json"
+      ;;
+    Linux)
+      DEFAULT_INPUT="$HOME/.config/zed/settings.json"
+      ;;
+    *)
+      DEFAULT_INPUT=""
+      ;;
+  esac
+
+  if [[ -n "$DEFAULT_INPUT" && ! -f "$DEFAULT_INPUT" ]]; then
+    echo "Zed settings.json not found at default path: $DEFAULT_INPUT"
+    echo "Skipping Zed settings sync."
+    exit 0
+  fi
+fi
 
 exec uv run python "$REPO_ROOT/home-manager/gui/editor/zed/settings.py" "$@"
