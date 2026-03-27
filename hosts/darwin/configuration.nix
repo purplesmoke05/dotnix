@@ -95,5 +95,4 @@
     ];
   };
 
-  programs.direnv.enable = true;
 }

@@ -1,4 +1,4 @@
-{ pkgs, lib, username, ... }:
+{ pkgs, lib, username, jiraPinnedPkgs, ... }:
 
 {
   imports = [
@@ -38,7 +38,6 @@
     go
     deno
     zig
-    volta
     rustup
     pulumi
     postgresql
@@ -46,6 +45,10 @@
     libpq.pg_config
     copilot-cli # AWS Copilot CLI
     wtp
+    nodejs
+    graphviz
+    jiraPinnedPkgs.jira-cli-go
+    direnv
 
     # GUIツール
     rectangle

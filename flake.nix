@@ -3,6 +3,7 @@
   # Declare flake inputs for systems and tooling. / システムとツールを支えるフレーク入力を定義。
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-jira.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap.url = "github:xremap/nix-flake";
     rust-overlay = {
@@ -93,7 +94,6 @@
             sha256 = "0w6qyfhc912xxav9x9pifwca40b4l49vy52wai9j0gc1mhni2a5y";
           };
           py311 = pkgs.python311;
-          py310 = pkgs.python310;
         };
       };
 
@@ -130,16 +130,6 @@
 
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
-
-          # Zed package / Zed パッケージ
-          zed-editor = final.callPackage ./pkgs/zed {
-            zed-editor = prev.zed-editor;
-          };
-
-          # VSCode package / VSCode パッケージ
-          vscode = final.callPackage ./pkgs/vscode {
-            vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
-          };
 
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
@@ -318,37 +308,47 @@
       darwinHost = let env = builtins.getEnv "DARWIN_HOST"; in if env != "" then env else "darwin-host"; # Default "darwin-host" fallback / 未設定時は "darwin-host"
 
       # Darwin builder / Darwin ビルダー
-      mkDarwinSystem = { hostname, username, system ? "aarch64-darwin" }: nix-darwin.lib.darwinSystem {
-        inherit system;
-        pkgs = import nixpkgs {
+      mkDarwinSystem = { hostname, username, system ? "aarch64-darwin" }:
+        let
+          jiraPinnedPkgs = import inputs.nixpkgs-jira {
+            inherit system;
+            config.allowUnfree = true;
+          };
+        in
+        nix-darwin.lib.darwinSystem {
           inherit system;
-          # Apply overlays and allow unfree / オーバーレイ適用と非自由許可
-          config.allowUnfree = true; # Adjust allowUnfreePredicate if needed / 必要なら allowUnfreePredicate を設定
-          overlays = [
-            self.overlays.common
-            brew-nix.overlays.default
-          ]; # Darwin uses common + brew-nix only / Darwin は common + brew-nix のみ
+          pkgs = import nixpkgs {
+            inherit system;
+            # Apply overlays and allow unfree / オーバーレイ適用と非自由許可
+            config.allowUnfree = true; # Adjust allowUnfreePredicate if needed / 必要なら allowUnfreePredicate を設定
+            overlays = [
+              self.overlays.common
+              brew-nix.overlays.default
+            ]; # Darwin uses common + brew-nix only / Darwin は common + brew-nix のみ
+          };
+          modules = [
+            ./hosts/darwin/configuration.nix # Darwin system config / Darwin システム設定
+            home-manager.darwinModules.home-manager
+            {
+              networking.hostName = hostname;
+              users.users.${username} = {
+                home = "/Users/${username}";
+                name = username;
+              };
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = false; # Original darwin flow / 既定の darwin フローを踏襲
+              home-manager.extraSpecialArgs = {
+                inherit jiraPinnedPkgs;
+              };
+              home-manager.users.${username} = { pkgs, lib, config, ... }: # Provided by HM module / HM から渡される値
+                import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username jiraPinnedPkgs; }; # Adjusted path and args / パスと引数を調整
+              home-manager.backupFileExtension = "backup-hm";
+            }
+          ];
+          specialArgs = {
+            inherit inputs nixpkgs home-manager username; # Pass required inputs / 必要な入力を渡す
+          };
         };
-        modules = [
-          ./hosts/darwin/configuration.nix # Darwin system config / Darwin システム設定
-          home-manager.darwinModules.home-manager
-          {
-            networking.hostName = hostname;
-            users.users.${username} = {
-              home = "/Users/${username}";
-              name = username;
-            };
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = false; # Original darwin flow / 既定の darwin フローを踏襲
-            home-manager.users.${username} = { pkgs, lib, config, ... }: # Provided by HM module / HM から渡される値
-              import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username; }; # Adjusted path and args / パスと引数を調整
-            home-manager.backupFileExtension = "backup-hm";
-          }
-        ];
-        specialArgs = {
-          inherit inputs nixpkgs home-manager username; # Pass required inputs / 必要な入力を渡す
-        };
-      };
     in
     (flake-utils.lib.eachDefaultSystem (system:
       let
