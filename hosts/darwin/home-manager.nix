@@ -26,6 +26,7 @@
     ctop
     dive
     confluence-cli
+    excel-cli
     uv
     foundry
 
