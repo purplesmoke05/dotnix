@@ -8,7 +8,6 @@
     ../../../home-manager/cli/default.nix
     ../../../home-manager/gui/default.nix
     ../../../home-manager/wm/hyprland/default.nix
-    ../../../home-manager/mcp-servers/default.nix
   ];
 
   # Home basics / 基本ホーム設定

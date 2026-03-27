@@ -32,10 +32,6 @@
       url = "github:hyprwm/Hyprland/v0.52.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    mcp-servers-nix = {
-      url = "github:natsukium/mcp-servers-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     zen-browser-flake = {
       url = "github:MarceColl/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -62,7 +58,7 @@
 
   # Outputs / 出力定義
   # Collect systems, overlays, and Home Manager setups. / システム構成・オーバーレイ・Home Manager を束ねる。
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, mcp-servers-nix, hyprland, hyprsplit, hyprpanel, zen-browser-flake, nix-darwin, brew-nix, sops-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, hyprland, hyprsplit, hyprpanel, zen-browser-flake, nix-darwin, brew-nix, sops-nix, ... }@inputs:
     let
       # Python builders / Python ビルダー
       mkPythonBuilders = pkgs: {
@@ -237,7 +233,7 @@
           useUserPackages = true;
           backupFileExtension = "backup-hm";
           extraSpecialArgs = {
-            inherit inputs nixpkgs hostname username mcp-servers-nix;
+            inherit inputs nixpkgs hostname username;
             inherit (inputs) hyprsplit;
             userConfig = {
               desktop = true;
