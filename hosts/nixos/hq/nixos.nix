@@ -133,7 +133,7 @@ let
   );
 
   openclawExtraOptions = [ "--network=${openclawNetworkMode}" ];
-  openclawGatewayPkg = "openclaw@2026.3.8";
+  openclawGatewayPkg = "openclaw@2026.3.24";
 
   codexLbExtraOptions = [
     "--pull=missing"
