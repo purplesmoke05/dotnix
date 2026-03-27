@@ -45,7 +45,7 @@ in
   networking.hostName = pkgs.lib.mkForce hostname;
   networking.networkmanager = {
     enable = true;
-    dns = "default"; # Use default for Hotspot compatibility / Hotspot 互換のため既定値を使用
+    dns = "default";
     settings = {
       main = {
         rc-manager = "symlink";
@@ -57,20 +57,6 @@ in
 
   # AdGuard Home DNS / AdGuard Home で DNS を提供
   networking.nameservers = [ "127.0.0.1" ];
-
-  # NetworkManager Hotspot / NetworkManager ホットスポット設定
-  environment.etc."NetworkManager/dnsmasq-shared.d/00-hotspot.conf".text = ''
-    # Hotspot settings / ホットスポット設定
-    interface=wlp5s0
-    bind-interfaces
-    listen-address=10.42.0.1
-    # Avoid DNS port clash with AdGuard Home / AdGuard Home と競合しないよう DNS ポートを変更
-    port=0
-    # Provide DHCP only; clients resolve DNS themselves. / DHCP のみ提供し DNS はクライアント任せ
-    dhcp-range=10.42.0.10,10.42.0.254,255.255.255.0,12h
-    dhcp-option=option:router,10.42.0.1
-    dhcp-option=option:dns-server,10.42.0.1,1.1.1.1,8.8.8.8
-  '';
 
 
 
@@ -562,7 +548,7 @@ in
     ccmanager
     tailscale
     sui
-    dnsmasq # NetworkManager hotspot helper / NetworkManager Hotspot 用
+    dnsmasq
     # Gaming diagnostics / ゲーム用診断ツール
     mangohud
     evtest
@@ -878,14 +864,14 @@ in
       ChallengeResponseAuthentication = false;
     };
     # Restrict networks / 接続元ネットワークを制限
-    # Hotspot: 10.42.0.0/24, Tailscale: 100.64.0.0/10
+    # Hotspot: 10.43.0.0/24, Tailscale: 100.64.0.0/10
     extraConfig = ''
       # Default deny / 既定で拒否
-      Match Address *,!10.42.0.0/24,!100.64.0.0/10
+      Match Address *,!10.43.0.0/24,!100.64.0.0/10
         DenyUsers *
 
       # Allow hotspot / ホットスポットを許可
-      Match Address 10.42.0.0/24
+      Match Address 10.43.0.0/24
         AllowUsers ${username}
         PubkeyAuthentication yes
 

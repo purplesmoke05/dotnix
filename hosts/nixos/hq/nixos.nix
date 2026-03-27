@@ -222,11 +222,6 @@ in
 
     # Interface rules / インターフェース別ルール
     interfaces = {
-      # wlp5s0 (internal Wi-Fi) / wlp5s0（内蔵 Wi-Fi）
-      "wlp5s0" = {
-        allowedUDPPorts = [ 53 67 68 ]; # DNS と DHCP / DNS and DHCP
-        allowedTCPPorts = [ 53 ]; # DNS / DNS
-      };
       # USB AP (hostapd) / USB AP（hostapd）
       "wlan-hotspot0" = {
         allowedUDPPorts = [ 53 67 68 ]; # AdGuard DNS と DHCP / AdGuard DNS and DHCP
@@ -268,11 +263,11 @@ in
           "172.17.0.100,172.17.0.200,24h"
         ];
         dhcpOpts = [
-          "interface:wlan-hotspot0,option:router,10.43.0.1"
-          "interface:wlan-hotspot0,option:dns-server,10.43.0.1"
+          "tag:wlan-hotspot0,option:router,10.43.0.1"
+          "tag:wlan-hotspot0,option:dns-server,10.43.0.1"
         ] ++ opt config.virtualisation.docker.enable [
-          "interface:docker0,option:router,172.17.0.1"
-          "interface:docker0,option:dns-server,172.17.0.1"
+          "tag:docker0,option:router,172.17.0.1"
+          "tag:docker0,option:dns-server,172.17.0.1"
         ];
       in
       {
