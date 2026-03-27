@@ -133,6 +133,9 @@
 
           # confluence-cli package / confluence-cli パッケージ
           confluence-cli = final.callPackage ./pkgs/confluence-cli { };
+
+          # excel-cli package / excel-cli パッケージ
+          excel-cli = final.callPackage ./pkgs/excel-cli { };
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
@@ -448,6 +451,7 @@
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
           clawzero = pkgs.clawzero;
           confluence-cli = pkgs.confluence-cli;
+          excel-cli = pkgs.excel-cli;
           uv = pkgs.uv;
           wtp = pkgs.wtp;
         };
