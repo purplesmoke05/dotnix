@@ -362,91 +362,70 @@ in
     # WirePlumber rules for Bluetooth / Bluetooth 用 WirePlumber 設定
     wireplumber.enable = true;
     wireplumber.configPackages = [
-      (pkgs.writeTextDir "share/wireplumber/bluetooth.lua.d/51-bluez-config.lua" ''
-        bluez_monitor.properties = {
-          ["bluez5.enable-sbc-xq"] = true,
-          ["bluez5.enable-msbc"] = true,
-          ["bluez5.enable-hw-volume"] = true,
-          ["bluez5.codecs"] = "[ sbc aac ]",
+      (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-bluez-config.conf" ''
+        wireplumber.settings = {
+          bluetooth.autoswitch-to-headset-profile = false
         }
 
-        bluez_monitor.rules = {
-          {
-            matches = {
-              {
-                -- Match all Bluetooth devices / 全 Bluetooth デバイスが対象
-                { "device.name", "matches", "bluez_card.*" },
-              },
-            },
-            apply_properties = {
-              -- Bluetooth audio quality controls / Bluetooth 音質制御
-              ["bluez5.auto-connect"] = "[ a2dp_sink ]",
-              ["bluez5.hw-volume"] = "[ a2dp_sink ]",
-
-              -- Prefer high quality codecs / 高音質コーデックを優先
-              ["bluez5.a2dp.codec"] = "auto",
-
-              -- Avoid fallback to HSP/HFP / HSP/HFP への切替を防止
-              ["bluez5.headset-roles"] = "[ ]",
-              ["bluez5.profile"] = "a2dp_sink",
-              ["bluez5.autoswitch-profile"] = false,
-
-              -- Pin sample rate at 48kHz / 48kHz に固定
-              ["audio.rate"] = 48000,
-              ["audio.allowed-rates"] = "[ 44100 48000 ]",
-
-              -- Session behaviour / セッションの挙動
-              ["node.pause-on-idle"] = false,
-              ["session.suspend-timeout-seconds"] = 0,
-            },
-          },
-          {
-            matches = {
-              {
-                -- Technics EAH-AZ100 profile / Technics EAH-AZ100 用プロファイル
-                { "device.name", "matches", "bluez_card.BC_3E_0B_03_16_1D" },
-              },
-            },
-            apply_properties = {
-              -- Force A2DP profile / 必ず A2DP を使用
-              ["bluez5.profile"] = "a2dp_sink",
-              ["bluez5.autoswitch-profile"] = false,
-              ["device.profile"] = "a2dp-sink",
-
-              -- Disable microphone roles / マイク系ロールを無効化
-              ["bluez5.headset-roles"] = "[ ]",
-              ["bluez5.hfp-enable"] = false,
-              ["bluez5.hsp-enable"] = false,
-
-              -- Audio tuning / 音質調整
-              ["audio.rate"] = 48000,
-              ["node.pause-on-idle"] = false,
-            },
-          },
-          {
-            matches = {
-              {
-                -- Shokz OpenRun profile / Shokz OpenRun 用プロファイル
-                { "device.name", "matches", "bluez_card.A8_F5_E1_4C_7B_20" },
-              },
-            },
-            apply_properties = {
-              -- Force A2DP profile / 必ず A2DP を使用
-              ["bluez5.profile"] = "a2dp_sink",
-              ["bluez5.autoswitch-profile"] = false,
-              ["device.profile"] = "a2dp-sink",
-
-              -- Disable microphone roles / マイク系ロールを無効化
-              ["bluez5.headset-roles"] = "[ ]",
-              ["bluez5.hfp-enable"] = false,
-              ["bluez5.hsp-enable"] = false,
-
-              -- Audio tuning / 音質調整
-              ["audio.rate"] = 48000,
-              ["node.pause-on-idle"] = false,
-            },
-          },
+        monitor.bluez.properties = {
+          bluez5.roles = [ a2dp_sink a2dp_source ]
+          bluez5.codecs = [ sbc sbc_xq ]
+          bluez5.enable-sbc-xq = true
+          bluez5.enable-msbc = false
+          bluez5.enable-hw-volume = false
+          bluez5.hfphsp-backend = "none"
+          bluez5.default.rate = 48000
+          bluez5.default.channels = 2
         }
+
+        monitor.bluez.rules = [
+          {
+            matches = [
+              {
+                device.name = "~bluez_card.*"
+              }
+            ]
+            actions = {
+              update-props = {
+                bluez5.auto-connect = [ a2dp_sink ]
+                device.profile = "a2dp-sink"
+              }
+            }
+          }
+          {
+            matches = [
+              {
+                device.name = "bluez_card.BC_3E_0B_03_16_1D"
+              }
+              {
+                device.name = "bluez_card.A8_F5_E1_4C_7B_20"
+              }
+            ]
+            actions = {
+              update-props = {
+                device.profile = "a2dp-sink"
+              }
+            }
+          }
+          {
+            matches = [
+              {
+                node.name = "~bluez_output.*"
+              }
+              {
+                node.name = "~bluez_input.*"
+              }
+            ]
+            actions = {
+              update-props = {
+                node.pause-on-idle = false
+                session.suspend-timeout-seconds = 0
+                resample.disable = true
+                resample.prefill = true
+              }
+            }
+          }
+        ]
       '')
     ];
   };
@@ -516,6 +495,7 @@ in
     unzip
     zip
     p7zip
+    bubblewrap
     unrar
     rar
     file-roller
@@ -556,6 +536,11 @@ in
     antimicrox
     linuxConsoleTools
     fontconfig
+  ];
+
+  # Provide a compatibility path for tools that hardcode /usr/bin/bwrap. / /usr/bin/bwrap を直参照するツール向け互換パスを提供。
+  systemd.tmpfiles.rules = [
+    "L+ /usr/bin/bwrap - - - - ${pkgs.bubblewrap}/bin/bwrap"
   ];
 
   # nix-ld / nix-ld 設定
