@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-jira.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
+    nixpkgs-logcli.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap.url = "github:xremap/nix-flake";
     rust-overlay = {
@@ -315,6 +316,10 @@
             inherit system;
             config.allowUnfree = true;
           };
+          logcliPinnedPkgs = import inputs.nixpkgs-logcli {
+            inherit system;
+            config.allowUnfree = true;
+          };
         in
         nix-darwin.lib.darwinSystem {
           inherit system;
@@ -340,9 +345,10 @@
               home-manager.useUserPackages = false; # Original darwin flow / 既定の darwin フローを踏襲
               home-manager.extraSpecialArgs = {
                 inherit jiraPinnedPkgs;
+                inherit logcliPinnedPkgs;
               };
               home-manager.users.${username} = { pkgs, lib, config, ... }: # Provided by HM module / HM から渡される値
-                import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username jiraPinnedPkgs; }; # Adjusted path and args / パスと引数を調整
+                import ./hosts/darwin/home-manager.nix { inherit pkgs lib config username jiraPinnedPkgs logcliPinnedPkgs; }; # Adjusted path and args / パスと引数を調整
               home-manager.backupFileExtension = "backup-hm";
             }
           ];

@@ -1,4 +1,10 @@
-{ pkgs, lib, username, jiraPinnedPkgs, ... }:
+{ pkgs, lib, username, jiraPinnedPkgs, logcliPinnedPkgs, ... }:
+
+let
+  pinnedLogcli = pkgs.callPackage ../../pkgs/logcli {
+    grafana-loki = logcliPinnedPkgs.grafana-loki;
+  };
+in
 
 {
   imports = [
@@ -27,6 +33,7 @@
     dive
     confluence-cli
     excel-cli
+    pinnedLogcli
     uv
     foundry
 
