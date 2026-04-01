@@ -123,7 +123,7 @@
           clawzero = final.callPackage ./pkgs/clawzero { };
 
           # uv package / uv パッケージ
-          uv = final.callPackage ./pkgs/uv { };
+          uv = prev.uv;
 
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
