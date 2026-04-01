@@ -185,6 +185,12 @@
             python3Packages = final.python312Packages;
           };
 
+          python312Packages = prev.python312Packages.overrideScope (pyFinal: pyPrev: {
+            mss = pyPrev.mss.overridePythonAttrs (_: {
+              doCheck = false;
+            });
+          });
+
           # StreamController Hyprland wrapper. / StreamController の Hyprland ラッパー。
           streamcontroller-hypr = final.callPackage ./pkgs/streamcontroller-hypr { };
 
