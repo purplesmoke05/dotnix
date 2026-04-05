@@ -20,7 +20,7 @@ in
       {
         window-padding-color = "extend-always";
         theme = "TokyoNight Night";
-        background-opacity = 0.3;
+        background-opacity = 0.55;
         background-opacity-cells = true;
         background-blur = false;
         scrollback-limit = 100000000;

@@ -207,8 +207,8 @@
           echo "🔧 VSCode keybind update detected / VSCode キーバインドの更新が検出されました"
           echo "Source: $source_type"
           echo ""
-          echo "This will update your VSCode keybindings from the Nix configuration."
-          echo "既存のVSCodeキーバインドがNix設定で更新されます。"
+          echo "This will import your current VSCode keybindings into the Nix configuration."
+          echo "現在のVSCodeキーバインドをNix設定へ取り込みます。"
           echo ""
 
           while true
