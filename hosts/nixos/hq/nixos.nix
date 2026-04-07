@@ -386,7 +386,7 @@ in
         ];
       };
       codex-lb = {
-        image = "ghcr.io/soju06/codex-lb@sha256:b5b82c1f65430b71ebdf67292d1986e31bc4d0df86f46b7a241f5f62da53d4c2";
+        image = "ghcr.io/soju06/codex-lb@sha256:7051945331a983098706a18d8f566b96ce98a476a4aa9bd466f30ef5930a4d68";
         dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
         podman = {
           user = username;
