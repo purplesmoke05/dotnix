@@ -36,6 +36,7 @@ in
     pinnedLogcli
     uv
     foundry
+    devbox
 
     # Fonts / フォント
     nerd-fonts.hack

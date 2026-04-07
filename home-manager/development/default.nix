@@ -22,6 +22,7 @@
     clawzero
     confluence-cli
     claude-code
+    devbox
     ctop
     iftop
     btop
