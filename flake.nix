@@ -133,6 +133,10 @@
 
           # excel-cli package / excel-cli パッケージ
           excel-cli = final.callPackage ./pkgs/excel-cli { };
+          # m365 package / m365 パッケージ
+          m365 = final.callPackage ./pkgs/m365 { };
+          # workiq package / workiq パッケージ
+          workiq = final.callPackage ./pkgs/workiq { };
           # ccmanager package / ccmanager パッケージ
           ccmanager-base = final.callPackage ./pkgs/ccmanager { };
           ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
@@ -460,6 +464,8 @@
           clawzero = pkgs.clawzero;
           confluence-cli = pkgs.confluence-cli;
           excel-cli = pkgs.excel-cli;
+          m365 = pkgs.m365;
+          workiq = pkgs.workiq;
           uv = pkgs.uv;
           wtp = pkgs.wtp;
         };

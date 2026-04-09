@@ -33,6 +33,8 @@ in
     dive
     confluence-cli
     excel-cli
+    m365
+    workiq
     pinnedLogcli
     uv
     foundry
