@@ -359,7 +359,7 @@
 };
   menuBarVisibility = "hidden";
   titleBarStyle = "custom";
-  zoomLevel = -1;
+  zoomLevel = 1;
 };
   workbench = {
   colorTheme = "Catppuccin Mocha";
