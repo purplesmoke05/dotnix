@@ -386,7 +386,7 @@ in
         ];
       };
       codex-lb = {
-        image = "ghcr.io/soju06/codex-lb@sha256:7051945331a983098706a18d8f566b96ce98a476a4aa9bd466f30ef5930a4d68";
+        image = "ghcr.io/soju06/codex-lb@sha256:7ec3560e29cf5ad8350c1ab73eba5ecbe7a1ab77382073bb76c782b94307c105";
         dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
         podman = {
           user = username;
@@ -505,5 +505,6 @@ in
   environment.systemPackages = with pkgs; [
     gamescope
     telegram-desktop
+    limux
   ];
 }

@@ -525,7 +525,6 @@ in
     llvmPackages.clang
     zlib.dev
     direnv
-    ccmanager
     tailscale
     sui
     dnsmasq

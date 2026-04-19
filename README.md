@@ -73,7 +73,6 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 │   ├── mcp-servers
 │   └── wm
 ├── pkgs                    # Custom packages / 独自パッケージ
-│   ├── ccmanager
 │   ├── codex
 │   ├── gh-iteration
 │   ├── ssh
@@ -89,7 +88,7 @@ Dotfiles and Nix flakes for reproducible desktops. / 再現性あるデスクト
 
 - **Hyprland desktop.** Custom Hyprpanel, Rofi, GTK theming, fcitx5 Mozc, Xremap integration. / Hyprpanel や Rofi、GTK テーマ、fcitx5 Mozc、Xremap を組み合わせた Hyprland デスクトップ。
 - **Development shells.** `nix develop`, `.#rust`, `.#py312` など Python/Rust ビルダーを提供。/ Rust・Python 向け開発シェルを `nix develop` で提供。
-- **Custom overlays.** Patched OpenSSH、`zen-browser`, `claude-code`, `ccmanager` などをオーバーレイ化。/ OpenSSH パッチや独自パッケージをオーバーレイで管理。
+- **Custom overlays.** Patched OpenSSH、`zen-browser`, `claude-code` などをオーバーレイ化。/ OpenSSH パッチや独自パッケージをオーバーレイで管理。
 - **MCP & automation.** `home-manager/mcp-servers` と `tasks/` が Claude/Codex ワークフローを支援。/ MCP サーバー設定とタスク雛形でエージェント運用を補助。
 
 ## Daily Commands / よく使うコマンド

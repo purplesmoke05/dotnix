@@ -122,9 +122,6 @@
           # clawzero package / clawzero パッケージ
           clawzero = final.callPackage ./pkgs/clawzero { };
 
-          # uv package / uv パッケージ
-          uv = prev.uv;
-
           # wtp package / wtp パッケージ
           wtp = final.callPackage ./pkgs/wtp { };
 
@@ -137,12 +134,6 @@
           m365 = final.callPackage ./pkgs/m365 { };
           # workiq package / workiq パッケージ
           workiq = final.callPackage ./pkgs/workiq { };
-          # ccmanager package / ccmanager パッケージ
-          ccmanager-base = final.callPackage ./pkgs/ccmanager { };
-          ccmanager = final.callPackage ./pkgs/ccmanager-wrapper {
-            ccmanager = final.ccmanager-base;
-          };
-
           # Python helpers / Python ヘルパー
           inherit (mkPythonBuilders prev) buildPython pythonVersions;
 
@@ -180,6 +171,9 @@
 
           # Codex CLI (prebuilt) / Codex CLI（バイナリ）
           codex = final.callPackage ./pkgs/codex { };
+
+          # limux: GPU-accelerated terminal multiplexer / limux: Linux 向け GPU 加速ターミナル多重化
+          limux = final.callPackage ./pkgs/limux { };
 
           # Hazkey package / Hazkey パッケージ
           fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
@@ -468,6 +462,7 @@
           workiq = pkgs.workiq;
           uv = pkgs.uv;
           wtp = pkgs.wtp;
+          limux = pkgs.limux;
         };
         formatter = pkgs.nixpkgs-fmt;
       }
