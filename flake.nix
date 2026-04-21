@@ -105,6 +105,12 @@
             doCheck = false;
           });
 
+          # xdg-desktop-portal 1.20.3 USB integration test fails in Nix sandbox
+          # (no PipeWire/RealtimeKit). Skip checks to unblock system builds.
+          xdg-desktop-portal = prev.xdg-desktop-portal.overrideAttrs (_: {
+            doCheck = false;
+          });
+
           # fcitx5 alias / fcitx5 代替
           libsForQt5 = prev.libsForQt5 // {
             fcitx5-with-addons = final.qt6Packages.fcitx5-with-addons;
@@ -118,6 +124,9 @@
 
           # claude-code package / claude-code パッケージ
           claude-code = final.callPackage ./pkgs/claude-code { };
+
+          # github-copilot-cli package / github-copilot-cli パッケージ
+          github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
 
           # clawzero package / clawzero パッケージ
           clawzero = final.callPackage ./pkgs/clawzero { };
@@ -174,6 +183,9 @@
 
           # limux: GPU-accelerated terminal multiplexer / limux: Linux 向け GPU 加速ターミナル多重化
           limux = final.callPackage ./pkgs/limux { };
+
+          # skills-manager: cross-tool AI agent skills manager / 横断エージェントスキル管理
+          skills-manager = final.callPackage ./pkgs/skills-manager { };
 
           # Hazkey package / Hazkey パッケージ
           fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
@@ -463,6 +475,7 @@
           uv = pkgs.uv;
           wtp = pkgs.wtp;
           limux = pkgs.limux;
+          skills-manager = pkgs.skills-manager;
         };
         formatter = pkgs.nixpkgs-fmt;
       }

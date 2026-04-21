@@ -1,4 +1,4 @@
-{ inputs, config, pkgs, hostname, username, ... }:
+{ inputs, config, lib, pkgs, hostname, username, ... }:
 
 let
   setVictrixPolling = pkgs.writeShellScript "set-victrix-binterval" ''
@@ -927,6 +927,10 @@ in
 
   # Disable USB autosuspend globally / USB autosuspend を全体で無効化
   powerManagement.powertop.enable = false;
+  services.tlp.settings = lib.mkIf config.services.tlp.enable {
+    USB_AUTOSUSPEND = 0;
+    USB_EXCLUDE_BTUSB = 1;
+  };
 
   # Gaming Performance / ゲーム性能最適化
   # Tune controller response and power management. / コントローラー応答と電源管理を調整。
@@ -975,15 +979,16 @@ in
   # Optimise controllers and Bluetooth handling. / コントローラーと Bluetooth の最適化。
   services.udev.extraRules = ''
     # Disable autosuspend for all USB devices / 全 USB デバイスの autosuspend を無効化
-    ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="on"
-    ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", TEST=="power/control", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
 
     # Generic HID gamepads / 汎用 HID ゲームパッドに適用
     ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_JOYSTICK}=="1", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
     ACTION=="add", SUBSYSTEM=="input", KERNEL=="js*", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > /sys/module/usbhid/parameters/jspoll 2>/dev/null'"
 
     # Disable USB autosuspend for Intel Bluetooth / Intel Bluetooth の autosuspend を無効化
-    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="8087", ATTR{idProduct}=="0a2b", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="8087", TEST=="power/control", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="8087", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
 
     # Force A2DP profile for Bluetooth audio / Bluetooth オーディオで A2DP を強制
     ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
@@ -1000,19 +1005,19 @@ in
     KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="e118", ATTRS{idProduct}=="0001", MODE="0660", GROUP="input", TAG+="uaccess"
 
     # Victrix-specific latency tweaks / Victrix 向けレイテンシー調整
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/autosuspend}="-1"
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/control}="on"
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", ATTR{power/wakeup}="enabled"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="0e6f", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="0e6f", TEST=="power/control", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="0e6f", TEST=="power/wakeup", ATTR{power/wakeup}="enabled"
     # Force 1 ms polling on Victrix endpoints with udev-run script. / udev スクリプトで Victrix のエンドポイントを 1ms ポーリングに設定。
     ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0e6f", RUN+="${setVictrixPolling}"
 
     # Vader 4 Pro power management lock. / Vader 4 Pro の電源管理を固定。
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", ATTR{power/autosuspend}="-1"
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", TEST=="power/control", ATTR{power/control}="on"
 
     # Xbox-compatible controllers / Xbox 互換コントローラーを最適化
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/autosuspend}="-1"
-    ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="045e", ATTR{power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="045e", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
+    ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="045e", TEST=="power/control", ATTR{power/control}="on"
   '';
 
   # File Management / ファイル管理
