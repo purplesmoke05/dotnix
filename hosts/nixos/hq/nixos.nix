@@ -506,5 +506,6 @@ in
     gamescope
     telegram-desktop
     limux
+    skills-manager
   ];
 }
