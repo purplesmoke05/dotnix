@@ -209,6 +209,11 @@
   model = "copilot:gpt-4.1";
 };
 };
+  gitkraken = {
+  mcp = {
+  autoEnabled = false;
+};
+};
 };
   go = {
   toolsManagement = {
@@ -389,5 +394,13 @@
   view = {
   alwaysShowHeaderActions = true;
 };
+};
+  githubPullRequests = {
+  pullBranch = "never";
+};
+  settingsSync = {
+  ignoredExtensions = [
+    "eamodio.gitlens"
+  ];
 };
 }

@@ -55,15 +55,16 @@ in
     postgresql
     libpq
     libpq.pg_config
-    copilot-cli # AWS Copilot CLI
     wtp
     nodejs
     graphviz
     jiraPinnedPkgs.jira-cli-go
     direnv
+    github-copilot-cli
 
     # GUIツール
     rectangle
+    alt-tab-macos
   ];
 
   # User information / ユーザー情報

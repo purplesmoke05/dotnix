@@ -1,91 +1,113 @@
 { config, pkgs, lib, ... }:
 let
+  isLinux = pkgs.stdenv.isLinux;
+  isDarwin = pkgs.stdenv.isDarwin;
+
   ghosttyExe = lib.getExe config.programs.ghostty.package;
+
+  commonKeybinds = [
+    "ctrl+g=scroll_to_top"
+    "ctrl+shift+g=scroll_to_bottom"
+    "ctrl+shift+u=scroll_page_up"
+    "ctrl+shift+d=scroll_page_down"
+    "ctrl+shift+space=write_scrollback_file:open"
+    "ctrl+equal=increase_font_size:1"
+    "ctrl+minus=decrease_font_size:1"
+    "ctrl+0=reset_font_size"
+    "ctrl+alt+u=scroll_page_up"
+    "ctrl+alt+d=scroll_page_down"
+    "ctrl+shift+c=copy_to_clipboard"
+    "ctrl+shift+v=paste_from_clipboard"
+    "alt+t=new_tab"
+    "ctrl+q=previous_tab"
+    "ctrl+bracket_right=next_tab"
+  ];
+
+  darwinKeybinds = lib.optionals isDarwin [
+    "global:ctrl+5=toggle_quick_terminal"
+  ];
+
+  commonSettings = {
+    window-padding-color = "extend-always";
+    theme = "TokyoNight Night";
+    background-opacity = 0.8;
+    background-opacity-cells = true;
+    background-blur = false;
+    scrollback-limit = 100000000;
+    desktop-notifications = true;
+
+    font-family = [
+      "Hack Nerd Font"
+      "Noto Sans CJK JP"
+    ];
+    font-thicken = false;
+
+    cursor-style = "bar";
+    cursor-style-blink = true;
+    cursor-opacity = 1;
+
+    window-padding-x = 4;
+    window-padding-y = 2;
+    window-theme = "ghostty";
+    window-titlebar-background = "#1a1b26";
+    window-titlebar-foreground = "#c0caf5";
+    window-height = 26;
+    window-width = 90;
+    window-padding-balance = false;
+    window-inherit-working-directory = true;
+    window-decoration = true;
+    window-show-tab-bar = "auto";
+
+    copy-on-select = true;
+    confirm-close-surface = true;
+    clipboard-paste-protection = true;
+    clipboard-trim-trailing-spaces = true;
+
+    adjust-cell-width = "0%";
+    font-feature = "-dlig";
+    auto-update-channel = "tip";
+
+    keybind = commonKeybinds ++ darwinKeybinds;
+  };
+
+  darwinSettings = lib.optionalAttrs isDarwin {
+    font-size = 12;
+    macos-option-as-alt = true;
+    macos-window-shadow = true;
+    macos-titlebar-style = "tabs";
+    macos-non-native-fullscreen = true;
+    macos-titlebar-proxy-icon = "hidden";
+  };
+
+  linuxSettings = lib.optionalAttrs isLinux {
+    font-size = 10;
+
+    gtk-tabs-location = "bottom";
+    gtk-titlebar-style = "native";
+    gtk-toolbar-style = "flat";
+    gtk-wide-tabs = false;
+
+    gtk-custom-css = [ "${config.xdg.configHome}/ghostty/ghostty-gtk.css" ];
+  };
 in
 {
   programs.ghostty = {
     enable = true;
 
     package =
-      if pkgs.stdenv.isLinux then
+      if isLinux then
         pkgs.ghostty
-      else if pkgs.stdenv.isDarwin then
+      else if isDarwin then
         pkgs.brewCasks.ghostty
       else
         throw "unsupported system ${pkgs.stdenv.hostPlatform.system}";
 
     enableFishIntegration = true;
 
-    settings =
-      {
-        window-padding-color = "extend-always";
-        theme = "TokyoNight Night";
-        background-opacity = 0.55;
-        background-opacity-cells = true;
-        background-blur = false;
-        scrollback-limit = 100000000;
-        desktop-notifications = true;
-        font-family = [
-          "Hack Nerd Font"
-          "Noto Sans CJK JP"
-        ];
-        font-size = if pkgs.stdenv.isDarwin then 12 else 10;
-        font-thicken = false;
-        cursor-style = "bar";
-        cursor-style-blink = true;
-        cursor-opacity = 1;
-        macos-option-as-alt = true;
-        macos-window-shadow = true;
-        macos-titlebar-style = "tabs";
-        macos-non-native-fullscreen = true;
-        macos-titlebar-proxy-icon = "hidden";
-        window-padding-x = 4;
-        window-padding-y = 2;
-        window-theme = "ghostty";
-        window-titlebar-background = "#1a1b26";
-        window-titlebar-foreground = "#c0caf5";
-        window-height = 26;
-        window-width = 90;
-        window-padding-balance = false;
-        window-inherit-working-directory = true;
-        window-decoration = true;
-        window-show-tab-bar = "auto";
-        copy-on-select = true;
-        confirm-close-surface = true;
-        clipboard-paste-protection = true;
-        clipboard-trim-trailing-spaces = true;
-        gtk-tabs-location = "bottom";
-        gtk-titlebar-style = "native";
-        gtk-toolbar-style = "flat";
-        gtk-wide-tabs = false;
-
-        adjust-cell-width = "0%";
-        font-feature = "-dlig";
-        auto-update-channel = "tip";
-        keybind = [
-          "ctrl+g=scroll_to_top"
-          "ctrl+shift+g=scroll_to_bottom"
-          "ctrl+shift+u=scroll_page_up"
-          "ctrl+shift+d=scroll_page_down"
-          "ctrl+shift+space=write_scrollback_file:open"
-          "ctrl+equal=increase_font_size:1"
-          "ctrl+minus=decrease_font_size:1"
-          "ctrl+0=reset_font_size"
-          "ctrl+alt+u=scroll_page_up"
-          "ctrl+alt+d=scroll_page_down"
-          "ctrl+shift+c=copy_to_clipboard"
-          "ctrl+shift+v=paste_from_clipboard"
-          "alt+t=new_tab"
-          "ctrl+q=previous_tab"
-          "ctrl+bracket_right=next_tab"
-        ];
-      }
-      // lib.optionalAttrs pkgs.stdenv.isLinux {
-        gtk-custom-css = [ "${config.xdg.configHome}/ghostty/ghostty-gtk.css" ];
-      };
+    settings = commonSettings // darwinSettings // linuxSettings;
   };
 
-  xdg.configFile = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile = lib.mkIf isLinux {
     "ghostty/ghostty-gtk.css".text = ''
       window.window tabbar > revealer > box.box {
         background-color: #0f111a;
@@ -159,7 +181,7 @@ in
     '';
   };
 
-  xdg.dataFile = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.dataFile = lib.mkIf isLinux {
     "applications/com.mitchellh.ghostty.quick.left.desktop".text = ''
       [Desktop Entry]
       Version=1.0
