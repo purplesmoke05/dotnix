@@ -224,6 +224,7 @@
           ghostty \
             --class="$_class" \
             --gtk-single-instance=false \
+            --window-padding-y=2,32 \
             --background-opacity=0.85 \
             --background-opacity-cells=false \
             >/dev/null 2>&1 &

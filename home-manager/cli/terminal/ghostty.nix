@@ -189,7 +189,7 @@ in
       Name=Ghostty Quick Left
       Comment=Quick terminal window
       TryExec=${ghosttyExe}
-      Exec=${ghosttyExe} --gtk-single-instance=false
+      Exec=${ghosttyExe} --gtk-single-instance=false --window-padding-y=2,32
       Icon=com.mitchellh.ghostty
       Categories=System;TerminalEmulator;
       Keywords=terminal;tty;pty;
@@ -206,7 +206,7 @@ in
       Name=Ghostty Quick Right
       Comment=Quick terminal window
       TryExec=${ghosttyExe}
-      Exec=${ghosttyExe} --gtk-single-instance=false
+      Exec=${ghosttyExe} --gtk-single-instance=false --window-padding-y=2,32
       Icon=com.mitchellh.ghostty
       Categories=System;TerminalEmulator;
       Keywords=terminal;tty;pty;
