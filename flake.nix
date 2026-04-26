@@ -169,6 +169,10 @@
 
         nixos = final: prev: {
           # NixOS-specific overlays / NixOS 専用オーバーレイ
+          ironbar = prev.ironbar.overrideAttrs (oldAttrs: {
+            patches = (oldAttrs.patches or [ ]) ++ [ ./pkgs/ironbar/fix-volume-default-sink.patch ];
+          });
+
           obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
             installPhase = builtins.replaceStrings
               [ "--ozone-platform=wayland" ]

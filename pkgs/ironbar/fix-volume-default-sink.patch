@@ -1,0 +1,106 @@
+diff -ruN orig/src/clients/volume/mod.rs new/src/clients/volume/mod.rs
+--- a/src/clients/volume/mod.rs	2026-04-24 23:18:48.498650707 +0900
++++ b/src/clients/volume/mod.rs	2026-04-24 23:18:48.523824491 +0900
+@@ -264,21 +264,40 @@
+ ) {
+     let default_sink_name = info.default_sink_name.as_ref().map(ToString::to_string);
+ 
+-    if default_sink_name != *lock!(default_sink)
+-        && let Some(ref default_sink_name) = default_sink_name
++    let mut found = default_sink_name.is_none();
++    let mut updated_sinks = Vec::new();
++
+     {
+-        if let Some(sink) = lock!(sinks)
+-            .iter_mut()
+-            .find(|s| s.name.as_str() == default_sink_name.as_str())
+-        {
+-            sink.active = true;
+-            debug!("Set sink active: {}", sink.name);
+-            tx.send_expect(Event::UpdateSink(sink.clone()));
+-        } else {
+-            warn!("Couldn't find sink: {}", default_sink_name);
++        let mut sinks = lock!(sinks);
++
++        for sink in sinks.iter_mut() {
++            let should_be_active = default_sink_name
++                .as_ref()
++                .map(|default_sink_name| sink.name.as_str() == default_sink_name.as_str())
++                .unwrap_or(false);
++
++            if should_be_active {
++                found = true;
++            }
++
++            if sink.active != should_be_active {
++                sink.active = should_be_active;
++                debug!("Set sink active={}: {}", sink.active, sink.name);
++                updated_sinks.push(sink.clone());
++            }
+         }
+     }
+ 
++    if !found
++        && let Some(ref default_sink_name) = default_sink_name
++    {
++        warn!("Couldn't find sink: {}", default_sink_name);
++    }
++
++    for sink in updated_sinks {
++        tx.send_expect(Event::UpdateSink(sink));
++    }
++
+     *lock!(default_sink) = default_sink_name;
+ }
+ 
+diff -ruN orig/src/clients/volume/sink.rs new/src/clients/volume/sink.rs
+--- a/src/clients/volume/sink.rs	2026-04-24 23:18:48.500125105 +0900
++++ b/src/clients/volume/sink.rs	2026-04-24 23:18:48.523954448 +0900
+@@ -5,7 +5,6 @@
+ use libpulse_binding::context::Context;
+ use libpulse_binding::context::introspect::SinkInfo;
+ use libpulse_binding::context::subscribe::Operation;
+-use libpulse_binding::def::SinkState;
+ use std::sync::{Arc, Mutex};
+ use tokio::sync::broadcast;
+ use tracing::{debug, error, instrument, trace};
+@@ -36,7 +35,7 @@
+                 .unwrap_or_default(),
+             muted: value.mute,
+             volume: value.volume.into(),
+-            active: value.state == SinkState::Running,
++            active: false,
+         }
+     }
+ }
+@@ -152,22 +151,18 @@
+ 
+         sinks[pos] = info.into();
+ 
+-        // update in local copy
+-        if !sinks[pos].active
+-            && let Some(default_sink) = &*lock!(default_sink)
+-        {
+-            sinks[pos].active = &sinks[pos].name == default_sink;
+-        }
++        sinks[pos].active = lock!(default_sink)
++            .as_ref()
++            .map(|default_sink| sinks[pos].name.as_str() == default_sink.as_str())
++            .unwrap_or(false);
+     }
+ 
+     let mut sink: Sink = info.into();
+ 
+-    // update in broadcast copy
+-    if !sink.active
+-        && let Some(default_sink) = &*lock!(default_sink)
+-    {
+-        sink.active = &sink.name == default_sink;
+-    }
++    sink.active = lock!(default_sink)
++        .as_ref()
++        .map(|default_sink| sink.name.as_str() == default_sink.as_str())
++        .unwrap_or(false);
+ 
+     tx.send_expect(Event::UpdateSink(sink));
+ }

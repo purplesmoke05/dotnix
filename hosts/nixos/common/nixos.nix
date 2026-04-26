@@ -412,6 +412,19 @@ in
               {
                 node.name = "~bluez_output.*"
               }
+            ]
+            actions = {
+              update-props = {
+                priority.driver = 2000
+                priority.session = 2000
+              }
+            }
+          }
+          {
+            matches = [
+              {
+                node.name = "~bluez_output.*"
+              }
               {
                 node.name = "~bluez_input.*"
               }
