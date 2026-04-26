@@ -1,9 +1,10 @@
-.specstory/**
+# Local agent/editor state
+.claude/settings.local.json
+.specstory/
+
 tasks/**
 !tasks/implement_feature.md
 logs/**
-# SpecStory explanation file
-.specstory/.what-is-this.md
 
 # Nix build output
 result
