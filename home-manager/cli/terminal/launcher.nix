@@ -2,7 +2,7 @@
 let
   ghosttyCommand = [
     (lib.getExe config.programs.ghostty.package)
-    "--gtk-single-instance=true"
+    "--gtk-single-instance=false"
     "--window-padding-y=2,32"
   ];
 in

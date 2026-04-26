@@ -88,6 +88,7 @@ let
     gtk-wide-tabs = false;
 
     gtk-custom-css = [ "${config.xdg.configHome}/ghostty/ghostty-gtk.css" ];
+    gtk-single-instance = false;
   };
 in
 {
