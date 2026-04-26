@@ -133,7 +133,42 @@ let
   );
 
   openclawExtraOptions = [ "--network=${openclawNetworkMode}" ];
-  openclawGatewayPkg = "openclaw@2026.3.24";
+  openclawGatewayPkg = "openclaw@2026.4.24";
+  openclawGatewayVersion = lib.removePrefix "openclaw@" openclawGatewayPkg;
+  # Build the OpenClaw runtime image declaratively. / OpenClaw 実行用イメージを宣言的に構築。
+  openclawGatewayImage = pkgs.dockerTools.streamLayeredImage {
+    name = "localhost/openclaw-gateway";
+    tag = openclawGatewayVersion;
+    contents = with pkgs; [
+      bashInteractive
+      coreutils
+      curl
+      dockerTools.binSh
+      dockerTools.caCertificates
+      dockerTools.usrBinEnv
+      findutils
+      gitMinimal
+      gnugrep
+      gnused
+      gnutar
+      gzip
+      jq
+      nodejs_22
+      openssh
+      procps
+      which
+      xz
+    ];
+    config = {
+      Env = [
+        "HOME=/root"
+        "NIX_SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
+        "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
+        "PATH=/root/.npm-global/bin:/bin:/usr/bin"
+      ];
+      WorkingDir = "/root";
+    };
+  };
 
   codexLbExtraOptions = [
     "--pull=missing"
@@ -352,7 +387,9 @@ in
     backend = "podman";
     containers = {
       openclaw = {
-        image = "docker.io/library/node:22-trixie";
+        image = "localhost/openclaw-gateway:${openclawGatewayVersion}";
+        imageStream = openclawGatewayImage;
+        pull = "never";
         dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
         podman = {
           user = username;
@@ -361,11 +398,14 @@ in
           config.sops.secrets."openclaw-env".path
         ];
         environment = {
+          OPENCLAW_DISABLE_BONJOUR = "1";
           OPENCLAW_SKIP_SERVICE_CHECK = "true";
           OPENCLAW_STATE_DIR = "/root/.openclaw";
           NODE_OPTIONS = "--dns-result-order=ipv4first";
+          NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle.crt";
           NPM_CONFIG_PREFIX = "/root/.npm-global";
-          PATH = "/root/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+          PATH = "/root/.npm-global/bin:/bin:/usr/bin";
+          SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle.crt";
         };
         volumes = [
           "/mnt/data/openclaw/root:/root"
@@ -376,11 +416,6 @@ in
           "-lc"
           ''
             test -f /root/.openclaw/openclaw.json || { echo 'missing openclaw.json'; exit 1; }
-            if ! command -v jq >/dev/null 2>&1; then
-              export DEBIAN_FRONTEND=noninteractive
-              apt-get update -qq
-              apt-get install -y -qq jq
-            fi
             exec npx -y ${openclawGatewayPkg} gateway
           ''
         ];
