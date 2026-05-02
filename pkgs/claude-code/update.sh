@@ -99,19 +99,7 @@ for platform, new_hash in hashes.items():
 default_nix.write_text(text)
 PY
 
-build_expr=$(cat <<EOF
-let
-  flake = builtins.getFlake "${REPO_ROOT}";
-  pkgs = import flake.inputs.nixpkgs {
-    system = builtins.currentSystem;
-    config.allowUnfree = true;
-  };
-in
-pkgs.callPackage "${DEFAULT_NIX}" {}
-EOF
-)
-
 echo "Verifying updated package..."
-NIXPKGS_ALLOW_UNFREE=1 nix build --no-link --impure --expr "$build_expr"
+nix build --no-link --no-write-lock-file "${REPO_ROOT}#claude-code"
 
 echo "Update complete: $manifest_version"

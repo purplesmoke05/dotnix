@@ -19,7 +19,7 @@ in
   # System Boot Configuration / システム起動構成
   # Boot via systemd-boot with xanmod for low-latency desktops. / systemd-boot と xanmod カーネルで低遅延デスクトップ向けに起動を構成。
   boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 3;
+  boot.loader.systemd-boot.configurationLimit = 1;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
@@ -48,12 +48,14 @@ in
     dns = "default";
     settings = {
       main = {
-        rc-manager = "symlink";
+        rc-manager = "resolvconf";
       };
     };
   };
   networking.wireless.userControlled.enable = true;
   hardware.wirelessRegulatoryDatabase = true;
+  # Do not fail activation when unused NetworkManager profiles stay pending. / 未使用の NetworkManager プロファイル待機で有効化を失敗させない。
+  systemd.services.NetworkManager-wait-online.enable = false;
 
   # AdGuard Home DNS / AdGuard Home で DNS を提供
   networking.nameservers = [ "127.0.0.1" ];
@@ -339,9 +341,8 @@ in
     };
   };
 
-  # Audio & Printing / オーディオと印刷
-  # Provide PipeWire audio and CUPS printing. / PipeWire と CUPS でモダンな入出力を構成。
-  services.printing.enable = true;
+  # Audio / オーディオ
+  # Provide PipeWire audio. / PipeWire でモダンな音声入出力を構成。
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -443,6 +444,10 @@ in
     ];
   };
 
+  # Accessibility / アクセシビリティ
+  # Keep speech synthesis disabled unless a screen reader stack is configured. / スクリーンリーダースタック未構成時は音声合成を無効化。
+  services.speechd.enable = false;
+
   # Auto-login / 自動ログイン
   # Enable auto-login with systemd tweaks. / systemd workaround で即ログイン。
   services.displayManager.autoLogin.enable = true;
@@ -483,8 +488,6 @@ in
     };
   };
 
-  services.flatpak.enable = true;
-
   # System Packages / システムパッケージ
   # Base toolset covering dev, Wayland, and IME support. / 開発・Wayland・IME を含む基本ツール群。
   environment.systemPackages = with pkgs; [
@@ -507,7 +510,7 @@ in
     steam
     unzip
     zip
-    p7zip
+    _7zz
     bubblewrap
     unrar
     rar
@@ -565,8 +568,6 @@ in
       glibc
       glibc.dev
       glib
-      cups.lib
-      cups
       nss
       nssTools
       alsa-lib
@@ -597,7 +598,6 @@ in
       freeglut
       libjpeg
       libpng
-      libpng12
       libsamplerate
       libmikmod
       libtheora
@@ -894,22 +894,20 @@ in
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "client";
+    extraSetFlags = [ "--accept-dns=false" ];
     # Allow tailscale without sudo / sudo なしで tailscale を許可
     permitCertUid = username;
   };
 
   # Bluetooth / Bluetooth 設定
-  # Enable auto power with full profile support. / 自動起動と全プロファイル対応。
+  # Enable Bluetooth with stable A2DP defaults. / A2DP を安定優先で Bluetooth を有効化。
   services.blueman.enable = true;
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
     settings = {
       General = {
-        Enable = "Source,Sink,Media,Socket";
         Experimental = true;
-        # Prefer A2DP profile / A2DP プロファイルを優先
-        AutoConnect = true;
         # Disable multiprofile to protect quality / 複数プロファイルを無効化し音質を確保
         MultiProfile = "off";
         # Improve stability / 接続安定性を向上
@@ -920,6 +918,30 @@ in
         AutoEnable = true;
       };
     };
+  };
+
+  # Keep the Bluetooth controller focused on paired audio devices. / ペアリング済み音声機器向けに Bluetooth コントローラーを固定。
+  systemd.services.bluetooth-a2dp-stability = {
+    description = "Bluetooth A2DP stability tuning";
+    after = [ "bluetooth.service" ];
+    wants = [ "bluetooth.service" ];
+    wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.bluez pkgs.coreutils ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      for _ in $(seq 1 30); do
+        if hciconfig hci0 >/dev/null 2>&1; then
+          hciconfig hci0 lp rswitch || true
+          bluetoothctl discoverable off || true
+          bluetoothctl pairable off || true
+          exit 0
+        fi
+        sleep 1
+      done
+    '';
   };
 
   # Logitech Wireless Devices / Logicool ワイヤレスデバイス
@@ -1034,10 +1056,9 @@ in
   '';
 
   # File Management / ファイル管理
-  # Enable Thunar with GVFS and Tumbler support. / Thunar + GVFS + Tumbler を有効化。
+  # Enable Thunar with GVFS support. / Thunar + GVFS を有効化。
   programs.thunar.enable = true;
   services.gvfs.enable = true;
-  services.tumbler.enable = true;
 
   # Mesa graphics stack / Mesa グラフィックススタック
   # Provide 32-bit capable Mesa for AMD GPUs and Steam. / AMD GPU と Steam 向けに 32bit 対応 Mesa を提供。

@@ -21,7 +21,6 @@
     totem
     evince
     loupe
-    parsec-bin
     remmina
     slack
     streamcontroller

@@ -18,24 +18,7 @@ let
     url = "https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/689f4a9aff1f63fde75cf733_favicon.png";
     hash = "sha256-zn6Mr+J2xNaCA4dlLXdDd3L7Lvp1Eb/5Kk52ZM0r7lE=";
   };
-  hasBattery =
-    let
-      powerSupplyPath = "/sys/class/power_supply";
-      batteryHosts = [ "laptop" ];
-      sysfsBatteryCheck = builtins.tryEval (
-        if builtins.pathExists powerSupplyPath then
-          let
-            entries = builtins.attrNames (builtins.readDir powerSupplyPath);
-            batteryEntries = builtins.filter (name: builtins.match "^BAT" name != null) entries;
-          in
-          batteryEntries != [ ]
-        else
-          false
-      );
-      sysfsHasBattery =
-        if sysfsBatteryCheck.success then sysfsBatteryCheck.value else false;
-    in
-    builtins.elem hostname batteryHosts || sysfsHasBattery;
+  hasBattery = builtins.elem hostname [ "laptop" ];
 
   ironbarBin = lib.getExe pkgs.ironbar;
   systemctlBin = "${pkgs.systemd}/bin/systemctl";

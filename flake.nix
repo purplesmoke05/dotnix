@@ -97,75 +97,133 @@
       # Overlays / オーバーレイ
       # Collect custom overlays and external sources. / 独自パッケージや外部オーバーレイをまとめる。
       overlays = {
-        common = final: prev: {
-          # Common overrides / 共通オーバーライド
-          # OpenSSH patch applied across platforms. / OpenSSH に独自パッチを適用。
-          openssh = prev.openssh.overrideAttrs (old: {
-            patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
-            doCheck = false;
-          });
+        common = final: prev:
+          let
+            withoutSpeechDispatcher = electron: final.runCommand "${electron.name}-no-speechd"
+              {
+                nativeBuildInputs = [ final.patchelf ];
+                version = electron.version;
+                passthru = electron.passthru or { };
+                meta = electron.meta or { };
+                preferLocalBuild = true;
+                allowSubstitutes = false;
+              }
+              ''
+                old_libexec="$(readlink -f ${electron}/libexec)"
 
-          # xdg-desktop-portal 1.20.3 USB integration test fails in Nix sandbox
-          # (no PipeWire/RealtimeKit). Skip checks to unblock system builds.
-          xdg-desktop-portal = prev.xdg-desktop-portal.overrideAttrs (_: {
-            doCheck = false;
-          });
+                mkdir -p "$out"
+                for item in ${electron}/*; do
+                  name="$(basename "$item")"
+                  if [ "$name" != "libexec" ]; then
+                    cp -R --no-preserve=ownership,timestamps "$item" "$out/$name"
+                  fi
+                done
+                mkdir -p "$out/libexec"
+                cp -R --no-preserve=ownership,timestamps "$old_libexec/electron" "$out/libexec/electron"
+                chmod -R u+rwX "$out"
 
-          # fcitx5 alias / fcitx5 代替
-          libsForQt5 = prev.libsForQt5 // {
-            fcitx5-with-addons = final.qt6Packages.fcitx5-with-addons;
+                electron="$out/libexec/electron/electron"
+                rpath="$(patchelf --print-rpath "$electron")"
+                rpath_without_speechd="$(printf '%s' "$rpath" | tr ':' '\n' | grep -v 'speech-dispatcher' | paste -sd ':' -)"
+                patchelf --set-rpath "$rpath_without_speechd" "$electron"
+
+                substituteInPlace "$out/bin/electron" \
+                  --replace-fail "${electron}" "$out" \
+                  --replace-fail "$old_libexec" "$out/libexec"
+              '';
+          in
+          {
+            # Common overrides / 共通オーバーライド
+            # OpenSSH patch applied across platforms. / OpenSSH に独自パッチを適用。
+            openssh = prev.openssh.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
+              doCheck = false;
+            });
+
+            # xdg-desktop-portal 1.20.3 USB integration test fails in Nix sandbox
+            # (no PipeWire/RealtimeKit). Skip checks to unblock system builds.
+            xdg-desktop-portal = prev.xdg-desktop-portal.overrideAttrs (_: {
+              doCheck = false;
+            });
+
+            # Keep Chrome out of the Speech Dispatcher runtime closure. / Chrome の Speech Dispatcher ランタイム依存を外す。
+            google-chrome = prev.google-chrome.override {
+              speechd-minimal = final.emptyDirectory;
+            };
+
+            # Keep Electron runtimes out of the Speech Dispatcher runtime closure. / Electron ランタイムの Speech Dispatcher 依存を外す。
+            electron_39 = withoutSpeechDispatcher prev.electron_39;
+            electron_40 = withoutSpeechDispatcher prev.electron_40;
+            electron_41 = withoutSpeechDispatcher prev.electron_41;
+
+            # Prefer current FFmpeg for Telegram Desktop and tg_owt. / Telegram Desktop と tg_owt は新しい FFmpeg を優先。
+            telegram-desktop = prev.telegram-desktop.override {
+              unwrapped = prev.telegram-desktop.unwrapped.override {
+                ffmpeg_6 = final.ffmpeg_8;
+                tg_owt = prev.telegram-desktop.tg_owt.override {
+                  ffmpeg_6 = final.ffmpeg_8;
+                };
+              };
+            };
+
+            # fcitx5 alias / fcitx5 代替
+            qt6Packages = prev.qt6Packages.overrideScope (_qtFinal: qtPrev: {
+              fcitx5-with-addons = qtPrev.fcitx5-with-addons.override {
+                withConfigtool = false;
+              };
+            });
+
+            libsForQt5 = prev.libsForQt5 // {
+              fcitx5-with-addons = final.qt6Packages.fcitx5-with-addons;
+            };
+
+            # gh-iteration package / gh-iteration パッケージ
+            gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
+
+            # gemini-cli package / gemini-cli パッケージ
+            gemini-cli = final.callPackage ./pkgs/gemini-cli { };
+
+            # claude-code package / claude-code パッケージ
+            claude-code = final.callPackage ./pkgs/claude-code { };
+
+            # github-copilot-cli package / github-copilot-cli パッケージ
+            github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
+
+            # wtp package / wtp パッケージ
+            wtp = final.callPackage ./pkgs/wtp { };
+
+            # confluence-cli package / confluence-cli パッケージ
+            confluence-cli = final.callPackage ./pkgs/confluence-cli { };
+
+            # excel-cli package / excel-cli パッケージ
+            excel-cli = final.callPackage ./pkgs/excel-cli { };
+            # m365 package / m365 パッケージ
+            m365 = final.callPackage ./pkgs/m365 { };
+            # workiq package / workiq パッケージ
+            workiq = final.callPackage ./pkgs/workiq { };
+            # Python helpers / Python ヘルパー
+            inherit (mkPythonBuilders prev) buildPython pythonVersions;
+
+            # sui package / sui パッケージ
+            sui = final.callPackage ./pkgs/sui { };
+
+            # StreamController package override with local patches. / ローカルパッチ適用版 StreamController。
+            streamcontroller = prev.streamcontroller.overrideAttrs (old: {
+              nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.perl ];
+              postPatch = (old.postPatch or "") + ''
+                perl -0pi -e 's|deck_controller = DeckController\(self, deck\)\n\s*self\.deck_controller\.append\(deck_controller\)|try:\n                deck_controller = DeckController(self, deck)\n            except Exception:\n                log.exception("Failed to initialize deck controller. Skipping deck until reconnect.")\n                try:\n                    deck.close()\n                except Exception:\n                    pass\n                try:\n                    self.reset_all_decks()\n                except Exception:\n                    pass\n                continue\n            self.deck_controller.append(deck_controller)|s' src/backend/DeckManagement/DeckManager.py
+                perl -0pi -e 's|def add_newly_connected_deck\(self, deck:StreamDeck, is_fake: bool = False\):\n\s*deck_controller = DeckController\(self, deck\)|def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):\n        try:\n            deck_controller = DeckController(self, deck)\n        except Exception:\n            log.exception("Failed to initialize newly connected deck.")\n            try:\n                deck.close()\n            except Exception:\n                pass\n            try:\n                self.reset_all_decks()\n            except Exception:\n                pass\n            return|s' src/backend/DeckManagement/DeckManager.py
+              '';
+            });
+
+            # StreamController OSPlugin patch / StreamController OSPlugin パッチ
+            streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
+
+            # Antigravity IDE / Antigravity IDE
+            antigravity = final.callPackage ./pkgs/antigravity {
+              vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
+            };
           };
-
-          # gh-iteration package / gh-iteration パッケージ
-          gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
-
-          # gemini-cli package / gemini-cli パッケージ
-          gemini-cli = final.callPackage ./pkgs/gemini-cli { };
-
-          # claude-code package / claude-code パッケージ
-          claude-code = final.callPackage ./pkgs/claude-code { };
-
-          # github-copilot-cli package / github-copilot-cli パッケージ
-          github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
-
-          # clawzero package / clawzero パッケージ
-          clawzero = final.callPackage ./pkgs/clawzero { };
-
-          # wtp package / wtp パッケージ
-          wtp = final.callPackage ./pkgs/wtp { };
-
-          # confluence-cli package / confluence-cli パッケージ
-          confluence-cli = final.callPackage ./pkgs/confluence-cli { };
-
-          # excel-cli package / excel-cli パッケージ
-          excel-cli = final.callPackage ./pkgs/excel-cli { };
-          # m365 package / m365 パッケージ
-          m365 = final.callPackage ./pkgs/m365 { };
-          # workiq package / workiq パッケージ
-          workiq = final.callPackage ./pkgs/workiq { };
-          # Python helpers / Python ヘルパー
-          inherit (mkPythonBuilders prev) buildPython pythonVersions;
-
-          # sui package / sui パッケージ
-          sui = final.callPackage ./pkgs/sui { };
-
-          # StreamController package override with local patches. / ローカルパッチ適用版 StreamController。
-          streamcontroller = prev.streamcontroller.overrideAttrs (old: {
-            nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.perl ];
-            postPatch = (old.postPatch or "") + ''
-              perl -0pi -e 's|deck_controller = DeckController\(self, deck\)\n\s*self\.deck_controller\.append\(deck_controller\)|try:\n                deck_controller = DeckController(self, deck)\n            except Exception:\n                log.exception("Failed to initialize deck controller. Skipping deck until reconnect.")\n                try:\n                    deck.close()\n                except Exception:\n                    pass\n                try:\n                    self.reset_all_decks()\n                except Exception:\n                    pass\n                continue\n            self.deck_controller.append(deck_controller)|s' src/backend/DeckManagement/DeckManager.py
-              perl -0pi -e 's|def add_newly_connected_deck\(self, deck:StreamDeck, is_fake: bool = False\):\n\s*deck_controller = DeckController\(self, deck\)|def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):\n        try:\n            deck_controller = DeckController(self, deck)\n        except Exception:\n            log.exception("Failed to initialize newly connected deck.")\n            try:\n                deck.close()\n            except Exception:\n                pass\n            try:\n                self.reset_all_decks()\n            except Exception:\n                pass\n            return|s' src/backend/DeckManagement/DeckManager.py
-            '';
-          });
-
-          # StreamController OSPlugin patch / StreamController OSPlugin パッチ
-          streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
-
-          # Antigravity IDE / Antigravity IDE
-          antigravity = final.callPackage ./pkgs/antigravity {
-            vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
-          };
-        };
 
         nixos = final: prev: {
           # NixOS-specific overlays / NixOS 専用オーバーレイ
@@ -187,9 +245,6 @@
 
           # limux: GPU-accelerated terminal multiplexer / limux: Linux 向け GPU 加速ターミナル多重化
           limux = final.callPackage ./pkgs/limux { };
-
-          # skills-manager: cross-tool AI agent skills manager / 横断エージェントスキル管理
-          skills-manager = final.callPackage ./pkgs/skills-manager { };
 
           # Hazkey package / Hazkey パッケージ
           fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
@@ -462,7 +517,6 @@
           solidity = mkSolidityShell;
           py3129 = mkPythonShell pythonTools.pythonVersions.py3129;
           py312 = mkPythonShell pythonTools.pythonVersions.py312;
-          py311 = mkPythonShell pythonTools.pythonVersions.py311;
         };
 
         packages = pythonTools.pythonVersions // {
@@ -471,7 +525,8 @@
             python3Packages = pkgs.python312Packages;
           };
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
-          clawzero = pkgs.clawzero;
+          claude-code = pkgs.claude-code;
+          vulnix = pkgs.vulnix;
           confluence-cli = pkgs.confluence-cli;
           excel-cli = pkgs.excel-cli;
           m365 = pkgs.m365;
@@ -479,7 +534,6 @@
           uv = pkgs.uv;
           wtp = pkgs.wtp;
           limux = pkgs.limux;
-          skills-manager = pkgs.skills-manager;
         };
         formatter = pkgs.nixpkgs-fmt;
       }

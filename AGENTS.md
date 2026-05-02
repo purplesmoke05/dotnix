@@ -8,12 +8,12 @@ Responses must be in Japanese. / 返答は日本語のみで行うこと。
   - `nixos/common/` (shared) and `nixos/<host>` (e.g., `laptop`, `hq`) / 共有とホスト別設定。
   - `darwin/`: Experimental macOS support / 実験的な macOS 対応。
 - `home-manager/`: User env modules by area (`cli/`, `gui/`, `wm/`, `development`) / 分野別ユーザー環境モジュール。
-- `pkgs/`: Custom packages (e.g., `code-cursor/`, `sui/`), each with `default.nix` / 各パッケージは専用ディレクトリ＋`default.nix`。
+- `pkgs/`: Custom packages (e.g., `codex/`, `sui/`), each with `default.nix` / 各パッケージは専用ディレクトリ＋`default.nix`。
 - `shells/`: Extra dev shells (e.g., `shells/node.nix`) / 追加の開発シェル。
 - `tasks/`: Maintainer workflows / 運用ワークフロー。
 
 ## Build, Test, and Development Commands / ビルド・テスト・開発コマンド
-- Enter dev shell / 開発シェルに入る: `nix develop`, `nix develop .#rust`, `.#py312`, `.#py311`。
+- Enter dev shell / 開発シェルに入る: `nix develop`, `nix develop .#rust`, `.#py312`。
 - Format Nix / フォーマット: `nix fmt`（`nixpkgs-fmt`）。
   - Note: Executing `nix fmt` without arguments might lead to unresponsiveness in environments with many Nix files; consider specifying file paths for stability. / 注: 引数なしで `nix fmt` を実行すると、Nix ファイルが多数ある環境では応答がなくなる可能性があります。安定性のため、ファイルパスを指定することを検討してください。
 - Validate flake / 検証: `nix flake check`。

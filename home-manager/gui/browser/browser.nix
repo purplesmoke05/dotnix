@@ -21,7 +21,6 @@
       "--enable-gpu-rasterization"
       "--enable-zero-copy"
     ];
-    firefox.enable = true;
   };
 
   # Removed ineffective brave-flags.conf definition

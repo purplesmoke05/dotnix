@@ -6,7 +6,6 @@
 
     # Audio processing tools
     sox
-    ffmpeg
 
     # Optional: Alternative voice input tools
     # nerd-dictation  # Lightweight alternative

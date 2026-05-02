@@ -5,8 +5,9 @@ UPDATE_TARGETS := $(addprefix update-,$(PKGS))
 
 J ?= $(shell nproc 2>/dev/null || echo 4)
 LOG_DIR := logs/update
+NIX_STRICT_FLAGS := --option accept-flake-config false --option use-registries false
 
-.PHONY: help update update-list $(UPDATE_TARGETS)
+.PHONY: help update update-list audit security-audit security-check security-build vuln-check $(UPDATE_TARGETS)
 
 help:
 	@echo "Targets:"
@@ -15,6 +16,34 @@ help:
 	@echo "  make update-<name>       - same as above"
 	@echo "  make update-list         - list packages with an update.sh"
 	@echo "  make update J=4          - cap parallelism (default: nproc)"
+	@echo "  make audit               - run static supply-chain audit"
+	@echo "  make security-check      - run audit and nix flake check"
+	@echo "  make security-build      - build laptop and hq system closures"
+	@echo "  make vuln-check          - scan the host system closure with vulnix (HOST=$(HOST))"
+
+audit: security-audit
+
+security-audit:
+	@scripts/security-audit
+
+security-check: security-audit
+	@nix $(NIX_STRICT_FLAGS) flake check --no-update-lock-file
+
+security-build:
+	@nix $(NIX_STRICT_FLAGS) build .#nixosConfigurations.laptop.config.system.build.toplevel --no-update-lock-file
+	@nix $(NIX_STRICT_FLAGS) build .#nixosConfigurations.hq.config.system.build.toplevel --no-update-lock-file
+
+HOST ?= $(shell hostname)
+VULNIX_TARGET ?= .\#nixosConfigurations.$(HOST).config.system.build.toplevel
+VULNIX_ARGS ?=
+
+vuln-check:
+	@set -euo pipefail; \
+	target="$(VULNIX_TARGET)"; \
+	echo "Building $$target for vulnerability scan..." >&2; \
+	out=$$(nix $(NIX_STRICT_FLAGS) build --no-link --print-out-paths --no-update-lock-file "$$target"); \
+	echo "Scanning $$out with vulnix..." >&2; \
+	nix $(NIX_STRICT_FLAGS) shell --no-write-lock-file .#vulnix -c scripts/vulnix-runtime-closure "$$out" $(VULNIX_ARGS)
 
 update-list:
 	@for p in $(PKGS); do echo $$p; done

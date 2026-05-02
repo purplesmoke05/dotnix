@@ -548,8 +548,6 @@
         "opaque, class:(nemo)"
         "opaque, class:(Nemo)"
         "opaque, class:(zen)"
-        "opaque, class:(firefox)"
-        "opaque, class:(Firefox)"
         "float, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
         "workspace 99 silent,class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
         "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
@@ -559,7 +557,7 @@
         "monitor DP-2, class:^(steam_app_1364780)$"
         "fullscreen, class:^(steam_app_1364780)$"
 
-        "workspace 20 silent,class:^(discord)$"
+        "workspace 20 silent,class:^(vesktop|Vesktop)$"
         "workspace 2 silent,class:^(steam)$"
       ];
 
@@ -660,7 +658,7 @@
       "exec-once" = [
         "hyprctl dispatch exec [workspace 1 silent] ${pkgs.brave}/bin/brave"
         "hyprctl dispatch exec [workspace 2 silent] term-main"
-        "${pkgs.discord-ptb}/bin/discordptb"
+        "${pkgs.vesktop}/bin/vesktop"
       ];
 
       # Layer rules / レイヤールール

@@ -19,7 +19,6 @@
     volta
     codex
     gemini-cli
-    clawzero
     confluence-cli
     claude-code
     devbox
@@ -30,7 +29,6 @@
     grim
     slurp
     wl-clipboard
-    wl-screenrec
     killall
     ripgrep
     foundry

@@ -212,6 +212,7 @@ in
     "interface-name:wlp2s0f0u5"
     "interface-name:wlan-hotspot0"
   ];
+  networking.wireless.interfaces = [ "wlp5s0" ];
 
   # hostapd access point / hostapd アクセスポイント
   # Store passphrase outside the Nix store. / パスフレーズは平文ファイルに配置（Nix ストア非保存）。
@@ -541,6 +542,5 @@ in
     gamescope
     telegram-desktop
     limux
-    skills-manager
   ];
 }

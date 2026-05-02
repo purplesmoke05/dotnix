@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+failures=0
+warnings=0
+
+fail() {
+  printf 'FAIL: %s\n' "$1" >&2
+  failures=$((failures + 1))
+}
+
+warn() {
+  printf 'WARN: %s\n' "$1" >&2
+  warnings=$((warnings + 1))
+}
+
+if [[ ! -f flake.lock ]]; then
+  fail "flake.lock is missing"
+elif ! git ls-files --error-unmatch flake.lock >/dev/null 2>&1; then
+  fail "flake.lock is not tracked"
+fi
+
+hash_placeholders=$(
+  rg -n --glob '*.nix' \
+    'fakeSha256|fakeHash|sha256 = ""|hash = ""' . || true
+)
+if [[ -n "$hash_placeholders" ]]; then
+  fail "placeholder or empty hashes found"
+  printf '%s\n' "$hash_placeholders" >&2
+fi
+
+if [[ -d .github/workflows ]]; then
+  unpinned_actions=$(
+    rg -n --glob '*.{yml,yaml}' 'uses:[[:space:]]+[^./][^@[:space:]]+@' .github/workflows \
+      | rg -v '@[0-9a-f]{40}([[:space:]]|$|#)' || true
+  )
+  if [[ -n "$unpinned_actions" ]]; then
+    fail "GitHub Actions must be pinned to full commit SHAs"
+    printf '%s\n' "$unpinned_actions" >&2
+  fi
+fi
+
+if [[ -d secrets ]]; then
+  while IFS= read -r secret_file; do
+    [[ -f "$secret_file" ]] || continue
+    case "$secret_file" in
+      secrets/.sops.yaml) continue ;;
+    esac
+    if ! rg -q 'ENC\[|^sops_' "$secret_file"; then
+      fail "tracked secret file lacks SOPS markers: $secret_file"
+    fi
+  done < <(git ls-files 'secrets/**')
+fi
+
+impure_matches=$(
+  rg -n \
+    --glob '!node_modules/**' \
+    --glob '!logs/**' \
+    --glob '!context-snapshot.json' \
+    --glob '!scripts/security-audit' \
+    'builtins\.(fetchGit|fetchTarball|getEnv|pathExists)|import <nixpkgs>|--impure' . || true
+)
+if [[ -n "$impure_matches" ]]; then
+  warn "impure evaluation or mutable lookup patterns found"
+  printf '%s\n' "$impure_matches" >&2
+fi
+
+branch_inputs=$(
+  rg -n 'url = "github:[^"]*/(main|master|nixos-unstable)' flake.nix || true
+)
+if [[ -n "$branch_inputs" ]]; then
+  warn "flake inputs track moving branches; flake.lock pins them, but updates need review"
+  printf '%s\n' "$branch_inputs" >&2
+fi
+
+printf '\nSupply-chain audit: %d failure(s), %d warning(s)\n' "$failures" "$warnings" >&2
+
+if (( failures > 0 )); then
+  exit 1
+fi
