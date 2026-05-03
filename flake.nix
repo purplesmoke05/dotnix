@@ -6,7 +6,10 @@
     nixpkgs-jira.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     nixpkgs-logcli.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-    xremap.url = "github:xremap/nix-flake";
+    xremap = {
+      url = "github:xremap/nix-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
