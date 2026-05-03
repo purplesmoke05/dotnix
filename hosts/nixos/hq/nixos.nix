@@ -540,7 +540,6 @@ in
   # Host-specific system packages. / ホスト専用の追加システムパッケージ。
   environment.systemPackages = with pkgs; [
     gamescope
-    telegram-desktop
     limux
   ];
 }

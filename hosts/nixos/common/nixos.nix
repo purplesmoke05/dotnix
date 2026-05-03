@@ -514,7 +514,6 @@ in
     bubblewrap
     unrar
     rar
-    file-roller
     # playwright.browsers # Disabled: libjxl build failure / libjxl ビルド失敗のため一時停止
     ghq
     peco
@@ -612,7 +611,6 @@ in
       libappindicator-gtk2
       libdbusmenu-gtk2
       libindicator-gtk2
-      libcaca
       libcanberra
       libgcrypt
       libvpx
