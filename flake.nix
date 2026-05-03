@@ -189,6 +189,9 @@
             # claude-code package / claude-code パッケージ
             claude-code = final.callPackage ./pkgs/claude-code { };
 
+            # rtk package / rtk パッケージ
+            rtk = final.callPackage ./pkgs/rtk { };
+
             # github-copilot-cli package / github-copilot-cli パッケージ
             github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
 
@@ -536,6 +539,7 @@
           workiq = pkgs.workiq;
           uv = pkgs.uv;
           wtp = pkgs.wtp;
+          rtk = pkgs.rtk;
           limux = pkgs.limux;
         };
         formatter = pkgs.nixpkgs-fmt;

@@ -39,6 +39,7 @@ in
     uv
     foundry
     devbox
+    rtk
 
     # Fonts / フォント
     nerd-fonts.hack

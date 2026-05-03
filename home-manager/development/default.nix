@@ -21,6 +21,7 @@
     gemini-cli
     confluence-cli
     claude-code
+    rtk
     devbox
     ctop
     iftop
