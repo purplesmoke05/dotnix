@@ -658,8 +658,9 @@ let
             '
               def app_id: (.class // .initialClass // .title // .address // "unknown") | ascii_downcase;
               def is_brave: ((.class // .initialClass // "") | ascii_downcase | contains("brave"));
+              def is_quick_term: ((.class // .initialClass // "") | test("^com\\.mitchellh\\.ghostty\\.quick\\.(left|right)$"));
               def stats:
-                reduce ($clients[] | select(.workspace.id >= 1 and .workspace.id <= 20)) as $client
+                reduce ($clients[] | select(.workspace.id >= 1 and .workspace.id <= 20 and (is_quick_term | not))) as $client
                   ({};
                     .[($client.workspace.id | tostring)] = (
                       (.[($client.workspace.id | tostring)] // { apps: [], brave: false })
@@ -726,7 +727,7 @@ let
           if ! update_state; then
             break
           fi
-        done < <(socat -U "UNIX-CONNECT:$socket_path" - 2>/dev/null)
+        done < <(socat -u "UNIX-CONNECT:$socket_path" - 2>/dev/null)
 
         sleep 1
       done
