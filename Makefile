@@ -19,7 +19,7 @@ help:
 	@echo "  make audit               - run static supply-chain audit"
 	@echo "  make security-check      - run audit and nix flake check"
 	@echo "  make security-build      - build laptop and hq system closures"
-	@echo "  make vuln-check          - scan the host system closure with vulnix (HOST=$(HOST))"
+	@echo "  make vuln-check          - scan the host system closure with sbomnix + grype (HOST=$(HOST))"
 
 audit: security-audit
 
@@ -34,16 +34,17 @@ security-build:
 	@nix $(NIX_STRICT_FLAGS) build .#nixosConfigurations.hq.config.system.build.toplevel --no-update-lock-file
 
 HOST ?= $(shell hostname)
-VULNIX_TARGET ?= .\#nixosConfigurations.$(HOST).config.system.build.toplevel
-VULNIX_ARGS ?=
+VULN_TARGET ?= .\#nixosConfigurations.$(HOST).config.system.build.toplevel
+VULN_FAIL_ON ?= medium
+GRYPE_ARGS ?=
 
 vuln-check:
 	@set -euo pipefail; \
-	target="$(VULNIX_TARGET)"; \
+	target="$(VULN_TARGET)"; \
 	echo "Building $$target for vulnerability scan..." >&2; \
 	out=$$(nix $(NIX_STRICT_FLAGS) build --no-link --print-out-paths --no-update-lock-file "$$target"); \
-	echo "Scanning $$out with vulnix..." >&2; \
-	nix $(NIX_STRICT_FLAGS) shell --no-write-lock-file .#vulnix -c scripts/vulnix-runtime-closure "$$out" $(VULNIX_ARGS)
+	echo "Scanning $$out with sbomnix + grype..." >&2; \
+	GRYPE_FAIL_ON="$(VULN_FAIL_ON)" nix $(NIX_STRICT_FLAGS) shell --no-write-lock-file .#sbomnix .#grype -c scripts/grype-sbom-runtime-closure "$$out" $(GRYPE_ARGS)
 
 update-list:
 	@for p in $(PKGS); do echo $$p; done

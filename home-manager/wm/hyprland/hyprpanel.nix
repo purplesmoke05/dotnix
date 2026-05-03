@@ -9,7 +9,6 @@ in
   # Required packages for Hyprpanel functionality
   home.packages = with pkgs; [
     jq # JSON processor for updates module
-    vulnix # Security vulnerability scanner
     pavucontrol # PulseAudio volume control
     pulseaudio # Audio system
     brightnessctl # Brightness control
@@ -37,7 +36,6 @@ in
               "dashboard" # System dashboard
               "workspaces" # Workspace indicator
               "windowtitle" # Active window title
-              "updates" # System updates
               "storage" # Storage usage
             ] ++ (if showBattery then [ "battery" ] else [ ]);
             "middle" = [
@@ -59,7 +57,6 @@ in
               "dashboard"
               "workspaces"
               "windowtitle"
-              "updates"
             ] ++ (if showBattery then [ "battery" ] else [ ]);
             "middle" = [ ];
             "right" = [
@@ -87,14 +84,6 @@ in
         };
 
       "theme.name" = "catppuccin_mocha";
-
-      # Updates module configuration
-      "bar.customModules.updates.pollingInterval" = 86400000; # Check updates every 24 hours
-      "bar.customModules.updates.updateCommand" = "jq '[.[].cvssv3_basescore | to_entries | add | select(.value > 5)] | length' <<< $(${pkgs.vulnix}/bin/vulnix -S --json)";
-      "bar.customModules.updates.updateTooltipCommand" = "echo";
-      "bar.customModules.updates.extendedTooltip" = false;
-      "bar.customModules.updates.icon.updated" = "󰋼"; # Icon for up-to-date system
-      "bar.customModules.updates.icon.pending" = "󰋼"; # Icon for pending updates
 
       # Theme settings
       "theme.bar.floating" = false; # Dock to screen edge

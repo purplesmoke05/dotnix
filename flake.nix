@@ -532,7 +532,8 @@
           };
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
           claude-code = pkgs.claude-code;
-          vulnix = pkgs.vulnix;
+          grype = pkgs.grype;
+          sbomnix = pkgs.sbomnix;
           confluence-cli = pkgs.confluence-cli;
           excel-cli = pkgs.excel-cli;
           m365 = pkgs.m365;

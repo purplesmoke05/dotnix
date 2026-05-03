@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  printf 'usage: %s STORE_PATH [GRYPE_ARGS...]\n' "$(basename "$0")" >&2
+  exit 2
+fi
+
+store_path=$1
+shift
+
+work_dir=$(mktemp -d)
+sbom_file="$work_dir/sbom.cdx.json"
+
+cleanup() {
+  rm -rf "$work_dir"
+}
+trap cleanup EXIT
+
+(
+  cd "$work_dir"
+  sbomnix --verbose 0 --cdx "$sbom_file" "$store_path"
+)
+
+grype_args=(-q)
+if [[ -n "${GRYPE_FAIL_ON:-}" ]]; then
+  grype_args+=(--fail-on "$GRYPE_FAIL_ON")
+fi
+
+exec grype "sbom:$sbom_file" "${grype_args[@]}" "$@"
