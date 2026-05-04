@@ -544,7 +544,6 @@ in
     sui
     dnsmasq
     # Gaming diagnostics / ゲーム用診断ツール
-    mangohud
     evtest
     jstest-gtk
     antimicrox

@@ -152,7 +152,7 @@ in
     force = true;
   };
 
-  # Ensure Steam games inhibit idle; keep SF6 on MangoHud + GameMode. / Steam ゲームのアイドル抑止を追加し、SF6は MangoHud + GameMode を維持。
+  # Ensure Steam games inhibit idle; keep SF6 on GameMode. / Steam ゲームのアイドル抑止を追加し、SF6は GameMode を維持。
   home.activation.ensureSteamLaunchOptions =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             set -euo pipefail
@@ -210,7 +210,7 @@ in
               app_block["LaunchOptions"] = updated
 
       sf6_block = apps_store.setdefault(sf6_app_id, {})
-      desired_sf6 = f"{base_prefix} mangohud gamemoderun %command%"
+      desired_sf6 = f"{base_prefix} gamemoderun %command%"
       if sf6_block.get("LaunchOptions") != desired_sf6:
           sf6_block["LaunchOptions"] = desired_sf6
       with open(config_path, "w", encoding="utf-8") as fh:
