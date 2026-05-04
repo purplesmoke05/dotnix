@@ -12,6 +12,7 @@
     ./terminal/fish.nix
     ./terminal/carapace.nix
     ./terminal/nushell.nix
+    ./file-manager.nix
     ./alternative.nix
     ./voice-input.nix
   ];

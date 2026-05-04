@@ -18,6 +18,7 @@
 
   # Additional GUI applications. / 追加の GUI アプリケーション。
   home.packages = with pkgs; [
+    libreoffice-fresh
     loupe
     slack
     streamcontroller
