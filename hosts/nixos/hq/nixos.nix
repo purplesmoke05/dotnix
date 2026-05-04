@@ -388,6 +388,7 @@ in
     backend = "podman";
     containers = {
       openclaw = {
+        autoStart = false;
         image = "localhost/openclaw-gateway:${openclawGatewayVersion}";
         imageStream = openclawGatewayImage;
         pull = "never";
