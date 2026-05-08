@@ -25,6 +25,12 @@ in
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
   boot.kernelPatches = [ ];
+  # Block Dirty Frag-exposed IPsec/RxRPC modules until patched kernels are deployed. / 修正済みカーネルへ移行するまで Dirty Frag 影響モジュールをブロック。
+  boot.blacklistedKernelModules = [
+    "esp4"
+    "esp6"
+    "rxrpc"
+  ];
   boot.kernelParams = [
     "split_lock_mitigate=0"
     # USB tuning for gaming latency / ゲーム時の USB レイテンシ対策
@@ -948,6 +954,10 @@ in
 
   # Disable Bluetooth USB autosuspend / Bluetooth USB autosuspend を無効化
   boot.extraModprobeConfig = ''
+    install esp4 ${pkgs.coreutils}/bin/false
+    install esp6 ${pkgs.coreutils}/bin/false
+    install rxrpc ${pkgs.coreutils}/bin/false
+
     options btusb enable_autosuspend=N
   '';
 
