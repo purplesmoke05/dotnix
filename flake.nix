@@ -198,6 +198,9 @@
             # wtp package / wtp パッケージ
             wtp = final.callPackage ./pkgs/wtp { };
 
+            # Sub2API package / Sub2API パッケージ
+            sub2api = final.callPackage ./pkgs/sub2api { };
+
             # confluence-cli package / confluence-cli パッケージ
             confluence-cli = final.callPackage ./pkgs/confluence-cli { };
 

@@ -10,6 +10,8 @@ let
     # Use an advertised exit node identifier. / 広告済み exit node の識別子を指定。
     exitNode = "oci-micro-tokyo";
     allowLanAccess = true;
+    # Keep rootless Podman host gateway reachable with an exit node. / exit node 利用時も rootless Podman のホストゲートウェイへ到達可能にする。
+    exitNodeBypassCidrs = [ "169.254.0.0/16" ];
     stateDir = "/mnt/data/openclaw/tailscale";
   };
 
@@ -18,6 +20,17 @@ let
     containerName = "tailscale-socks-proxy";
     image = "localhost/tailscale-socks-proxy:latest";
     listenPort = 1080;
+  };
+
+  localSocksProxy = {
+    enable = true;
+    containerName = "local-socks-proxy";
+    image = "localhost/local-socks-proxy:latest";
+    listenHost = "0.0.0.0";
+    listenPort = 1090;
+    username = "localproxy";
+    stateDir = "/mnt/data/local-socks-proxy";
+    envFile = "/mnt/data/local-socks-proxy/local-socks-proxy.env";
   };
 
   tailscaleForwardSlots = {
@@ -38,6 +51,19 @@ let
       listenPort = 1083;
       remoteHost = "100.98.97.41";
       remotePort = 11083;
+    };
+  };
+
+  # Local SOCKS5 image for host egress. / ホスト経路で外へ出るローカル SOCKS5 イメージ。
+  localSocksProxyImage = pkgs.dockerTools.streamLayeredImage {
+    name = "localhost/local-socks-proxy";
+    tag = "latest";
+    contents = [
+      pkgs.bash
+      pkgs.microsocks
+    ];
+    config = {
+      Entrypoint = [ "${pkgs.bash}/bin/bash" "-lc" ];
     };
   };
 
@@ -108,6 +134,9 @@ let
       fi
     done
     ${pkgs.podman}/bin/podman exec ${tailscaleSidecar.containerName} tailscale set --exit-node=${tailscaleSidecar.exitNode}${lib.optionalString tailscaleSidecar.allowLanAccess " --exit-node-allow-lan-access=true"}
+    ${lib.concatMapStringsSep "\n" (cidr: ''
+      ${pkgs.podman}/bin/podman exec ${tailscaleSidecar.containerName} ip route replace throw ${cidr} table 52
+    '') tailscaleSidecar.exitNodeBypassCidrs}
   '';
 
   cloudflareDnsServers = [
@@ -122,6 +151,7 @@ let
     "127.0.0.1:2455:2455"
     "127.0.0.1:1455:1455"
     "127.0.0.1:18789:18789"
+    "127.0.0.1:${toString sub2api.hostPort}:${toString sub2api.appPort}"
   ] ++ lib.optionals tailscaleSocksProxy.enable [
     "127.0.0.1:${toString tailscaleSocksProxy.listenPort}:${toString tailscaleSocksProxy.listenPort}"
   ] ++ lib.optionals tailscaleSidecar.enable (
@@ -174,6 +204,111 @@ let
     "--pull=missing"
     "--userns=keep-id"
   ] ++ lib.optionals tailscaleSidecar.enable [ "--network=container:${tailscaleSidecar.containerName}" ];
+
+  sub2api = {
+    version = "0.1.123";
+    appPort = 3455;
+    hostPort = 3455;
+    networkName = "sub2api";
+    stateDir = "/mnt/data/sub2api";
+    envFile = "/mnt/data/sub2api/sub2api.env";
+    postgresDigest = "81c605a193335bafd794990c604ccfb179e00959c3c35a47c249687b3d44b056";
+  };
+
+  sub2apiExtraOptions =
+    if tailscaleSidecar.enable then
+      [ "--network=container:${tailscaleSidecar.containerName}" ]
+    else
+      [ "--network=${sub2api.networkName}" ];
+
+  sub2apiNetworkDeps =
+    if tailscaleSidecar.enable then
+      [ "podman-${tailscaleSidecar.containerName}.service" ]
+    else
+      [ "podman-sub2api-network.service" ];
+
+  sub2apiBaseImage = pkgs.dockerTools.pullImage {
+    imageName = "cgr.dev/chainguard/postgres";
+    imageDigest = "sha256:${sub2api.postgresDigest}";
+    hash = "sha256-g+/ISr6NKQafuixO608fqkL3sUcNzKUaFTDlSEDctVs=";
+    finalImageName = "cgr.dev/chainguard/postgres";
+    finalImageTag = "latest";
+  };
+
+  sub2apiRoot = pkgs.runCommand "sub2api-root" { } ''
+    mkdir -p "$out/app/data"
+    cp ${pkgs.sub2api}/bin/sub2api "$out/app/sub2api"
+    cp -r ${pkgs.sub2api}/share/sub2api/resources "$out/app/resources"
+    chmod +x "$out/app/sub2api"
+  '';
+
+  sub2apiImage = pkgs.dockerTools.streamLayeredImage {
+    name = "localhost/sub2api";
+    tag = pkgs.sub2api.version;
+    fromImage = sub2apiBaseImage;
+    contents = [
+      sub2apiRoot
+    ];
+    config = {
+      Entrypoint = [ "/app/sub2api" ];
+      ExposedPorts = {
+        "8080/tcp" = { };
+      };
+      WorkingDir = "/app";
+    };
+  };
+
+  sub2apiValkey = (pkgs.valkey.override {
+    tlsSupport = false;
+    withSystemd = false;
+  }).overrideAttrs (_: {
+    doCheck = false;
+  });
+
+  sub2apiValkeyRoot = pkgs.runCommand "sub2api-valkey-root" { } ''
+    mkdir -p "$out/data" "$out/etc"
+    cat > "$out/etc/passwd" <<'EOF'
+    valkey:x:999:999:Valkey Server:/data:/bin/sh
+    EOF
+    cat > "$out/etc/group" <<'EOF'
+    valkey:x:999:
+    EOF
+  '';
+
+  sub2apiValkeyEntrypoint = pkgs.writeShellScriptBin "sub2api-valkey-entrypoint" ''
+    set -euo pipefail
+
+    args=(
+      --dir /data
+      --save 60 1
+      --appendonly yes
+      --appendfsync everysec
+    )
+
+    if [ -n "''${REDIS_PASSWORD:-}" ]; then
+      args+=(--requirepass "$REDIS_PASSWORD")
+    fi
+
+    exec ${sub2apiValkey}/bin/valkey-server "''${args[@]}" "$@"
+  '';
+
+  sub2apiValkeyImage = pkgs.dockerTools.streamLayeredImage {
+    name = "localhost/sub2api-valkey";
+    tag = sub2apiValkey.version;
+    contents = [
+      sub2apiValkey
+      sub2apiValkeyEntrypoint
+      sub2apiValkeyRoot
+    ];
+    config = {
+      Entrypoint = [ "${sub2apiValkeyEntrypoint}/bin/sub2api-valkey-entrypoint" ];
+      ExposedPorts = {
+        "6379/tcp" = { };
+      };
+      User = "999:999";
+      WorkingDir = "/data";
+    };
+  };
 in
 {
   # Hardware configuration / ハードウェア設定
@@ -344,6 +479,10 @@ in
     "d /var/lib/codex-lb 0750 1000 1000 -"
     "d /mnt/data/openclaw 0750 ${username} users -"
     "d /mnt/data/openclaw/root 0750 ${username} users -"
+    "d /mnt/data/sub2api 0750 ${username} users -"
+    "d /mnt/data/sub2api/data 0750 ${username} users -"
+    "d /mnt/data/sub2api/postgres 0750 ${username} users -"
+    "d /mnt/data/local-socks-proxy 0750 ${username} users -"
   ] ++ lib.optionals tailscaleSidecar.enable [
     "d /mnt/data/openclaw/tailscale 0750 ${username} users -"
   ];
@@ -440,6 +579,116 @@ in
         ];
         extraOptions = codexLbExtraOptions;
       };
+      sub2api = {
+        autoStart = true;
+        image = "localhost/sub2api:${pkgs.sub2api.version}";
+        imageStream = sub2apiImage;
+        pull = "never";
+        dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ] ++ [
+          "sub2api-postgres"
+          "sub2api-redis"
+        ];
+        podman = {
+          user = username;
+        };
+        ports = lib.optionals (!tailscaleSidecar.enable) [
+          "127.0.0.1:${toString sub2api.hostPort}:${toString sub2api.appPort}"
+        ];
+        environmentFiles = [
+          sub2api.envFile
+        ];
+        environment = {
+          ADMIN_EMAIL = "admin@sub2api.local";
+          AUTO_SETUP = "true";
+          DATABASE_DBNAME = "sub2api";
+          DATABASE_HOST = if tailscaleSidecar.enable then "127.0.0.1" else "sub2api-postgres";
+          DATABASE_PORT = "5432";
+          DATABASE_SSLMODE = "disable";
+          DATABASE_USER = "sub2api";
+          REDIS_DB = "0";
+          REDIS_ENABLE_TLS = "false";
+          REDIS_HOST = if tailscaleSidecar.enable then "127.0.0.1" else "sub2api-redis";
+          REDIS_PORT = "6379";
+          RUN_MODE = "simple";
+          SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP = "false";
+          SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS = "false";
+          SECURITY_URL_ALLOWLIST_ENABLED = "false";
+          SERVER_HOST = "0.0.0.0";
+          SERVER_MODE = "release";
+          SERVER_PORT = toString sub2api.appPort;
+          SIMPLE_MODE_CONFIRM = "true";
+          TZ = "Asia/Tokyo";
+        };
+        volumes = [
+          "${sub2api.stateDir}/data:/app/data:U"
+        ];
+        extraOptions = sub2apiExtraOptions;
+      };
+      sub2api-postgres = {
+        autoStart = true;
+        image = "cgr.dev/chainguard/postgres:latest@sha256:${sub2api.postgresDigest}";
+        pull = "missing";
+        dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
+        podman = {
+          user = username;
+        };
+        environmentFiles = [
+          sub2api.envFile
+        ];
+        environment = {
+          PGDATA = "/var/lib/postgresql/data";
+          POSTGRES_DB = "sub2api";
+          POSTGRES_USER = "sub2api";
+          TZ = "Asia/Tokyo";
+        };
+        volumes = [
+          "${sub2api.stateDir}/postgres/data:/var/lib/postgresql/data"
+        ];
+        extraOptions = sub2apiExtraOptions;
+      };
+      sub2api-redis = {
+        autoStart = true;
+        image = "localhost/sub2api-valkey:${sub2apiValkey.version}";
+        imageStream = sub2apiValkeyImage;
+        pull = "never";
+        dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
+        podman = {
+          user = username;
+        };
+        environmentFiles = [
+          sub2api.envFile
+        ];
+        environment = {
+          TZ = "Asia/Tokyo";
+        };
+        volumes = [
+          "${sub2api.stateDir}/redis:/data:U"
+        ];
+        extraOptions = sub2apiExtraOptions;
+      };
+      "${localSocksProxy.containerName}" = lib.mkIf localSocksProxy.enable {
+        autoStart = true;
+        image = localSocksProxy.image;
+        imageStream = localSocksProxyImage;
+        pull = "never";
+        podman = {
+          user = username;
+        };
+        environmentFiles = [
+          localSocksProxy.envFile
+        ];
+        cmd = [
+          ''
+            exec ${pkgs.microsocks}/bin/microsocks \
+              -q \
+              -i ${localSocksProxy.listenHost} \
+              -p ${toString localSocksProxy.listenPort} \
+              -u "$LOCAL_SOCKS_USER" \
+              -P "$LOCAL_SOCKS_PASSWORD"
+          ''
+        ];
+        extraOptions = [ "--network=host" ];
+      };
       "${tailscaleSocksProxy.containerName}" = lib.mkIf tailscaleSocksProxy.enable {
         image = tailscaleSocksProxy.image;
         imageStream = tailscaleSocksProxyImage;
@@ -488,7 +737,103 @@ in
     } // lib.optionalAttrs tailscaleSidecar.enable tailscaleForwardSlotContainers;
   };
 
+  # Generate Sub2API local secrets outside the Nix store. / Sub2API のローカルシークレットを Nix ストア外で生成。
+  systemd.services."sub2api-init-env" = {
+    description = "Initialize Sub2API environment file";
+    wantedBy = [ "multi-user.target" ];
+    path = [
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.openssl
+      pkgs.podman
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = username;
+      RemainAfterExit = true;
+    };
+    script = ''
+      install -d -m 0750 ${sub2api.stateDir}
+      install -d -m 0750 ${sub2api.stateDir}/data ${sub2api.stateDir}/postgres
+      install -d -m 0700 ${sub2api.stateDir}/postgres/data
+      install -d -m 0750 ${sub2api.stateDir}/redis
+
+      podman unshare chown 70:70 ${sub2api.stateDir}/postgres/data
+      podman unshare chmod 0700 ${sub2api.stateDir}/postgres/data
+      podman unshare chown 999:999 ${sub2api.stateDir}/redis
+      podman unshare chmod 0750 ${sub2api.stateDir}/redis
+
+      if [ ! -f ${sub2api.envFile} ]; then
+        tmp="$(${pkgs.coreutils}/bin/mktemp)"
+        {
+          echo "POSTGRES_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -hex 32)"
+          echo "REDIS_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -hex 32)"
+          echo "JWT_SECRET=$(${pkgs.openssl}/bin/openssl rand -hex 32)"
+          echo "TOTP_ENCRYPTION_KEY=$(${pkgs.openssl}/bin/openssl rand -hex 32)"
+          echo "ADMIN_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -hex 24)"
+        } > "$tmp"
+        chmod 0600 "$tmp"
+        mv "$tmp" ${sub2api.envFile}
+      fi
+    '';
+  };
+
+  # Initialize local SOCKS credentials outside the Nix store. / ローカル SOCKS 認証情報を Nix store 外で初期化。
+  systemd.services."local-socks-proxy-init-env" = lib.mkIf localSocksProxy.enable {
+    description = "Initialize local SOCKS proxy credentials";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      install -d -m 0750 -o ${username} -g users ${localSocksProxy.stateDir}
+
+      if [ ! -f ${localSocksProxy.envFile} ]; then
+        tmp="$(${pkgs.coreutils}/bin/mktemp)"
+        {
+          echo "LOCAL_SOCKS_USER=${localSocksProxy.username}"
+          echo "LOCAL_SOCKS_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -hex 24)"
+        } > "$tmp"
+        chown ${username}:users "$tmp"
+        chmod 0600 "$tmp"
+        mv "$tmp" ${localSocksProxy.envFile}
+      fi
+    '';
+  };
+
+  # Create the rootless Podman network used by the Sub2API stack. / Sub2API スタック用 rootless Podman ネットワークを作成。
+  systemd.services."podman-sub2api-network" = lib.mkIf (!tailscaleSidecar.enable) {
+    description = "Create Podman network for Sub2API";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = username;
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.podman}/bin/podman network exists ${sub2api.networkName} || ${pkgs.podman}/bin/podman network create ${sub2api.networkName}
+    '';
+  };
+
   # Ensure containers start after secrets are decrypted. / シークレット復号後にコンテナを起動。
+  systemd.services."podman-${localSocksProxy.containerName}" = lib.mkIf localSocksProxy.enable {
+    after = [
+      "local-socks-proxy-init-env.service"
+      "network-online.target"
+    ];
+    wants = [
+      "local-socks-proxy-init-env.service"
+      "network-online.target"
+    ];
+    startLimitIntervalSec = 0;
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
+  };
   systemd.services."podman-openclaw" = {
     after = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
     wants = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
@@ -508,6 +853,45 @@ in
     restartTriggers = [
       config.sops.secrets."codex-lb-env".sopsFile
     ];
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
+  };
+  systemd.services."podman-sub2api" = {
+    after = [
+      "sub2api-init-env.service"
+    ] ++ sub2apiNetworkDeps;
+    wants = [
+      "sub2api-init-env.service"
+    ] ++ sub2apiNetworkDeps;
+    startLimitIntervalSec = 0;
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
+  };
+  systemd.services."podman-sub2api-postgres" = {
+    after = [
+      "sub2api-init-env.service"
+    ] ++ sub2apiNetworkDeps;
+    wants = [
+      "sub2api-init-env.service"
+    ] ++ sub2apiNetworkDeps;
+    startLimitIntervalSec = 0;
+    serviceConfig = {
+      Restart = lib.mkForce "always";
+      RestartSec = 5;
+    };
+  };
+  systemd.services."podman-sub2api-redis" = {
+    after = [
+      "sub2api-init-env.service"
+    ] ++ sub2apiNetworkDeps;
+    wants = [
+      "sub2api-init-env.service"
+    ] ++ sub2apiNetworkDeps;
+    startLimitIntervalSec = 0;
     serviceConfig = {
       Restart = lib.mkForce "always";
       RestartSec = 5;
