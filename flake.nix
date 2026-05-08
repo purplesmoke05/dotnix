@@ -201,6 +201,9 @@
             # Sub2API package / Sub2API パッケージ
             sub2api = final.callPackage ./pkgs/sub2api { };
 
+            # CC Switch package / CC Switch パッケージ
+            cc-switch = final.callPackage ./pkgs/cc-switch { };
+
             # confluence-cli package / confluence-cli パッケージ
             confluence-cli = final.callPackage ./pkgs/confluence-cli { };
 
@@ -535,6 +538,7 @@
           };
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
           claude-code = pkgs.claude-code;
+          cc-switch = pkgs.cc-switch;
           grype = pkgs.grype;
           sbomnix = pkgs.sbomnix;
           confluence-cli = pkgs.confluence-cli;
