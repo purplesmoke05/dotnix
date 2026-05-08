@@ -22,7 +22,7 @@
 }:
 
 let
-  version = "0.1.13";
+  version = "0.1.14";
   artifact = "limux-${version}-linux-x86_64.tar.gz";
 in
 stdenv.mkDerivation {
@@ -31,7 +31,7 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "https://github.com/am-will/limux/releases/download/v${version}/${artifact}";
-    sha256 = "1zqgj9qvhrv65j1in30ix6wvyilvx5dklkgyf3spnhv81c3rpkkn";
+    sha256 = "0ik8d8mkcnipb2a5d64gf6734c96lfbsk747vigma9ivhwqcgw4c";
   };
 
   nativeBuildInputs = [ autoPatchelfHook wrapGAppsHook4 ];

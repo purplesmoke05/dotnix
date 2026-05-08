@@ -10,7 +10,7 @@
 }:
 
 let
-  version = "2.1.119";
+  version = "2.1.132";
   releaseBase = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/${version}";
 
   platform =
@@ -36,12 +36,12 @@ let
     "${os}-${arch}${muslSuffix}";
 
   hashes = {
-    darwin-arm64 = "sha256-Mds0RDCdXQ+Lheh4Li3NhvMffkjBoeg9abCSaMe0+aI=";
-    darwin-x64 = "sha256-UrO3XP6AxiaYKy/7Omzhx5eCTyV9wnXPCjwywgK2o98=";
-    linux-arm64 = "sha256-OCqnPqSwf9jWmOMVm1754bhzn651BbqN3Si4pqYoGc4=";
-    linux-arm64-musl = "sha256-4Jv67di/3q6+Xxz5u4Hr63GDEsaP/843n7UXhiYxQ9A=";
-    linux-x64 = "sha256-zKQwU/BilJSVWWsRtv0bWc95ECrbE7rL5mmX5vrkHko=";
-    linux-x64-musl = "sha256-70GhFlOznBTbLTQ/H14qOvfrmHHGPmTetuZZGWcKTgs=";
+    darwin-arm64 = "sha256-LOa5AH849crw0RauNdWfGm1A6QKuf58ZrKbsSDaXt2Q=";
+    darwin-x64 = "sha256-GVP1CFPtpMN039VY8c9ioTqZyBSq5ztCoH09mkn+cns=";
+    linux-arm64 = "sha256-JyZmae2lrmEVg34GIwlz9WX5mw8lwJrYau7UBMP3+Uc=";
+    linux-arm64-musl = "sha256-ZuTbKE5o6NPFIpWdyGoJpz7DBTIq6ucl9J7MlNd35BA=";
+    linux-x64 = "sha256-YjCG9lz9nDr/DIpRJQh/iuoxAKqSvz8FM7K+peXWno0=";
+    linux-x64-musl = "sha256-GMAO04HTcUxqvMJfUrgfDfszrGKwa7MvkaiBR8y9cDY=";
   };
 
   wrapperPath = lib.makeBinPath (

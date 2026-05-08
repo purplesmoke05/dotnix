@@ -35,7 +35,7 @@ else
     tag_pattern='refs/tags/rust-v[0-9]+[.][0-9]+[.][0-9]+-alpha[.][0-9]+$'
   fi
 
-  representative_artifact="codex-x86_64-unknown-linux-gnu.tar.gz"
+  representative_artifact="codex-x86_64-unknown-linux-musl.tar.gz"
   latest_tag=$(
     git ls-remote --tags --refs https://github.com/openai/codex.git \
     | awk -v pattern="$tag_pattern" '$2 ~ pattern { print $2 }' \
@@ -63,8 +63,8 @@ if [[ "$latest_tag" == "$current_version" ]]; then
 fi
 
 artifacts=(
-  "x86_64-linux codex-x86_64-unknown-linux-gnu.tar.gz"
-  "aarch64-linux codex-aarch64-unknown-linux-gnu.tar.gz"
+  "x86_64-linux codex-x86_64-unknown-linux-musl.tar.gz"
+  "aarch64-linux codex-aarch64-unknown-linux-musl.tar.gz"
   "x86_64-darwin codex-x86_64-apple-darwin.tar.gz"
   "aarch64-darwin codex-aarch64-apple-darwin.tar.gz"
 )
