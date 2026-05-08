@@ -674,8 +674,8 @@ in
       max-jobs = "auto";
       cores = 0; # 0 uses all available cores / 0は利用可能な全てのコアを使用
       keep-going = true;
-      keep-outputs = true;
-      keep-derivations = true;
+      keep-outputs = false;
+      keep-derivations = false;
       # Binary caches / バイナリキャッシュ設定
       substituters = [
         "https://cache.nixos.org"
