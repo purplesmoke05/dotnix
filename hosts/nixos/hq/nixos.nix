@@ -148,8 +148,6 @@ let
 
   tailscaleSidecarDnsExtraOptions = map (server: "--dns=${server}") cloudflareDnsServers;
   tailscaleSidecarPublishedPorts = [
-    "127.0.0.1:2455:2455"
-    "127.0.0.1:1455:1455"
     "127.0.0.1:18789:18789"
     "127.0.0.1:${toString sub2api.hostPort}:${toString sub2api.appPort}"
   ] ++ lib.optionals tailscaleSocksProxy.enable [
@@ -199,11 +197,6 @@ let
       WorkingDir = "/root";
     };
   };
-
-  codexLbExtraOptions = [
-    "--pull=missing"
-    "--userns=keep-id"
-  ] ++ lib.optionals tailscaleSidecar.enable [ "--network=container:${tailscaleSidecar.containerName}" ];
 
   sub2api = {
     appPort = 3455;
@@ -475,7 +468,6 @@ in
   systemd.tmpfiles.rules = [
     # path mode user group age / パス モード ユーザー グループ age
     "d /var/lib/hostapd 0750 root root -"
-    "d /var/lib/codex-lb 0750 1000 1000 -"
     "d /mnt/data/openclaw 0750 ${username} users -"
     "d /mnt/data/openclaw/root 0750 ${username} users -"
     "d /mnt/data/sub2api 0750 ${username} users -"
@@ -506,13 +498,6 @@ in
     };
     secrets."tailscale-env" = {
       sopsFile = ../../../secrets/hq/tailscale.env;
-      format = "dotenv";
-      owner = username;
-      group = "users";
-      mode = "0400";
-    };
-    secrets."codex-lb-env" = {
-      sopsFile = ../../../secrets/hq/codex-lb.env;
       format = "dotenv";
       owner = username;
       group = "users";
@@ -559,24 +544,6 @@ in
             exec npx -y ${openclawGatewayPkg} gateway
           ''
         ];
-      };
-      codex-lb = {
-        image = "ghcr.io/soju06/codex-lb@sha256:e1047fa6c61de2506b6f264050cd8be25aa117356561b60335ad4a6d35ef6105";
-        dependsOn = lib.optionals tailscaleSidecar.enable [ tailscaleSidecar.containerName ];
-        podman = {
-          user = username;
-        };
-        ports = lib.optionals (!tailscaleSidecar.enable) [
-          "127.0.0.1:2455:2455"
-          "127.0.0.1:1455:1455"
-        ];
-        environmentFiles = [
-          config.sops.secrets."codex-lb-env".path
-        ];
-        volumes = [
-          "/var/lib/codex-lb:/var/lib/codex-lb"
-        ];
-        extraOptions = codexLbExtraOptions;
       };
       sub2api = {
         autoStart = true;
@@ -839,18 +806,6 @@ in
     startLimitIntervalSec = 0;
     restartTriggers = [
       config.sops.secrets."openclaw-env".sopsFile
-    ];
-    serviceConfig = {
-      Restart = lib.mkForce "always";
-      RestartSec = 5;
-    };
-  };
-  systemd.services."podman-codex-lb" = {
-    after = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
-    wants = [ "sops-nix.service" ] ++ lib.optionals tailscaleSidecar.enable [ "podman-${tailscaleSidecar.containerName}.service" ];
-    startLimitIntervalSec = 0;
-    restartTriggers = [
-      config.sops.secrets."codex-lb-env".sopsFile
     ];
     serviceConfig = {
       Restart = lib.mkForce "always";
