@@ -206,7 +206,6 @@ let
   ] ++ lib.optionals tailscaleSidecar.enable [ "--network=container:${tailscaleSidecar.containerName}" ];
 
   sub2api = {
-    version = "0.1.123";
     appPort = 3455;
     hostPort = 3455;
     networkName = "sub2api";

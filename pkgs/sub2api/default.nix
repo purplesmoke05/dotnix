@@ -11,13 +11,13 @@
 
 let
   pname = "sub2api";
-  version = "0.1.123";
+  version = "0.1.125";
 
   src = fetchFromGitHub {
     owner = "Wei-Shaw";
     repo = "sub2api";
     tag = "v${version}";
-    hash = "sha256-GiL9MirrU6G9euInMXl0De6xaPDje4CqDw06uRPax8Q=";
+    hash = "sha256-V6BJXLk3T4m3Wa1G2V+f6kuCavZbVA3toCHsslxbSLA=";
   };
 
   frontend = stdenvNoCC.mkDerivation {
@@ -41,7 +41,7 @@ let
       sourceRoot = "${src.name}/frontend";
       pnpm = pnpm_10;
       fetcherVersion = 3;
-      hash = "sha256-ZpVhuU+XHmkzKRKMZe7IscQdXCUidxy0IfrHqmWh6jQ=";
+      hash = "sha256-1WXc/ukN6QyCrUCxvvMbD6LjuWeMG2a6vBoHx8TWKU0=";
     };
 
     postPatch = ''
@@ -104,8 +104,8 @@ buildGo126Module {
     "-s"
     "-w"
     "-X main.Version=${version}"
-    "-X main.Commit=df722c9a6e97312491232c11bf305d5f93b45e04"
-    "-X main.Date=2026-05-04T10:25:18Z"
+    "-X main.Commit=8a835b22bb9d629126127e8d2a42d9fc60928ff2"
+    "-X main.Date=2026-05-07T11:26:18Z"
     "-X main.BuildType=release"
   ];
 
