@@ -2,6 +2,7 @@
 
 let
   lib = pkgs.lib;
+  sopsAgeKeyFile = "/var/lib/sops-nix/key.txt";
 
   # OpenClaw egress routing knobs. / OpenClaw の外向き経路切替設定。
   tailscaleSidecar = {
@@ -486,9 +487,12 @@ in
   '';
 
   # Secrets management / シークレット管理
-  # Decrypt secrets via sops-nix using the host SSH key. / ホスト SSH 鍵で sops-nix による復号を実行。
+  # Keep the SOPS identity outside the Nix store. / SOPS identity は Nix store 外に保存。
   sops = {
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age = {
+      keyFile = sopsAgeKeyFile;
+      sshKeyPaths = [ ];
+    };
     secrets."openclaw-env" = {
       sopsFile = ../../../secrets/hq/openclaw.env;
       format = "dotenv";
@@ -504,6 +508,38 @@ in
       mode = "0400";
     };
   };
+
+  # Validate the SOPS age identity before secrets are installed. / secrets 配置前に SOPS age identity を検証。
+  system.activationScripts.validateSopsAgeKey = {
+    deps = [ "users" "groups" ];
+    text = ''
+      key_file=${lib.escapeShellArg sopsAgeKeyFile}
+      pub_file="$key_file.pub"
+
+      if [ ! -f "$key_file" ]; then
+        echo "missing SOPS age identity: $key_file" >&2
+        exit 1
+      fi
+
+      chown root:root "$key_file"
+      chmod 0600 "$key_file"
+
+      recipient="$(${pkgs.age}/bin/age-keygen -y "$key_file")"
+      case "$recipient" in
+        age1pq*) ;;
+        *)
+          echo "unsupported SOPS age identity: $key_file" >&2
+          exit 1
+          ;;
+      esac
+
+      printf '%s\n' "$recipient" > "$pub_file.tmp"
+      chown root:root "$pub_file.tmp"
+      chmod 0644 "$pub_file.tmp"
+      mv "$pub_file.tmp" "$pub_file"
+    '';
+  };
+  system.activationScripts.setupSecrets.deps = [ "validateSopsAgeKey" ];
 
   # Application containers / アプリケーションコンテナ
   # Run user-facing services with Podman and sops-managed env files. / Podman と sops 管理の env ファイルでユーザー向けサービスを稼働。
