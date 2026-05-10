@@ -575,14 +575,13 @@ in
           REDIS_ENABLE_TLS = "false";
           REDIS_HOST = if tailscaleSidecar.enable then "127.0.0.1" else "sub2api-redis";
           REDIS_PORT = "6379";
-          RUN_MODE = "simple";
+          RUN_MODE = "standard";
           SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP = "false";
           SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS = "false";
           SECURITY_URL_ALLOWLIST_ENABLED = "false";
           SERVER_HOST = "0.0.0.0";
           SERVER_MODE = "release";
           SERVER_PORT = toString sub2api.appPort;
-          SIMPLE_MODE_CONFIRM = "true";
           TZ = "Asia/Tokyo";
         };
         volumes = [

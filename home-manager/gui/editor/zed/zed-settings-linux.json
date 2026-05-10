@@ -1,9 +1,24 @@
 {
+  "agent": {
+    "dock": "right",
+    "favorite_models": [],
+    "model_parameters": []
+  },
   "base_keymap": "VSCode",
   "buffer_font_size": 15,
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "git_panel": {
+    "dock": "left"
+  },
   "icon_theme": "Zed (Default)",
+  "outline_panel": {
+    "dock": "left"
+  },
   "project_panel": {
-    "auto_reveal_entries": false
+    "auto_reveal_entries": false,
+    "dock": "left"
   },
   "session": {
     "trust_all_worktrees": true
