@@ -308,6 +308,7 @@ in
   # Import hardware definitions and tuning modules. / ハードウェア定義と最適化モジュールを取り込む。
   imports = [
     ./hardware-configuration.nix
+    ./proton-vpn.nix
   ] ++ (with inputs.nixos-hardware.nixosModules; [
     common-cpu-amd
     common-pc-ssd
@@ -341,6 +342,8 @@ in
     "interface-name:wlan-hotspot0"
   ];
   networking.wireless.interfaces = [ "wlp5s0" ];
+
+  hq.protonVpn.enable = true;
 
   # hostapd access point / hostapd アクセスポイント
   # Store passphrase outside the Nix store. / パスフレーズは平文ファイルに配置（Nix ストア非保存）。
@@ -381,7 +384,6 @@ in
   # Firewall configuration / ファイアウォール設定
   networking.firewall = {
     enable = true;
-    trustedInterfaces = [ "wlan-hotspot0" ];
     checkReversePath = "loose";
 
     # Interface rules / インターフェース別ルール
