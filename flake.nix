@@ -198,9 +198,6 @@
             # wtp package / wtp パッケージ
             wtp = final.callPackage ./pkgs/wtp { };
 
-            # Sub2API package / Sub2API パッケージ
-            sub2api = final.callPackage ./pkgs/sub2api { };
-
             # CC Switch package / CC Switch パッケージ
             cc-switch = final.callPackage ./pkgs/cc-switch { };
 
@@ -341,7 +338,7 @@
 
 
       # NixOS builder / NixOS ビルダー
-      mkSystem = { system ? "x86_64-linux", hostname, enabledUsers ? [ "primary" ] }:
+      mkSystem = { system ? "x86_64-linux", hostname, enabledUsers ? [ "primary" ], extraModules ? [ ] }:
         let
           users = mkUsers hostname;
           username = systemUsers.${hostname}.primary;
@@ -386,7 +383,7 @@
               );
             })
             ./hosts/nixos/${hostname}/nixos.nix
-          ];
+          ] ++ extraModules;
           specialArgs = {
             inherit nixpkgs inputs hostname username;
             inherit (inputs) hyprsplit;
@@ -558,6 +555,14 @@
 
       # NixOS configurations / NixOS 構成
       # Define host-specific systems. / ホストごとのシステム定義。
+      lib = {
+        mkHqSystem = { system ? "x86_64-linux", extraModules ? [ ], enabledUsers ? [ "primary" ] }:
+          mkSystem {
+            inherit system extraModules enabledUsers;
+            hostname = "hq";
+          };
+      };
+
       nixosConfigurations = {
         laptop = mkSystem {
           hostname = "laptop";
