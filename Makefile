@@ -56,24 +56,38 @@ ifdef PKG
 	@$(MAKE) --no-print-directory update-$(PKG)
 else
 	@mkdir -p $(LOG_DIR)
-	@rm -f $(LOG_DIR)/*.ok $(LOG_DIR)/*.fail $(LOG_DIR)/*.before $(LOG_DIR)/*.after
+	@rm -f $(LOG_DIR)/*.ok $(LOG_DIR)/*.fail $(LOG_DIR)/*.before $(LOG_DIR)/*.after $(LOG_DIR)/*.seconds
 	@echo "Updating $(words $(PKGS)) package(s) with -j$(J): $(PKGS)"
 	@$(MAKE) --no-print-directory -k -j$(J) $(UPDATE_TARGETS) || true
 	@echo
 	@echo "=== update summary ==="
-	@ok=0; fail=0; bumped=0; unchanged=0; \
+	@format_duration() { \
+	  local seconds=$$1; \
+	  if [[ ! "$$seconds" =~ ^[0-9]+$$ ]]; then \
+	    printf "?"; \
+	  elif (( seconds >= 3600 )); then \
+	    printf "%dh%02dm%02ds" "$$((seconds / 3600))" "$$(((seconds % 3600) / 60))" "$$((seconds % 60))"; \
+	  elif (( seconds >= 60 )); then \
+	    printf "%dm%02ds" "$$((seconds / 60))" "$$((seconds % 60))"; \
+	  else \
+	    printf "%ss" "$$seconds"; \
+	  fi; \
+	}; \
+	ok=0; fail=0; bumped=0; unchanged=0; \
 	for pkg in $(PKGS); do \
 	  before=$$(cat $(LOG_DIR)/$$pkg.before 2>/dev/null || echo "?"); \
 	  after=$$(cat $(LOG_DIR)/$$pkg.after 2>/dev/null || echo "?"); \
+	  seconds=$$(cat $(LOG_DIR)/$$pkg.seconds 2>/dev/null || echo "?"); \
+	  duration=$$(format_duration "$$seconds"); \
 	  if [ -f $(LOG_DIR)/$$pkg.ok ]; then \
 	    if [ "$$before" != "$$after" ]; then \
-	      printf "  \033[32mBUMPED\033[0m   %-22s %s -> %s\n" "$$pkg" "$$before" "$$after"; bumped=$$((bumped+1)); \
+	      printf "  \033[32mBUMPED\033[0m   %-22s %8s  %s -> %s\n" "$$pkg" "$$duration" "$$before" "$$after"; bumped=$$((bumped+1)); \
 	    else \
-	      printf "  \033[90mup-to-date\033[0m %-22s %s\n" "$$pkg" "$$before"; unchanged=$$((unchanged+1)); \
+	      printf "  \033[90mup-to-date\033[0m %-22s %8s  %s\n" "$$pkg" "$$duration" "$$before"; unchanged=$$((unchanged+1)); \
 	    fi; \
 	    ok=$$((ok+1)); \
 	  else \
-	    printf "  \033[31mFAIL\033[0m     %-22s (see $(LOG_DIR)/%s.log)\n" "$$pkg" "$$pkg"; fail=$$((fail+1)); \
+	    printf "  \033[31mFAIL\033[0m     %-22s %8s  (see $(LOG_DIR)/%s.log)\n" "$$pkg" "$$duration" "$$pkg"; fail=$$((fail+1)); \
 	  fi; \
 	done; \
 	echo "ok=$$ok (bumped=$$bumped unchanged=$$unchanged) fail=$$fail"
@@ -88,27 +102,48 @@ $(UPDATE_TARGETS): update-%:
 	fail=$(LOG_DIR)/$$pkg.fail; \
 	before_file=$(LOG_DIR)/$$pkg.before; \
 	after_file=$(LOG_DIR)/$$pkg.after; \
-	rm -f $$ok $$fail $$before_file $$after_file; \
+	seconds_file=$(LOG_DIR)/$$pkg.seconds; \
+	rm -f $$ok $$fail $$before_file $$after_file $$seconds_file; \
+	format_duration() { \
+	  local seconds=$$1; \
+	  if (( seconds >= 3600 )); then \
+	    printf "%dh%02dm%02ds" "$$((seconds / 3600))" "$$(((seconds % 3600) / 60))" "$$((seconds % 60))"; \
+	  elif (( seconds >= 60 )); then \
+	    printf "%dm%02ds" "$$((seconds / 60))" "$$((seconds % 60))"; \
+	  else \
+	    printf "%ss" "$$seconds"; \
+	  fi; \
+	}; \
+	start_time=$$(date +%s); \
 	echo "$(PKG_VERSION)" >$$before_file; \
 	if [ ! -x $$script ]; then \
-	  echo ">>> $$pkg: no executable update.sh, skipping"; \
+	  seconds=$$(( $$(date +%s) - start_time )); \
+	  echo "$$seconds" >$$seconds_file; \
+	  duration=$$(format_duration "$$seconds"); \
+	  echo ">>> $$pkg: no executable update.sh, skipping ($$duration)"; \
 	  touch $$fail; \
 	  exit 1; \
 	fi; \
 	echo ">>> $$pkg: start"; \
 	if $$script >$$log 2>&1; then \
+	  seconds=$$(( $$(date +%s) - start_time )); \
+	  echo "$$seconds" >$$seconds_file; \
+	  duration=$$(format_duration "$$seconds"); \
 	  echo "$(PKG_VERSION)" >$$after_file; \
 	  touch $$ok; \
 	  before=$$(cat $$before_file); after=$$(cat $$after_file); \
 	  if [ "$$before" != "$$after" ]; then \
-	    echo "<<< $$pkg: ok (bumped $$before -> $$after)"; \
+	    echo "<<< $$pkg: ok (bumped $$before -> $$after, $$duration)"; \
 	  else \
-	    echo "<<< $$pkg: ok (unchanged $$before)"; \
+	    echo "<<< $$pkg: ok (unchanged $$before, $$duration)"; \
 	  fi; \
 	else \
 	  rc=$$?; \
+	  seconds=$$(( $$(date +%s) - start_time )); \
+	  echo "$$seconds" >$$seconds_file; \
+	  duration=$$(format_duration "$$seconds"); \
 	  echo "$(PKG_VERSION)" >$$after_file; \
 	  touch $$fail; \
-	  echo "<<< $$pkg: FAIL rc=$$rc (log: $$log)"; \
+	  echo "<<< $$pkg: FAIL rc=$$rc ($$duration, log: $$log)"; \
 	  exit $$rc; \
 	fi
