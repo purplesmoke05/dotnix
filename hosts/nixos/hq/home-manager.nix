@@ -31,6 +31,9 @@
       "3,monitor:DP-2"
     ];
     windowrulev2 = lib.mkAfter [
+      "workspace 19 silent,class:^(browser-automation)$"
+      "workspace 19 silent,class:^(google-chrome)$,title:(OpenAI|ChatGPT|Phone number required|Check your phone)"
+
       "workspace 3 silent,class:^(gamescope)$"
       "monitor DP-2,class:^(gamescope)$"
       "fullscreen,class:^(gamescope)$"

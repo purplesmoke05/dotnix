@@ -61,6 +61,7 @@ in
         band = "5g";
         channel = 36;
         countryCode = "JP";
+        wifi4.capabilities = [ "HT40+" "SHORT-GI-20" "SHORT-GI-40" ];
         networks.wlan-hotspot0 = {
           ssid = "Hotspot";
           authentication = {

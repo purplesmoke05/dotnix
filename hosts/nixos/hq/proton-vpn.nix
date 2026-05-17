@@ -286,6 +286,17 @@ in
 
     networking.nat.externalInterface = lib.mkForce protonVpn.interfaceName;
 
+    virtualisation.docker = {
+      daemon.settings.dns = lib.mkForce [
+        protonVpn.dns4
+        protonVpn.dns6
+      ];
+      rootless.daemon.settings.dns = lib.mkForce [
+        protonVpn.dns4
+        protonVpn.dns6
+      ];
+    };
+
     services.adguardhome.settings.dns = {
       upstream_dns = lib.mkForce protonVpn.dnsServers;
       bootstrap_dns = lib.mkForce [ ];
