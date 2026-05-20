@@ -742,6 +742,7 @@ let
       memoryModule
       diskModule
       volumeModule
+      bluetoothModule
     ]
     ++ lib.optional hasBattery batteryModule
     ++ [
@@ -758,6 +759,7 @@ let
       memoryModule
       diskModule
       volumeModule
+      bluetoothModule
     ]
     ++ lib.optional hasBattery batteryModule
     ++ [ powerMenuModule ];
@@ -1607,6 +1609,17 @@ in
 
   home.activation.stopHyprpanel = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     ${systemctlBin} --user stop hyprpanel.service 2>/dev/null || true
+  '';
+
+  home.activation.stopBluemanApplet = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    ${systemctlBin} --user stop 'app-blueman@autostart.service' blueman-applet.service 2>/dev/null || true
+  '';
+
+  xdg.configFile."autostart/blueman.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=Blueman Applet
+    Hidden=true
   '';
 
   systemd.user.services.ironbar = {

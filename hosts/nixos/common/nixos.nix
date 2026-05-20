@@ -376,8 +376,8 @@ in
 
         monitor.bluez.properties = {
           bluez5.roles = [ a2dp_sink a2dp_source ]
-          bluez5.codecs = [ sbc sbc_xq ]
-          bluez5.enable-sbc-xq = true
+          bluez5.codecs = [ sbc ]
+          bluez5.enable-sbc-xq = false
           bluez5.enable-msbc = false
           bluez5.enable-hw-volume = false
           bluez5.hfphsp-backend = "none"
@@ -1031,9 +1031,6 @@ in
     # Disable USB autosuspend for Intel Bluetooth / Intel Bluetooth の autosuspend を無効化
     ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="8087", TEST=="power/control", ATTR{power/control}="on"
     ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="8087", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
-
-    # Force A2DP profile for Bluetooth audio / Bluetooth オーディオで A2DP を強制
-    ACTION=="add", SUBSYSTEM=="bluetooth", ENV{DEVTYPE}=="link", RUN+="/bin/sh -c 'sleep 2 && pactl set-card-profile bluez_card.%k a2dp-sink || true'"
 
     # Victrix Pro BFG controller / Victrix Pro BFG コントローラー
     KERNEL=="hidraw*", ATTRS{idVendor}=="0e6f", TAG+="uaccess", ATTR{power/autosuspend}="-1"
