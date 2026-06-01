@@ -23,6 +23,117 @@ let
   ironbarBin = lib.getExe pkgs.ironbar;
   systemctlBin = "${pkgs.systemd}/bin/systemctl";
   hyprctlBin = "hyprctl";
+  setDefaultSinkScript = lib.getExe (pkgs.writeShellApplication {
+    name = "ironbar-set-default-sink";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.gnugrep
+      pkgs.pulseaudio
+      pkgs.systemd
+    ];
+    text = ''
+      sink_name="''${1:-}"
+
+      if [ "$#" -ne 1 ] || [ -z "$sink_name" ]; then
+        printf 'usage: ironbar-set-default-sink SINK_NAME\n' >&2
+        exit 2
+      fi
+
+      get_bluez_bool() {
+        busctl get-property org.bluez "$device_path" org.bluez.Device1 "$1" | awk '{ print $2 }'
+      }
+
+      wait_bluez_resolved() {
+        for _ in $(seq 1 20); do
+          connected="$(get_bluez_bool Connected)"
+          resolved="$(get_bluez_bool ServicesResolved)"
+
+          if [ "$connected" = "true" ] && [ "$resolved" = "true" ]; then
+            return 0
+          fi
+
+          sleep 0.25
+        done
+
+        return 1
+      }
+
+      wait_sink_visible() {
+        for _ in $(seq 1 20); do
+          if pactl list short sinks | awk '{ print $2 }' | grep -Fx "$sink_name" >/dev/null; then
+            return 0
+          fi
+
+          sleep 0.25
+        done
+
+        return 1
+      }
+
+      reconnect_bluez() {
+        for attempt in $(seq 1 3); do
+          # Disconnect may fail after BlueZ has already dropped the transport.
+          busctl call org.bluez "$device_path" org.bluez.Device1 Disconnect >/dev/null 2>&1 || true
+          sleep 1
+
+          if busctl call org.bluez "$device_path" org.bluez.Device1 Connect >/dev/null; then
+            if wait_bluez_resolved; then
+              return 0
+            fi
+
+            connected="$(get_bluez_bool Connected)"
+            resolved="$(get_bluez_bool ServicesResolved)"
+            printf 'Bluetooth reconnect attempt %s for %s did not resolve services: Connected=%s ServicesResolved=%s\n' \
+              "$attempt" "$device_address" "$connected" "$resolved" >&2
+          else
+            printf 'Bluetooth reconnect attempt %s for %s failed\n' "$attempt" "$device_address" >&2
+          fi
+        done
+
+        return 1
+      }
+
+      if [[ "$sink_name" == bluez_output.* ]]; then
+        device_address="''${sink_name#bluez_output.}"
+        device_address="''${device_address%%.*}"
+        device_address="''${device_address//_/:}"
+        device_object="dev_''${device_address//:/_}"
+        device_path="$(
+          busctl tree org.bluez \
+            | awk -v device_object="$device_object" '{ path = $NF } path ~ ("/" device_object "$") { print path; exit }'
+        )"
+
+        if [ -z "$device_path" ]; then
+          printf 'BlueZ device for sink %s was not found\n' "$sink_name" >&2
+          exit 1
+        fi
+
+        connected="$(get_bluez_bool Connected)"
+        resolved="$(get_bluez_bool ServicesResolved)"
+
+        if [ "$connected" != "true" ] || [ "$resolved" != "true" ]; then
+          printf 'Bluetooth device %s is Connected=%s ServicesResolved=%s; reconnecting before selecting %s\n' \
+            "$device_address" "$connected" "$resolved" "$sink_name" >&2
+
+          if ! reconnect_bluez; then
+            connected="$(get_bluez_bool Connected)"
+            resolved="$(get_bluez_bool ServicesResolved)"
+            printf 'Bluetooth device %s did not recover: Connected=%s ServicesResolved=%s\n' \
+              "$device_address" "$connected" "$resolved" >&2
+            exit 1
+          fi
+        fi
+
+        if ! wait_sink_visible; then
+          printf 'PipeWire/Pulse sink %s is not visible after Bluetooth readiness check\n' "$sink_name" >&2
+          exit 1
+        fi
+      fi
+
+      exec pactl set-default-sink "$sink_name"
+    '';
+  });
   cpuUsageScript = lib.getExe (pkgs.writeShellApplication {
     name = "ironbar-cpu-usage";
     runtimeInputs = [
@@ -1632,6 +1743,7 @@ in
       X-Restart-Triggers = [
         "${config.xdg.configFile."ironbar/config.json".source}"
         "${config.xdg.configFile."ironbar/style.css".source}"
+        setDefaultSinkScript
       ];
     };
 
@@ -1641,6 +1753,7 @@ in
         "IRONBAR_CSS=%h/.config/ironbar/style.css"
         "IRONBAR_LOG=warn"
         "IRONBAR_FILE_LOG=warn"
+        "IRONBAR_VOLUME_SET_DEFAULT_SINK=${setDefaultSinkScript}"
       ];
       ExecStart = ironbarBin;
       ExecReload = "${ironbarBin} reload";

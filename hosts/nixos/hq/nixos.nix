@@ -24,6 +24,7 @@ in
   # User configuration / ユーザー設定
   # Grant network and admin access to primary user. / 主要ユーザーに管理権限を付与。
   users.users.${username} = {
+    uid = 1000;
     isNormalUser = true;
     description = "Yosuke Otosu";
     linger = true;
@@ -181,6 +182,44 @@ in
     options rtw88_usb switch_usb_mode=N
     options rtw88_core disable_lps_deep=Y
   '';
+
+  # Bluetooth adapter policy / Bluetooth アダプター方針
+  # Prefer the TP-Link UB500 and keep the flaky onboard Intel controller unavailable. / TP-Link UB500 を優先し、不安定な内蔵 Intel コントローラーを使用不可にする。
+  services.udev.extraRules = ''
+    ACTION=="add|change", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="8087", ATTR{idProduct}=="0aa7", TEST=="authorized", ATTR{authorized}="0"
+    ACTION=="add|change", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2357", ATTR{idProduct}=="0604", TEST=="power/control", ATTR{power/control}="on"
+    ACTION=="add|change", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2357", ATTR{idProduct}=="0604", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
+  '';
+
+  systemd.services.hq-bluetooth-adapter-policy = {
+    description = "Apply hq Bluetooth adapter policy";
+    before = [ "bluetooth.service" ];
+    wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.coreutils ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      for device in /sys/bus/usb/devices/*; do
+        [ -f "$device/idVendor" ] || continue
+        [ -f "$device/idProduct" ] || continue
+
+        vendor="$(cat "$device/idVendor")"
+        product="$(cat "$device/idProduct")"
+
+        case "$vendor:$product" in
+          8087:0aa7)
+            [ -w "$device/authorized" ] && echo 0 > "$device/authorized"
+            ;;
+          2357:0604)
+            [ -w "$device/power/control" ] && echo on > "$device/power/control"
+            [ -w "$device/power/autosuspend" ] && echo -1 > "$device/power/autosuspend"
+            ;;
+        esac
+      done
+    '';
+  };
 
   # Secrets management / シークレット管理
   # Keep the SOPS identity outside the Nix store. / SOPS identity は Nix store 外に保存。

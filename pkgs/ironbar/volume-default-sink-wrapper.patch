@@ -1,0 +1,91 @@
+diff -ruN orig/src/clients/volume/sink.rs new/src/clients/volume/sink.rs
+--- a/src/clients/volume/sink.rs	2026-05-29 01:21:00.000000000 +0900
++++ b/src/clients/volume/sink.rs	2026-05-29 01:21:00.000000000 +0900
+@@ -5,6 +5,7 @@
+ use libpulse_binding::context::Context;
+ use libpulse_binding::context::introspect::SinkInfo;
+ use libpulse_binding::context::subscribe::Operation;
++use std::process::Command;
+ use std::sync::{Arc, Mutex};
+ use tokio::sync::broadcast;
+ use tracing::{debug, error, instrument, trace};
+@@ -49,6 +50,24 @@
+ 
+     #[instrument(level = "trace")]
+     pub fn set_default_sink(&self, name: &str) {
++        if let Ok(wrapper) = std::env::var("IRONBAR_VOLUME_SET_DEFAULT_SINK")
++            && !wrapper.is_empty()
++        {
++            match Command::new(&wrapper).arg(name).status() {
++                Ok(status) if status.success() => {
++                    return;
++                }
++                Ok(status) => {
++                    error!("default sink wrapper exited with status {status} for {name}");
++                    return;
++                }
++                Err(error) => {
++                    error!("failed to execute default sink wrapper for {name}: {error}");
++                    return;
++                }
++            }
++        }
++
+         if let ConnectionState::Connected { context, .. } = &*lock!(self.connection) {
+             lock!(context).set_default_sink(name, |_| {});
+         }
+diff -ruN orig/src/modules/volume.rs new/src/modules/volume.rs
+--- a/src/modules/volume.rs	2026-05-29 12:22:00.000000000 +0900
++++ b/src/modules/volume.rs	2026-05-29 12:22:00.000000000 +0900
+@@ -11,8 +11,9 @@
+     ToggleButton, gio,
+ };
+ use serde::Deserialize;
+-use std::cell::RefCell;
++use std::cell::{Cell, RefCell};
+ use std::collections::HashMap;
++use std::rc::Rc;
+ use tokio::sync::mpsc;
+ use tracing::trace;
+ 
+@@ -335,11 +336,18 @@
+         sink_selector.set_factory(Some(&factory));
+         sink_selector.add_css_class("device-selector");
+ 
++        let syncing_sink_selector = Rc::new(Cell::new(false));
++
+         {
+             let tx = context.controller_tx.clone();
++            let syncing_sink_selector = syncing_sink_selector.clone();
+ 
+             sink_selector.connect_selected_notify(move |selector| {
+-                if let Some(item) = selector.selected_item().and_downcast_ref::<DropdownItem>() {
++                if syncing_sink_selector.get() {
++                    return;
++                }
++
++                if let Some(item) = selector.selected_item().and_downcast_ref::<DropdownItem>() {
+                     tx.send_spawn(Update::SinkChange(item.key()));
+                 }
+             });
+@@ -389,7 +396,9 @@
+                         options.append(&DropdownItem::new(&info.name, &info.description));
+ 
+                         if info.active {
++                            syncing_sink_selector.set(true);
+                             sink_selector.set_selected(sinks.len() as u32);
++                            syncing_sink_selector.set(false);
+                             slider.set_value(info.volume.percent());
+ 
+                             btn_mute.set_active(info.muted);
+@@ -407,7 +416,9 @@
+                     Event::UpdateSink(info) => {
+                         if info.active
+                             && let Some(pos) = sinks.iter().position(|s| s.name == info.name)
+                         {
++                            syncing_sink_selector.set(true);
+                             sink_selector.set_selected(pos as u32);
++                            syncing_sink_selector.set(false);
+ 
+                             if !slider.has_css_class("dragging") {
+                                 slider.set_value(info.volume.percent());
