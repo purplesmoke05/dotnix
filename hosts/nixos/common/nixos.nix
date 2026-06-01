@@ -740,7 +740,7 @@ in
     enable = false; # Avoid NM conflicts / NetworkManager との競合を避ける
   };
   security.protectKernelImage = false;
-  time.hardwareClockInLocalTime = true;
+  time.hardwareClockInLocalTime = false;
 
   # AdGuard Home / AdGuard Home 設定
   # Provide network-wide ad blocking and DNS service. / 広域広告ブロックと DNS 提供を統合。
