@@ -14,6 +14,5 @@
     ./terminal/nushell.nix
     ./file-manager.nix
     ./alternative.nix
-    ./voice-input.nix
   ];
 }
