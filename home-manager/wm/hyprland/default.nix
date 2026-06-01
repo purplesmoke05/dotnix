@@ -594,6 +594,9 @@
         "$mainMod SHIFT, l, movewindow, u"
         "$mainMod SHIFT, semicolon, movewindow, r"
 
+        # Window layout / ウィンドウレイアウト
+        "$mainMod CTRL, k, layoutmsg, preselect d"
+
         # Monitor control / モニター制御
         "$mainMod, Tab, exec, hyprctl monitors -j|jq 'map(select(.focused|not).activeWorkspace.id)[0]'|xargs hyprctl dispatch workspace"
 
