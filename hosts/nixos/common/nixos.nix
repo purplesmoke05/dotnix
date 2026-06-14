@@ -264,7 +264,6 @@ in
   services.xserver.enable = false;
   services.displayManager.gdm = {
     enable = true;
-    wayland = true;
   };
   services.displayManager.defaultSession = "hyprland";
   services.desktopManager.gnome.enable = false;
