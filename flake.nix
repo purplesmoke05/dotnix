@@ -198,9 +198,6 @@
             # wtp package / wtp パッケージ
             wtp = final.callPackage ./pkgs/wtp { };
 
-            # CC Switch package / CC Switch パッケージ
-            cc-switch = final.callPackage ./pkgs/cc-switch { };
-
             # confluence-cli package / confluence-cli パッケージ
             confluence-cli = final.callPackage ./pkgs/confluence-cli { };
 
@@ -228,10 +225,6 @@
             # StreamController OSPlugin patch / StreamController OSPlugin パッチ
             streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
 
-            # Antigravity IDE / Antigravity IDE
-            antigravity = final.callPackage ./pkgs/antigravity {
-              vscode-generic = nixpkgs.outPath + "/pkgs/applications/editors/vscode/generic.nix";
-            };
           };
 
         nixos = final: prev: {
@@ -537,7 +530,6 @@
           };
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
           claude-code = pkgs.claude-code;
-          cc-switch = pkgs.cc-switch;
           grype = pkgs.grype;
           sbomnix = pkgs.sbomnix;
           confluence-cli = pkgs.confluence-cli;

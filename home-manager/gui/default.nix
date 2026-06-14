@@ -6,7 +6,6 @@
   imports = [
     ./browser/browser.nix
     ./editor/neovim.nix
-    ./editor/antigravity.nix
     ./editor/zed.nix
     ./editor/vscode/default.nix
     ./chat/discord.nix
@@ -17,7 +16,6 @@
 
   # Additional GUI applications. / 追加の GUI アプリケーション。
   home.packages = with pkgs; [
-    cc-switch
     loupe
     slack
     streamcontroller
