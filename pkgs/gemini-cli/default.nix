@@ -15,17 +15,17 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "gemini-cli";
-  version = "0.44.1";
+  version = "0.46.0";
   nodejs = nodejs_22;
 
   src = fetchFromGitHub {
     owner = "google-gemini";
     repo = "gemini-cli";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-FizxmHWOomlnWZoCK2lOLc94RjNTQM33vN16nLXsJI0=";
+    hash = "sha256-/ojCJJoddu2F9k1BGN55n9Uc/bmavImGiuA0bT5Tb40=";
   };
 
-  npmDepsHash = "sha256-yn17dwHIpL3T2Z9nSOyBMehggrj4y6so7WMhnk2VwoA=";
+  npmDepsHash = "sha256-sDJVzRe6KDPSDHx1+J5F1vCgceTEJXeNK11R4KbjgUs=";
 
   nativeBuildInputs = [
     jq
@@ -77,6 +77,8 @@ buildNpmPackage (finalAttrs: {
     cp -r packages/sdk $out/share/gemini-cli/node_modules/@google/gemini-cli-sdk
 
     rm -f $out/share/gemini-cli/node_modules/@google/gemini-cli-core/dist/docs/CONTRIBUTING.md
+    rm -f $out/share/gemini-cli/node_modules/node-pty/build/config.gypi
+    rm -f $out/share/gemini-cli/node_modules/shell-quote/print.py
 
     makeWrapper ${nodejs_22}/bin/node $out/bin/gemini \
       --add-flags "--no-deprecation" \

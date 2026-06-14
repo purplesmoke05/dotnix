@@ -137,6 +137,77 @@
           in
           {
             # Common overrides / 共通オーバーライド
+            # Security-patched scanner-visible runtime libraries. / スキャナで見えるランタイムライブラリのセキュリティ修正版。
+            openssl_3_6_patched = prev.openssl_3_6.overrideAttrs (_finalAttrs: _oldAttrs: {
+              version = "3.6.3";
+              src = builtins.fetchurl {
+                url = "https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz";
+                sha256 = "sha256-JDqGZJz28j7rai/yRW4J5dd92QGKVNPZawxr3Wumx/E=";
+              };
+            });
+
+            sqlite_3_53 = prev.sqlite.overrideAttrs (_finalAttrs: oldAttrs: {
+              version = "3.53.2";
+              src = prev.fetchurl {
+                url = "https://sqlite.org/2026/sqlite-src-3530200.zip";
+                hash = "sha256-yv/3ZMA/bXIJaPdG4vR6mGu/Er9MGJBPHrExwLC1ktM=";
+              };
+              docsrc = prev.fetchurl {
+                url = "https://sqlite.org/2026/sqlite-doc-3530200.zip";
+                hash = "sha256-MMVIiSbnKguVjWQ3fJHJdaNajxbShcu4PPrTH0r3HG0=";
+              };
+              postInstall = ''
+                mkdir -p $doc/share/doc
+                unzip $docsrc
+                mv sqlite-doc-3530200 $doc/share/doc/sqlite
+              '';
+              meta = oldAttrs.meta // {
+                changelog = "https://www.sqlite.org/releaselog/3_53_2.html";
+                identifiers.cpeParts = final.lib.meta.cpeFullVersionWithVendor "sqlite" "3.53.2";
+              };
+            });
+
+            libcap_2_78 = prev.libcap.overrideAttrs (_finalAttrs: _oldAttrs: {
+              version = "2.78";
+              src = prev.fetchurl {
+                url = "mirror://kernel/linux/libs/security/linux-privs/libcap2/libcap-2.78.tar.xz";
+                hash = "sha256-DWIeVi/ZMsz2e5Zg+wGORopoPXuCdUHfJ4EyKMmWuxE=";
+              };
+              patches = [ ];
+            });
+
+            ngtcp2_openssl_patched = prev.ngtcp2.override {
+              openssl = final.openssl_3_6_patched;
+            };
+
+            nghttp2_minimal = prev.nghttp2.override {
+              enableApp = false;
+              enableTests = false;
+              openssl = final.openssl_3_6_patched;
+            };
+
+            curl_openssl_patched = prev.curl.override {
+              gssSupport = false;
+              http3Support = false;
+              openssl = final.openssl_3_6_patched;
+              scpSupport = false;
+            };
+
+            gitMinimal_openssl_patched = prev.gitMinimal.override {
+              curl = final.curl_openssl_patched;
+              openssl = final.openssl_3_6_patched;
+            };
+
+            openexr_3_4_12 = prev.openexr.overrideAttrs (_finalAttrs: _oldAttrs: {
+              version = "3.4.12";
+              src = prev.fetchFromGitHub {
+                owner = "AcademySoftwareFoundation";
+                repo = "openexr";
+                rev = "v3.4.12";
+                hash = "sha256-pFV3nDifZcZCINRbY+rSkACB5fYzfN+TQxyxAyw+JoY=";
+              };
+            });
+
             # OpenSSH patch applied across platforms. / OpenSSH に独自パッチを適用。
             openssh = prev.openssh.overrideAttrs (old: {
               patches = (old.patches or [ ]) ++ [ ./pkgs/ssh/openssh.patch ];
@@ -184,13 +255,34 @@
             gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
             # gemini-cli package / gemini-cli パッケージ
-            gemini-cli = final.callPackage ./pkgs/gemini-cli { };
+            gemini-cli = final.callPackage ./pkgs/gemini-cli {
+              nodejs_22 = prev.nodejs_22.override {
+                "nodejs-slim" = prev."nodejs-slim_22".override {
+                  callPackage = path: args: prev.callPackage path (args // {
+                    nghttp2 = final.nghttp2_minimal;
+                    ngtcp2 = final.ngtcp2_openssl_patched;
+                    sqlite = final.sqlite_3_53;
+                  });
+                  openssl = final.openssl_3_6_patched;
+                };
+              };
+            };
 
             # claude-code package / claude-code パッケージ
-            claude-code = final.callPackage ./pkgs/claude-code { };
+            claude-code = final.callPackage ./pkgs/claude-code {
+              bubblewrap = prev.bubblewrap.override {
+                libcap = final.libcap_2_78;
+              };
+              socat = prev.socat.override {
+                openssl = final.openssl_3_6_patched;
+              };
+            };
 
             # rtk package / rtk パッケージ
-            rtk = final.callPackage ./pkgs/rtk { };
+            rtk = final.callPackage ./pkgs/rtk {
+              gitMinimal = final.gitMinimal_openssl_patched;
+              sqlite = final.sqlite_3_53;
+            };
 
             # Pi coding agent package / Pi コーディングエージェントパッケージ
             pi = final.callPackage ./pkgs/pi { };
@@ -230,48 +322,160 @@
 
           };
 
-        nixos = final: prev: {
-          # NixOS-specific overlays / NixOS 専用オーバーレイ
-          ironbar = prev.ironbar.overrideAttrs (oldAttrs: {
-            patches = (oldAttrs.patches or [ ]) ++ [
-              ./pkgs/ironbar/volume-default-sink-wrapper.patch
-            ];
-          });
-
-          obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
-            installPhase = builtins.replaceStrings
-              [ "--ozone-platform=wayland" ]
-              [ "--enable-features=UseOzonePlatform --ozone-platform=wayland" ]
-              oldAttrs.installPhase;
-          });
-
-
-
-          # Codex CLI (prebuilt) / Codex CLI（バイナリ）
-          codex = final.callPackage ./pkgs/codex { };
-
-          # limux: GPU-accelerated terminal multiplexer / limux: Linux 向け GPU 加速ターミナル多重化
-          limux = final.callPackage ./pkgs/limux { };
-
-          # Hazkey package / Hazkey パッケージ
-          fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
-
-          # hints package (NixOS only) / hints パッケージ（NixOS 限定）
-          hints = final.callPackage ./pkgs/hints {
-            python3Packages = final.python312Packages;
-          };
-
-          python312Packages = prev.python312Packages.overrideScope (pyFinal: pyPrev: {
-            mss = pyPrev.mss.overridePythonAttrs (_: {
-              doCheck = false;
+        nixos = final: prev:
+          let
+            ironbarGdkPixbuf = (prev.gdk-pixbuf.override {
+              libtiff = final.emptyDirectory;
+            }).overrideAttrs (oldAttrs: {
+              mesonFlags = (oldAttrs.mesonFlags or [ ]) ++ [ "-Dtiff=disabled" ];
+              propagatedBuildInputs = final.lib.remove final.emptyDirectory (oldAttrs.propagatedBuildInputs or [ ]);
             });
-          });
+            ironbarLibrsvg = prev.librsvg.override {
+              gdk-pixbuf = ironbarGdkPixbuf;
+            };
+            ironbarGlibNetworking = prev.glib-networking.override {
+              libproxy = prev.libproxy.override {
+                curl = final.curl_openssl_patched;
+              };
+            };
+            ironbarGtk4 = (prev.gtk4.override {
+              broadwaySupport = false;
+              cupsSupport = false;
+              gdk-pixbuf = ironbarGdkPixbuf;
+              libtiff = final.emptyDirectory;
+              trackerSupport = false;
+              vulkanSupport = false;
+            }).overrideAttrs (oldAttrs: {
+              buildInputs = final.lib.remove final.emptyDirectory
+                (
+                  final.lib.remove prev.gst_all_1.gst-plugins-base (
+                    final.lib.remove prev.gst_all_1.gst-plugins-bad (oldAttrs.buildInputs or [ ])
+                  )
+                ) ++ [ prev.libdrm ];
+              mesonFlags = map
+                (flag: if flag == "-Dx11-backend=true" then "-Dx11-backend=false" else flag)
+                (oldAttrs.mesonFlags or [ ])
+              ++ [
+                "-Dmedia-gstreamer=disabled"
+              ];
+              postPatch = (oldAttrs.postPatch or "") + ''
+                substituteInPlace meson.build \
+                  --replace-fail "tiff_dep          = dependency('libtiff-4', 'tiff')" \
+                                 "tiff_dep          = dependency('libtiff-4', 'tiff', required: false)"
+                substituteInPlace gdk/meson.build \
+                  --replace-fail "  tiff_dep," ""
+                substituteInPlace gdk/gdktexture.c \
+                  --replace-fail $'  bytes = gdk_save_tiff (texture);\n  result = g_file_set_contents' \
+                                 $'  bytes = gdk_save_tiff (texture);\n  if (bytes == NULL)\n    return FALSE;\n  result = g_file_set_contents'
+                substituteInPlace gdk/gdkcontentserializer.c \
+                  --replace-fail "  input = g_memory_input_stream_new_from_bytes (bytes);" \
+                                 $'  if (bytes == NULL)\n    {\n      g_task_return_new_error (task,\n                               GDK_TEXTURE_ERROR,\n                               GDK_TEXTURE_ERROR_UNSUPPORTED_CONTENT,\n                               "TIFF support is disabled");\n      return;\n    }\n\n  input = g_memory_input_stream_new_from_bytes (bytes);'
+                cat > gdk/loaders/gdktiff.c <<'EOF'
+                #include "config.h"
+                #include "gdktiffprivate.h"
+                #include <glib/gi18n-lib.h>
 
-          # StreamController Hyprland wrapper. / StreamController の Hyprland ラッパー。
-          streamcontroller-hypr = final.callPackage ./pkgs/streamcontroller-hypr { };
+                GdkTexture *
+                gdk_load_tiff (GBytes  *bytes,
+                               GError **error)
+                {
+                  (void) bytes;
+                  if (error != NULL)
+                    g_set_error_literal (error,
+                                         GDK_TEXTURE_ERROR,
+                                         GDK_TEXTURE_ERROR_UNSUPPORTED_CONTENT,
+                                         _("TIFF support is disabled"));
+                  return NULL;
+                }
 
-          hyprpanel = prev.hyprpanel;
-        };
+                GBytes *
+                gdk_save_tiff (GdkTexture *texture)
+                {
+                  (void) texture;
+                  return NULL;
+                }
+                EOF
+              '';
+            });
+            ironbarGtk4LayerShell = prev.gtk4-layer-shell.override {
+              gtk4 = ironbarGtk4;
+            };
+          in
+          {
+            # NixOS-specific overlays / NixOS 専用オーバーレイ
+            ironbar = (prev.ironbar.override {
+              features = [
+                "battery"
+                "bluetooth"
+                "cli"
+                "clock"
+                "config+json"
+                "custom"
+                "focused"
+                "ipc"
+                "label"
+                "menu"
+                "music+mpris"
+                "network_manager"
+                "notifications"
+                "script"
+                "tray"
+                "volume"
+              ];
+              gdk-pixbuf = ironbarGdkPixbuf;
+              glib-networking = ironbarGlibNetworking;
+              gtk4 = ironbarGtk4;
+              gtk4-layer-shell = ironbarGtk4LayerShell;
+              librsvg = ironbarLibrsvg;
+              webp-pixbuf-loader = final.emptyDirectory;
+              wrapGAppsHook4 = prev.wrapGAppsHook4.override {
+                gtk3 = ironbarGtk4;
+                librsvg = ironbarLibrsvg;
+              };
+            }).overrideAttrs (oldAttrs: {
+              patches = (oldAttrs.patches or [ ]) ++ [
+                ./pkgs/ironbar/volume-default-sink-wrapper.patch
+              ];
+              propagatedBuildInputs = [ ];
+            });
+
+            obsidian = prev.obsidian.overrideAttrs (oldAttrs: rec {
+              installPhase = builtins.replaceStrings
+                [ "--ozone-platform=wayland" ]
+                [ "--enable-features=UseOzonePlatform --ozone-platform=wayland" ]
+                oldAttrs.installPhase;
+            });
+
+
+
+            # Codex CLI (prebuilt) / Codex CLI（バイナリ）
+            codex = final.callPackage ./pkgs/codex {
+              libcap = final.libcap_2_78;
+              openssl = final.openssl_3_6_patched;
+            };
+
+            # limux: GPU-accelerated terminal multiplexer / limux: Linux 向け GPU 加速ターミナル多重化
+            limux = final.callPackage ./pkgs/limux { };
+
+            # Hazkey package / Hazkey パッケージ
+            fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
+
+            # hints package (NixOS only) / hints パッケージ（NixOS 限定）
+            hints = final.callPackage ./pkgs/hints {
+              python3Packages = final.python312Packages;
+            };
+
+            python312Packages = prev.python312Packages.overrideScope (pyFinal: pyPrev: {
+              mss = pyPrev.mss.overridePythonAttrs (_: {
+                doCheck = false;
+              });
+            });
+
+            # StreamController Hyprland wrapper. / StreamController の Hyprland ラッパー。
+            streamcontroller-hypr = final.callPackage ./pkgs/streamcontroller-hypr { };
+
+            hyprpanel = prev.hyprpanel;
+          };
 
         # default overlay / default オーバーレイ
         # Combine common and nixos layers for reuse. / common+nixos を束ね再利用性を確保。
