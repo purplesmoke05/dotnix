@@ -174,6 +174,29 @@
           hyprctl clients -j | jq -r --arg class "$_class" 'first(.[] | select(.class == $class) | (.pinned | tostring)) // empty'
         }
 
+        is_quick_term_visible_on_active_workspace() {
+          _active_ws="$1"
+
+          for _class in "$left_class" "$right_class"; do
+            _pid="$(get_client_pid "$_class")"
+            if [ -z "$_pid" ]; then
+              continue
+            fi
+
+            _is_pinned_now="$(get_client_pinned "$_class")"
+            if [ "$_is_pinned_now" = "true" ]; then
+              return 0
+            fi
+
+            _ws="$(get_client_workspace "$_class")"
+            if [ -n "$_active_ws" ] && [ "$_ws" = "$_active_ws" ]; then
+              return 0
+            fi
+          done
+
+          return 1
+        }
+
         is_quick_term_class() {
           case "$1" in
             "$left_class"|"$right_class")
@@ -358,9 +381,12 @@
         }
 
         _focused_class="$(hyprctl activewindow -j | jq -r '.class // ""')"
+        _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // empty')"
 
-        if is_quick_term_class "$_focused_class"; then
-          remember_last_focused_quick_term "$_focused_class"
+        if is_quick_term_visible_on_active_workspace "$_active_ws"; then
+          if is_quick_term_class "$_focused_class"; then
+            remember_last_focused_quick_term "$_focused_class"
+          fi
           _batch_commands=""
           append_quick_term_pin_state_commands "false" "$right_class" "$left_class"
           append_quick_term_hide_commands "$left_class"
@@ -549,7 +575,6 @@
         "opaque, class:(Nemo)"
         "opaque, class:(zen)"
         "float, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
-        "workspace 99 silent,class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
         "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
         "noanim, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
 
