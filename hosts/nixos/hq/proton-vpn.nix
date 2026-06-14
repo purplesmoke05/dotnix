@@ -15,6 +15,10 @@ let
     ];
     dns4 = "10.2.0.1";
     dns6 = "2a07:b944::2:1";
+    timeSync4Servers = [
+      "162.159.200.1"
+      "162.159.200.123"
+    ];
     tailscaleInterface = "tailscale0";
     tailnet4 = "100.64.0.0/10";
     tailnet6 = "fd7a:115c:a1e0::/48";
@@ -208,6 +212,7 @@ in
             oifname "${protonVpn.interfaceName}" ip daddr ${protonVpn.dns4} tcp dport 53 accept comment "Proton DNS"
             oifname "${protonVpn.interfaceName}" ip6 daddr ${protonVpn.dns6} udp dport 53 accept comment "Proton DNS"
             oifname "${protonVpn.interfaceName}" ip6 daddr ${protonVpn.dns6} tcp dport 53 accept comment "Proton DNS"
+            ip daddr { ${lib.concatStringsSep ", " protonVpn.timeSync4Servers} } udp dport 123 accept comment "pre-VPN time sync"
             udp dport { 53, 853 } counter reject with icmpx admin-prohibited
             tcp dport { 53, 853 } counter reject with icmpx admin-prohibited
             oifname "${protonVpn.hotspotInterface}" ip daddr ${protonVpn.hotspot4} accept
@@ -261,6 +266,12 @@ in
     networking.firewall.filterForward = true;
 
     networking.nat.externalInterface = lib.mkForce protonVpn.interfaceName;
+
+    # Keep pre-VPN time sync DNS-free so wg-quick can safely wait for time-sync.
+    services.timesyncd = {
+      servers = protonVpn.timeSync4Servers;
+      fallbackServers = [ ];
+    };
 
     virtualisation.docker = {
       daemon.settings.dns = lib.mkForce [
