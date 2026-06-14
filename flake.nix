@@ -192,6 +192,9 @@
             # rtk package / rtk パッケージ
             rtk = final.callPackage ./pkgs/rtk { };
 
+            # Pi coding agent package / Pi コーディングエージェントパッケージ
+            pi = final.callPackage ./pkgs/pi { };
+
             # github-copilot-cli package / github-copilot-cli パッケージ
             github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
 
@@ -539,6 +542,7 @@
           uv = pkgs.uv;
           wtp = pkgs.wtp;
           rtk = pkgs.rtk;
+          pi = pkgs.pi;
           limux = pkgs.limux;
         };
         formatter = pkgs.nixpkgs-fmt;
