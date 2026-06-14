@@ -93,8 +93,8 @@ in
     interfaces = {
       # USB AP (hostapd) / USB AP（hostapd）
       "wlan-hotspot0" = {
-        allowedUDPPorts = [ 53 67 68 ]; # AdGuard DNS と DHCP / AdGuard DNS and DHCP
-        allowedTCPPorts = [ 53 ]; # AdGuard DNS / AdGuard DNS
+        allowedUDPPorts = [ 53 67 68 ]; # DNS and DHCP / DNS と DHCP
+        allowedTCPPorts = [ 53 ]; # DNS / DNS
       };
     };
 
@@ -119,9 +119,10 @@ in
   };
 
   # DHCP server / DHCP サーバー
-  # Disable DNS to avoid AdGuard conflicts. / DNS は AdGuard と競合しないよう無効。
+  # Disable DNS to avoid resolver conflicts. / DNS リゾルバとの競合を避けるため DNS は無効。
   services.dnsmasq = {
     enable = true;
+    resolveLocalQueries = false;
     settings =
       let
         opt = pkgs.lib.optionals;

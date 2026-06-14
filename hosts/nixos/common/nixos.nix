@@ -63,11 +63,6 @@ in
   # Do not fail activation when unused NetworkManager profiles stay pending. / 未使用の NetworkManager プロファイル待機で有効化を失敗させない。
   systemd.services.NetworkManager-wait-online.enable = false;
 
-  # AdGuard Home DNS / AdGuard Home で DNS を提供
-  networking.nameservers = [ "127.0.0.1" ];
-
-
-
   # Localization Settings / ロケール設定
   # Asia/Tokyo と ja_JP.UTF-8 を全面適用。 / Apply Asia/Tokyo timezone and ja_JP.UTF-8 locales system-wide.
   time.timeZone = "Asia/Tokyo";
@@ -742,86 +737,6 @@ in
   security.protectKernelImage = false;
   time.hardwareClockInLocalTime = false;
 
-  # AdGuard Home / AdGuard Home 設定
-  # Provide network-wide ad blocking and DNS service. / 広域広告ブロックと DNS 提供を統合。
-  services.adguardhome = {
-    enable = true;
-    host = "0.0.0.0";
-    port = 3000;
-    openFirewall = true;
-    settings = {
-      users = [
-        # Default credentials; change immediately. / 既定認証情報。必ず変更すること。
-      ];
-      dns = {
-        bind_hosts = [ "0.0.0.0" ];
-        port = 53;
-        protection_enabled = true;
-        filtering_enabled = true;
-        # Upstream resolvers / 上流 DNS
-        upstream_dns = [
-          "https://dns.cloudflare.com/dns-query"
-          "https://dns.google/dns-query"
-          "1.1.1.1"
-          "8.8.8.8"
-        ];
-        # Bootstrap for DoH / DoH 解決用ブートストラップ
-        bootstrap_dns = [
-          "1.1.1.1"
-          "8.8.8.8"
-        ];
-      };
-      filtering = {
-        rewrites = [ ];
-      };
-      # Filter lists / フィルタ一覧
-      filters = [
-        {
-          enabled = true;
-          url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt";
-          name = "AdGuard DNS filter";
-          id = 1;
-        }
-        {
-          enabled = true;
-          url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_7.txt";
-          name = "AdGuard Japanese filter";
-          id = 7;
-        }
-        {
-          enabled = true;
-          url = "https://raw.githubusercontent.com/eEIi0A5L/adblock_filter/master/tamago_filter.txt";
-          name = "たまごフィルタ (Tamago Filter)";
-          id = 100;
-        }
-      ];
-      # Whitelist rules / ホワイトリスト
-      user_rules = [
-        # Claude API domains / Claude API 用
-        "@@||anthropic.com^"
-        "@@||claude.ai^"
-        "@@||api.anthropic.com^"
-        "@@||console.anthropic.com^"
-        # AWS domains for Claude / Claude が利用する AWS
-        "@@||amazonaws.com^"
-        "@@||cloudfront.net^"
-        # Allow all subdomains / サブドメイン全許可
-        "@@||*.anthropic.com^"
-        "@@||*.claude.ai^"
-
-        # Cursor API domains / Cursor API 用
-        "@@||cursor.sh^"
-        "@@||*.cursor.sh^"
-        "@@||api2.cursor.sh^"
-        "@@||cursor.com^"
-        "@@||*.cursor.com^"
-        "@@||downloads.cursor.com^"
-        # GitHub for Cursor / Cursor 更新用 GitHub
-        "@@||raw.githubusercontent.com^"
-      ];
-    };
-  };
-
   # Gaming Support / ゲーミング設定
   # Enable Steam with Remote Play and JP fonts. / Steam を有効化しリモートプレイと日本語フォントを補完。
   programs.steam = {
@@ -885,11 +800,6 @@ in
   # Firewall ports / ファイアウォール開放ポート
   networking.firewall.allowedTCPPorts = [
     22 # SSH
-    53 # DNS (AdGuard Home)
-    3000 # AdGuard Home Web UI
-  ];
-  networking.firewall.allowedUDPPorts = [
-    53 # DNS (AdGuard Home)
   ];
 
   # Tailscale / Tailscale 設定

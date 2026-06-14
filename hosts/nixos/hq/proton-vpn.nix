@@ -169,11 +169,6 @@ let
     ${triggerTailnetRoute}
   '';
 
-  triggerAdGuardHome = pkgs.writeShellScript "proton-vpn-trigger-adguardhome" ''
-    set -euo pipefail
-
-    ${pkgs.systemd}/bin/systemctl start --no-block adguardhome.service >/dev/null 2>&1 || true
-  '';
 in
 {
   options.hq.protonVpn.enable = lib.mkEnableOption "Proton VPN routing for hq";
@@ -188,29 +183,10 @@ in
         assertion = builtins.elem protonVpn.hotspotInterface config.networking.nat.internalInterfaces;
         message = "Proton VPN routing expects wlan-hotspot0 in networking.nat.internalInterfaces.";
       }
-      {
-        assertion =
-          let
-            bindHosts = config.services.adguardhome.settings.dns.bind_hosts or [ ];
-          in
-          builtins.elem "0.0.0.0" bindHosts || builtins.elem protonVpn.hotspot4Address bindHosts;
-        message = "Proton VPN hotspot DNS redirect expects AdGuard Home to listen on wlan-hotspot0.";
-      }
     ];
 
     networking.nftables = {
       enable = true;
-      tables."proton-hotspot-dns" = {
-        family = "ip";
-        content = ''
-          chain prerouting {
-            type nat hook prerouting priority -110; policy accept;
-
-            iifname "${protonVpn.hotspotInterface}" udp dport 53 redirect to :53 comment "Hotspot DNS to AdGuard Home"
-            iifname "${protonVpn.hotspotInterface}" tcp dport 53 redirect to :53 comment "Hotspot DNS to AdGuard Home"
-          }
-        '';
-      };
       tables."proton-killswitch" = {
         family = "inet";
         content = ''
@@ -295,11 +271,6 @@ in
         protonVpn.dns4
         protonVpn.dns6
       ];
-    };
-
-    services.adguardhome.settings.dns = {
-      upstream_dns = lib.mkForce protonVpn.dnsServers;
-      bootstrap_dns = lib.mkForce [ ];
     };
 
     networking.wg-quick.interfaces.${protonVpn.interfaceName} = {
@@ -413,7 +384,6 @@ in
       };
       postStart = ''
         ${triggerTailnetRoute}
-        ${triggerAdGuardHome}
       '';
     };
 
@@ -439,13 +409,6 @@ in
     systemd.services.tailscaled.postStart = lib.mkAfter ''
       ${triggerTailnetRouteIfProtonActive}
     '';
-
-    systemd.services.adguardhome = {
-      after = [ "wg-quick-${protonVpn.interfaceName}.service" ];
-      wants = [ "wg-quick-${protonVpn.interfaceName}.service" ];
-      bindsTo = [ "wg-quick-${protonVpn.interfaceName}.service" ];
-      partOf = [ "wg-quick-${protonVpn.interfaceName}.service" ];
-    };
 
     systemd.tmpfiles.rules = [
       "d ${protonVpn.stateDir} 0700 root root -"
