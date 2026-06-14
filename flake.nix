@@ -238,7 +238,6 @@
           # NixOS-specific overlays / NixOS 専用オーバーレイ
           ironbar = prev.ironbar.overrideAttrs (oldAttrs: {
             patches = (oldAttrs.patches or [ ]) ++ [
-              ./pkgs/ironbar/fix-volume-default-sink.patch
               ./pkgs/ironbar/volume-default-sink-wrapper.patch
             ];
           });

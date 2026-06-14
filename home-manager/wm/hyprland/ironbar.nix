@@ -22,7 +22,74 @@ let
 
   ironbarBin = lib.getExe pkgs.ironbar;
   systemctlBin = "${pkgs.systemd}/bin/systemctl";
-  hyprctlBin = "hyprctl";
+  hyprctlBin = "/run/current-system/sw/bin/hyprctl";
+  ironbarStartScript = lib.getExe (pkgs.writeShellApplication {
+    name = "ironbar-start";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+    ];
+    text = ''
+      set -eu
+
+      wait_for_hyprland() {
+        local monitors_json runtime_dir wayland_display wayland_socket
+
+        runtime_dir="''${XDG_RUNTIME_DIR-}"
+        if [ -z "$runtime_dir" ]; then
+          runtime_dir="/run/user/$UID"
+        fi
+
+        for _ in $(seq 1 30); do
+          wayland_display="''${WAYLAND_DISPLAY-}"
+          wayland_socket="$runtime_dir/$wayland_display"
+
+          if [ -n "$wayland_display" ] && [ -S "$wayland_socket" ]; then
+            if monitors_json="$(${hyprctlBin} monitors -j 2>/dev/null)" \
+              && printf '%s\n' "$monitors_json" \
+                | jq -e 'type == "array" and length > 0 and all(.[]; (.name // "") != "")' >/dev/null
+            then
+              return 0
+            fi
+          fi
+
+          sleep 1
+        done
+
+        printf 'Hyprland was not ready for ironbar: WAYLAND_DISPLAY=%s XDG_RUNTIME_DIR=%s\n' \
+          "''${WAYLAND_DISPLAY-}" "$runtime_dir" >&2
+        return 1
+      }
+
+      wait_for_hyprland
+      exec ${ironbarBin}
+    '';
+  });
+  ironbarHealthScript = lib.getExe (pkgs.writeShellApplication {
+    name = "ironbar-health";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.ironbar
+      pkgs.jq
+    ];
+    text = ''
+      set -eu
+
+      for _ in $(seq 1 20); do
+        if timeout 3s ironbar ping >/dev/null 2>&1 \
+          && ${hyprctlBin} layers -j 2>/dev/null \
+            | jq -e '[to_entries[].value.levels | to_entries[].value[]? | select((.namespace // "") | startswith("ironbar"))] | length > 0' >/dev/null
+        then
+          exit 0
+        fi
+
+        sleep 1
+      done
+
+      printf 'Ironbar did not become visible and IPC-ready after startup\n' >&2
+      exit 1
+    '';
+  });
   setDefaultSinkScript = lib.getExe (pkgs.writeShellApplication {
     name = "ironbar-set-default-sink";
     runtimeInputs = [
@@ -610,10 +677,25 @@ let
       declare -A last_vars=()
       declare -A last_classes=()
 
+      ironbar_ipc_timeout=3
+      ironbar_ready_attempts=20
+
+      ironbar_ipc() {
+        timeout "''${ironbar_ipc_timeout}s" ironbar "$@"
+      }
+
       wait_for_ironbar() {
-        until ironbar ping >/dev/null 2>&1; do
+        for _ in $(seq 1 "$ironbar_ready_attempts"); do
+          if ironbar_ipc ping >/dev/null 2>&1; then
+            return 0
+          fi
+
           sleep 1
         done
+
+        printf 'Ironbar did not answer IPC ping within %s seconds\n' \
+          "$((ironbar_ready_attempts * (ironbar_ipc_timeout + 1)))" >&2
+        return 1
       }
 
       find_hypr_socket() {
@@ -662,7 +744,7 @@ let
 
         [ "$current" = "$value" ] && return 0
 
-        if ironbar var set "$key" "$value" >/dev/null 2>&1; then
+        if ironbar_ipc var set "$key" "$value" >/dev/null 2>&1; then
           last_vars["$key"]="$value"
           return 0
         fi
@@ -685,12 +767,12 @@ let
         [ "$current" = "$desired" ] && return 0
 
         if [ "$desired" = "1" ]; then
-          if ironbar style add-class "$module_name" "$class_name" >/dev/null 2>&1; then
+          if ironbar_ipc style add-class "$module_name" "$class_name" >/dev/null 2>&1; then
             last_classes["$key"]="$desired"
             return 0
           fi
         else
-          if ironbar style remove-class "$module_name" "$class_name" >/dev/null 2>&1; then
+          if ironbar_ipc style remove-class "$module_name" "$class_name" >/dev/null 2>&1; then
             last_classes["$key"]="$desired"
             return 0
           fi
@@ -831,7 +913,7 @@ let
             continue
           fi
 
-          if ! ironbar ping >/dev/null 2>&1; then
+          if ! ironbar_ipc ping >/dev/null 2>&1; then
             break
           fi
 
@@ -1743,6 +1825,8 @@ in
       X-Restart-Triggers = [
         "${config.xdg.configFile."ironbar/config.json".source}"
         "${config.xdg.configFile."ironbar/style.css".source}"
+        ironbarStartScript
+        ironbarHealthScript
         setDefaultSinkScript
       ];
     };
@@ -1755,9 +1839,11 @@ in
         "IRONBAR_FILE_LOG=warn"
         "IRONBAR_VOLUME_SET_DEFAULT_SINK=${setDefaultSinkScript}"
       ];
-      ExecStart = ironbarBin;
+      ExecStart = ironbarStartScript;
+      ExecStartPost = ironbarHealthScript;
       ExecReload = "${ironbarBin} reload";
       Restart = "on-failure";
+      RestartSec = 1;
       KillMode = "mixed";
     };
 
