@@ -206,11 +206,19 @@
       }
     }
   },
+  "githubPullRequests": {
+    "pullBranch": "never"
+  },
   "gitlens": {
     "ai": {
       "model": "vscode",
       "vscode": {
         "model": "copilot:gpt-4.1"
+      }
+    },
+    "gitkraken": {
+      "mcp": {
+        "autoEnabled": false
       }
     }
   },
@@ -351,6 +359,11 @@
     "seedWithNearestWord": false,
     "showLineNumbers": true
   },
+  "settingsSync": {
+    "ignoredExtensions": [
+      "eamodio.gitlens"
+    ]
+  },
   "terminal": {
     "external": {
       "linuxExec": "foot"
@@ -426,10 +439,5 @@
       "alwaysShowHeaderActions": true
     }
   },
-  "workbench.iconTheme": "catppuccin-mocha",
-  "githubPullRequests.pullBranch": "never",
-  "settingsSync.ignoredExtensions": [
-    "eamodio.gitlens"
-  ],
-  "gitlens.gitkraken.mcp.autoEnabled": false
+  "editor.fontFamily": "JetBrainsMono Nerd Font, PlemolJP Console, Ricty Diminished, Menlo, Monaco, 'Courier New', monospace"
 }
