@@ -582,7 +582,6 @@
         "monitor DP-2, class:^(steam_app_1364780)$"
         "fullscreen, class:^(steam_app_1364780)$"
 
-        "workspace 20 silent,class:^(vesktop|Vesktop)$"
         "workspace 2 silent,class:^(steam)$"
       ];
 
@@ -686,7 +685,7 @@
       "exec-once" = [
         "hyprctl dispatch exec [workspace 1 silent] ${pkgs.brave}/bin/brave"
         "hyprctl dispatch exec [workspace 2 silent] term-main"
-        "${pkgs.vesktop}/bin/vesktop"
+        "hyprctl dispatch exec [workspace 20 silent] ${pkgs.vesktop}/bin/vesktop"
       ];
 
       # Layer rules / レイヤールール
