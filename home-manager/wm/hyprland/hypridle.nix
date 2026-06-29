@@ -35,4 +35,19 @@ in
     };
     Install = { WantedBy = [ "graphical-session.target" ]; };
   };
+
+  systemd.user.services.inhibit-idle-sleep = {
+    Unit = {
+      Description = "Inhibit idle and sleep while keep-awake is enabled";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+      ConditionPathExists = "!%h/.config/hq/allow-sleep";
+    };
+    Service = {
+      ExecStart = "${pkgs.systemd}/bin/systemd-inhibit --what=idle:sleep --mode=block --why=\"keep-awake enabled\" ${pkgs.coreutils}/bin/sleep infinity";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
+  };
 }

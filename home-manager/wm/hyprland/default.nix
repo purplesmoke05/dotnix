@@ -448,6 +448,170 @@
     })
 
     (pkgs.writeShellApplication {
+      name = "dev-monitor-term";
+      runtimeInputs = with pkgs; [
+        coreutils
+        ghostty
+        jq
+      ];
+      bashOptions = [ "errexit" "nounset" "pipefail" ];
+      text = ''
+        dev_class="com.mitchellh.ghostty.dev.monitor"
+        preferred_monitor="DP-2"
+        workspace_number="1"
+        state_file="''${XDG_RUNTIME_DIR:-/tmp}/dev-monitor-term-last-focused-$UID"
+
+        get_active_window_addr() {
+          hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty' || true
+        }
+
+        get_active_window_class() {
+          hyprctl activewindow -j 2>/dev/null | jq -r '.class // empty' || true
+        }
+
+        get_dev_terminal_addr() {
+          hyprctl clients -j 2>/dev/null | jq -r --arg class "$dev_class" 'first(.[] | select(.class == $class) | .address) // empty' || true
+        }
+
+        get_target_monitor() {
+          _monitor="$(
+            hyprctl monitors -j 2>/dev/null | jq -r --arg monitor "$preferred_monitor" '
+              first(.[] | select(.name == $monitor) | .name) // empty
+            ' || true
+          )"
+
+          if [ -n "$_monitor" ]; then
+            printf '%s\n' "$_monitor"
+            return 0
+          fi
+
+          hyprctl monitors -j 2>/dev/null | jq -r '
+            first(.[] | select(.focused == true) | .name) // first(.[] | .name) // empty
+          ' || true
+        }
+
+        get_monitor_active_workspace() {
+          _monitor="$1"
+
+          hyprctl monitors -j 2>/dev/null | jq -r --arg monitor "$_monitor" '
+            first(.[] | select(.name == $monitor) | .activeWorkspace.id) // empty
+          ' || true
+        }
+
+        client_exists() {
+          _address="$1"
+
+          if [ -z "$_address" ]; then
+            return 1
+          fi
+
+          hyprctl clients -j 2>/dev/null | jq -e --arg address "$_address" 'any(.[]; .address == $address)' >/dev/null
+        }
+
+        remember_return_window() {
+          _address="$(get_active_window_addr)"
+          _class="$(get_active_window_class)"
+
+          if [ -n "$_address" ] && [ "$_class" != "$dev_class" ]; then
+            printf '%s\n' "$_address" > "$state_file"
+          fi
+        }
+
+        focus_return_window() {
+          if [ ! -r "$state_file" ]; then
+            return 1
+          fi
+
+          IFS= read -r _address < "$state_file" || return 1
+
+          if ! client_exists "$_address"; then
+            return 1
+          fi
+
+          hyprctl dispatch focuswindow "address:$_address" >/dev/null
+        }
+
+        focus_dev_workspace() {
+          _monitor="$(get_target_monitor)"
+
+          if [ -z "$_monitor" ]; then
+            printf 'no monitor available for dev terminal\n' >&2
+            exit 1
+          fi
+
+          hyprctl --batch "dispatch focusmonitor $_monitor ; dispatch split:workspace $workspace_number" >/dev/null
+          get_monitor_active_workspace "$_monitor"
+        }
+
+        launch_dev_terminal() {
+          _workspace="$1"
+
+          if [ -n "$_workspace" ]; then
+            hyprctl dispatch exec "[workspace $_workspace silent] ${pkgs.ghostty}/bin/ghostty --class=$dev_class --gtk-single-instance=false --window-padding-y=2,8 --font-size=12.5" >/dev/null
+            return 0
+          fi
+
+          ${pkgs.ghostty}/bin/ghostty --class="$dev_class" --gtk-single-instance=false --window-padding-y=2,8 --font-size=12.5 >/dev/null 2>&1 &
+        }
+
+        move_dev_terminal_to_workspace() {
+          _address="$1"
+          _workspace="$2"
+
+          if [ -z "$_address" ] || [ -z "$_workspace" ]; then
+            return 0
+          fi
+
+          hyprctl dispatch movetoworkspacesilent "$_workspace,address:$_address" >/dev/null
+        }
+
+        wait_for_dev_terminal() {
+          _attempt=0
+
+          while [ "$_attempt" -lt 100 ]; do
+            if [ -n "$(get_dev_terminal_addr)" ]; then
+              return 0
+            fi
+
+            sleep 0.05
+            _attempt=$((_attempt + 1))
+          done
+
+          return 1
+        }
+
+        focus_dev_terminal() {
+          _address="$(get_dev_terminal_addr)"
+
+          if [ -z "$_address" ]; then
+            return 1
+          fi
+
+          hyprctl dispatch focuswindow "address:$_address" >/dev/null
+        }
+
+        if [ "$(get_active_window_class)" = "$dev_class" ]; then
+          focus_return_window || true
+          exit 0
+        fi
+
+        remember_return_window
+
+        target_workspace="$(focus_dev_workspace)"
+        dev_address="$(get_dev_terminal_addr)"
+
+        if [ -n "$dev_address" ]; then
+          move_dev_terminal_to_workspace "$dev_address" "$target_workspace"
+          focus_dev_terminal
+        else
+          launch_dev_terminal "$target_workspace"
+          wait_for_dev_terminal || true
+          focus_dev_terminal
+        fi
+      '';
+    })
+
+    (pkgs.writeShellApplication {
       name = "hints-once";
       runtimeInputs = with pkgs; [ util-linux ];
       bashOptions = [ "errexit" "nounset" "pipefail" ];
@@ -596,9 +760,10 @@
         "$mainMod,E,exec,nautilus"
         "CTRL, 4, exec,rofi -show drun"
         "CTRL SHIFT, 4, exec, term-ghostty"
-        "CTRL, 1, exec,bemoji -t -c -e -n"
+        "CTRL, 1, exec, dev-monitor-term"
         "CTRL, 2, exec, hints-once"
         "$mainMod,P,pseudo,"
+        "CTRL, 5, exec,bemoji -t -c -e -n"
 
         # Utility controls / ユーティリティ操作
         "$mainMod SHIFT, c, exec, hyprpicker --autocopy"
@@ -620,9 +785,6 @@
 
         # Window layout / ウィンドウレイアウト
         "$mainMod CTRL, k, layoutmsg, preselect d"
-
-        # Monitor control / モニター制御
-        "$mainMod, Tab, exec, hyprctl monitors -j|jq 'map(select(.focused|not).activeWorkspace.id)[0]'|xargs hyprctl dispatch workspace"
 
         # Screenshot controls / スクリーンショット操作
         '', Print, exec, grimblast save output - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png $HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png''
