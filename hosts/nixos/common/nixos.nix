@@ -492,6 +492,7 @@ in
   # Base toolset covering dev, Wayland, and IME support. / 開発・Wayland・IME を含む基本ツール群。
   environment.systemPackages = with pkgs; [
     git
+    mosh
     alacritty
     waybar
     wofi

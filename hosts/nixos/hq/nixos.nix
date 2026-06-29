@@ -35,6 +35,7 @@ in
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEnLxrW1BOyt8CREqoEzBaH86LEh6+4rE27Kv+Zl6vU9"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzfuIp5GmSgUAJFlRxHtCFPwhZ/1Zo3ItoeMgbfIaLw"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDo31UyrkM48T7kLYXfYCIZD0MNNT+bDtKi9Wm1cpvoA thehand@nixos"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfKr30iNzf2T+1bq1E8hnK6b7atVzFfkVlzL6b1zMly moshi"
     ];
   };
 
@@ -84,6 +85,11 @@ in
     ];
   };
 
+  programs.mosh = {
+    enable = true;
+    openFirewall = false;
+  };
+
   # Firewall configuration / ファイアウォール設定
   networking.firewall = {
     enable = true;
@@ -94,8 +100,20 @@ in
       # USB AP (hostapd) / USB AP（hostapd）
       "wlan-hotspot0" = {
         allowedUDPPorts = [ 53 67 68 ]; # DNS and DHCP / DNS と DHCP
+        allowedUDPPortRanges = [
+          {
+            from = 60000;
+            to = 61000;
+          }
+        ];
         allowedTCPPorts = [ 53 ]; # DNS / DNS
       };
+      ${config.services.tailscale.interfaceName}.allowedUDPPortRanges = [
+        {
+          from = 60000;
+          to = 61000;
+        }
+      ];
     };
 
     # Default rules / 既定ルール
