@@ -8,24 +8,24 @@
 }:
 
 let
-  version = "1.0.61";
+  version = "1.0.65";
 
   sources = {
     x86_64-linux = {
       name = "copilot-linux-x64";
-      hash = "sha256-IovYAqNprWs0d74cCFENVVYoux/IpTomM38zZln4F9s=";
+      hash = "sha256-2ja+KaWvx8bO9jslrBDuGGIhag9e+r7VAu1CxOD2Kvg=";
     };
     aarch64-linux = {
       name = "copilot-linux-arm64";
-      hash = "sha256-IlyHdCOUCWVX7F0cxVk2JlTaiVpnLVp6pv3CBLHJXTY=";
+      hash = "sha256-6fTlcM/oXnvko75LdOtlZMP5bpfLEWK8xigs0fggxoY=";
     };
     x86_64-darwin = {
       name = "copilot-darwin-x64";
-      hash = "sha256-j3pxBbegJb9XMxs0Q1eNzT+uJSl3yCRr55egHP+6tCY=";
+      hash = "sha256-fB32LvO2xZGdhCxptM32QSOelhIhOxjx7NtgqGyJ0zY=";
     };
     aarch64-darwin = {
       name = "copilot-darwin-arm64";
-      hash = "sha256-RI9VC4zsshbGDP9c36pG/phGBsMW/bYrW17YMkju8K4=";
+      hash = "sha256-mKA5oSRreNdmJw/doZdICizCEVcTN4f9t5ifEojVspw=";
     };
   };
 

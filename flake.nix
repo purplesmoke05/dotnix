@@ -435,6 +435,7 @@
             }).overrideAttrs (oldAttrs: {
               patches = (oldAttrs.patches or [ ]) ++ [
                 ./pkgs/ironbar/volume-default-sink-wrapper.patch
+                ./pkgs/ironbar/volume-dropdown-selection-guard.patch
               ];
               propagatedBuildInputs = [ ];
             });
@@ -453,9 +454,6 @@
               libcap = final.libcap_2_78;
               openssl = final.openssl_3_6_patched;
             };
-
-            # limux: GPU-accelerated terminal multiplexer / limux: Linux 向け GPU 加速ターミナル多重化
-            limux = final.callPackage ./pkgs/limux { };
 
             # Hazkey package / Hazkey パッケージ
             fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
@@ -747,7 +745,6 @@
           wtp = pkgs.wtp;
           rtk = pkgs.rtk;
           pi = pkgs.pi;
-          limux = pkgs.limux;
         };
         formatter = pkgs.nixpkgs-fmt;
       }

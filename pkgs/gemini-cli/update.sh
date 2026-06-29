@@ -70,7 +70,7 @@ if [[ ! -f "$lockFilePath" ]]; then
 fi
 
 echo "Calculating npmDepsHash from lockfile..."
-npmDepsHash=$(prefetch-npm-deps "$lockFilePath")
+npmDepsHash=$(NPM_FETCHER_VERSION=2 prefetch-npm-deps "$lockFilePath")
 if [[ -z "$npmDepsHash" ]]; then
   echo "Error: Could not calculate npmDepsHash."
   exit 1

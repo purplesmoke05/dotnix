@@ -18,6 +18,7 @@
     sqlite
     volta
     codex
+    opencode
     gemini-cli
     confluence-cli
     claude-code

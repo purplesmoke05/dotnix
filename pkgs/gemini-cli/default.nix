@@ -15,17 +15,19 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "gemini-cli";
-  version = "0.46.0";
+  version = "0.49.0";
   nodejs = nodejs_22;
 
   src = fetchFromGitHub {
     owner = "google-gemini";
     repo = "gemini-cli";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-/ojCJJoddu2F9k1BGN55n9Uc/bmavImGiuA0bT5Tb40=";
+    hash = "sha256-C47U5nTWB0Dq2iPRujRHMDjyyrU0d6xZ3Uv7URcIcg8=";
   };
 
-  npmDepsHash = "sha256-sDJVzRe6KDPSDHx1+J5F1vCgceTEJXeNK11R4KbjgUs=";
+  npmDepsHash = "sha256-e3gPyBJg2TPGywpR7iqpDtcRdq6AWlvY725kIGPJmCo=";
+  npmDepsFetcherVersion = 2;
+  npmFlags = [ "--legacy-peer-deps" ];
 
   nativeBuildInputs = [
     jq
@@ -48,6 +50,35 @@ buildNpmPackage (finalAttrs: {
     # Disable auto-update and update notifications by default.
     sed -i '/enableAutoUpdate: {/,/}/ s/default: true/default: false/' packages/cli/src/config/settingsSchema.ts
     sed -i '/enableAutoUpdateNotification: {/,/}/ s/default: true/default: false/' packages/cli/src/config/settingsSchema.ts
+
+    # Align workspace manifests with package-lock before npm ci. / npm ci の前に workspace manifest を package-lock と揃える。
+    syncLockedDependencyVersion() {
+      local manifest="$1"
+      local dependency="$2"
+      local lockPackage="''${manifest%/package.json}/node_modules/$dependency"
+      local escapedLockPackage
+      local escapedDependency
+      local lockedVersion
+
+      escapedLockPackage="$(printf '%s\n' "$lockPackage" | sed 's/[\/&]/\\&/g')"
+      escapedDependency="$(printf '%s\n' "$dependency" | sed 's/[\/&]/\\&/g')"
+      lockedVersion="$(sed -n "/\"$escapedLockPackage\": {/,/}/ s/.*\"version\": \"\([^\"]*\)\".*/\1/p" package-lock.json | head -n1)"
+      if [ -z "$lockedVersion" ]; then
+        echo "failed to read locked version for $lockPackage" >&2
+        exit 1
+      fi
+
+      sed -i "s/\"$escapedDependency\": \"[^\"]*\"/\"$dependency\": \"$lockedVersion\"/" "$manifest"
+    }
+
+    syncLockedDependencyVersion packages/a2a-server/package.json tar
+    syncLockedDependencyVersion packages/a2a-server/package.json vitest
+    syncLockedDependencyVersion packages/cli/package.json clipboardy
+    syncLockedDependencyVersion packages/cli/package.json tar
+    syncLockedDependencyVersion packages/cli/package.json vitest
+    syncLockedDependencyVersion packages/core/package.json vitest
+    syncLockedDependencyVersion packages/sdk/package.json vitest
+    syncLockedDependencyVersion packages/vscode-ide-companion/package.json typescript
   '';
 
   preBuild = ''
@@ -58,7 +89,7 @@ buildNpmPackage (finalAttrs: {
     runHook preInstall
     mkdir -p $out/{bin,share/gemini-cli}
 
-    npm prune --omit=dev
+    npm prune --omit=dev --legacy-peer-deps
     cp -r node_modules $out/share/gemini-cli/
     
     # Cleanup unnecessary modules

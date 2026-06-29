@@ -1,0 +1,112 @@
+--- a/src/modules/volume/mod.rs
++++ b/src/modules/volume/mod.rs
+@@ -3,7 +3,7 @@ use std::cell::RefCell;
+ use std::collections::HashMap;
+
+ use glib::subclass::prelude::*;
+-use glib::{Object, Properties};
++use glib::{Object, Properties, SignalHandlerId};
+ use gtk::prelude::*;
+ use gtk::{
+     Button, DropDown, Expression, Label, ListItem, Orientation, Scale, SignalListItemFactory,
+@@ -126,14 +126,20 @@ impl VolumeModule {
+-    fn select_notify<F>(selector: &DropDown, tx: Sender<Update>, func: F)
++    fn select_notify<F>(selector: &DropDown, tx: Sender<Update>, func: F) -> SignalHandlerId
+     where
+         F: Fn(String) -> Update + 'static,
+     {
+-        selector.connect_selected_item_notify(move |selector| {
++        selector.connect_selected_item_notify(move |selector| {
+             if let Some(item) = selector.selected_item().and_downcast_ref::<DropdownItem>() {
+                 tx.send_spawn(func(item.key()));
+             }
+-        });
++        })
++    }
++
++    fn set_selected_silently(selector: &DropDown, handler: &SignalHandlerId, selected: u32) {
++        selector.block_signal(handler);
++        selector.set_selected(selected);
++        selector.unblock_signal(handler);
+     }
+
+     fn slider_notify<F>(&self, scale: &Scale, selector: DropDown, tx: Sender<Update>, func: F)
+     where
+         F: Fn(String, f64) -> Update + 'static,
+@@ -519,20 +526,20 @@ impl Module<Button> for VolumeModule {
+         sink_selector.set_factory(Some(&factory));
+         sink_selector.add_css_class("device-selector");
+         sink_selector.add_css_class("sink-selector");
+-        {
++        let sink_select_handler = {
+             let tx = context.controller_tx.clone();
+-            Self::select_notify(&sink_selector, tx, Update::SinkChange);
+-        }
++            Self::select_notify(&sink_selector, tx, Update::SinkChange)
++        };
+         sink_container.append(&sink_selector);
+
+         let source_selector = DropDown::new(Some(source_options.clone()), None::<Expression>);
+         source_selector.set_factory(Some(&factory));
+         source_selector.add_css_class("device-selector");
+         source_selector.add_css_class("source-selector");
+-        {
++        let source_select_handler = {
+             let tx = context.controller_tx.clone();
+-            Self::select_notify(&source_selector, tx, Update::SourceChange);
+-        }
++            Self::select_notify(&source_selector, tx, Update::SourceChange)
++        };
+         source_container.append(&source_selector);
+
+         let sink_slider = self.new_slider();
+@@ -630,6 +637,10 @@ impl Module<Button> for VolumeModule {
+                         {
+                             let offset = sink_options.find(&no_sink).is_some() as usize;
+-                            sink_selector.set_selected((sinks.len() + offset) as u32);
++                            Self::set_selected_silently(
++                                &sink_selector,
++                                &sink_select_handler,
++                                (sinks.len() + offset) as u32,
++                            );
+                             sink_slider.set_value(info.volume.percent());
+
+                             sink_manager
+@@ -650,6 +661,10 @@ impl Module<Button> for VolumeModule {
+                         {
+                             let offset = source_options.find(&no_source).is_some() as usize;
+-                            source_selector.set_selected((sources.len() + offset) as u32);
++                            Self::set_selected_silently(
++                                &source_selector,
++                                &source_select_handler,
++                                (sources.len() + offset) as u32,
++                            );
+                             source_slider.set_value(info.volume.percent());
+
+                             source_manager
+@@ -670,7 +685,11 @@ impl Module<Button> for VolumeModule {
+                                     Err(_) => false,
+                                 })
+                         {
+-                            sink_selector.set_selected(pos as u32);
++                            Self::set_selected_silently(
++                                &sink_selector,
++                                &sink_select_handler,
++                                pos as u32,
++                            );
+                             if !sink_slider.has_css_class("dragging") {
+                                 sink_slider.set_value(info.volume.percent());
+                             }
+@@ -698,7 +717,11 @@ impl Module<Button> for VolumeModule {
+                                 })
+                             && (!info.monitor || show_monitors)
+                         {
+-                            source_selector.set_selected(pos as u32);
++                            Self::set_selected_silently(
++                                &source_selector,
++                                &source_select_handler,
++                                pos as u32,
++                            );
+                             if !source_slider.has_css_class("dragging") {
+                                 source_slider.set_value(info.volume.percent());
+                             }
