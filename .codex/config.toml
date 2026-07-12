@@ -1,6 +1,10 @@
 [features]
 multi_agent = true
 
+[[skills.config]]
+path = ".codex/skills/nix-rust-update-hashes/SKILL.md"
+enabled = true
+
 [agents.explorer]
 description = "Read-only codebase scout for impact analysis in this Nix monorepo"
 config_file = "agents/explorer.toml"

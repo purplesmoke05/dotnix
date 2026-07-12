@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nix Rust Update Hashes"
+  short_description: "Refresh Rust Nix hashes without full builds"
+  default_prompt: "Use $nix-rust-update-hashes to update a Rust Nix package script without compiling the final package."
