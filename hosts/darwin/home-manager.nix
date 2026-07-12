@@ -16,6 +16,7 @@ in
     ./../../home-manager/cli/terminal/nushell.nix
     ./../../home-manager/cli/terminal/fish.nix
     ./../../home-manager/cli/alternative.nix
+    ./../../home-manager/development/agent-tools.nix
     ./../../home-manager/gui/editor/vscode
   ];
   home.packages = with pkgs; [
