@@ -230,6 +230,10 @@
             electron_40 = withoutSpeechDispatcher prev.electron_40;
             electron_41 = withoutSpeechDispatcher prev.electron_41;
 
+            vesktop = prev.vesktop.override {
+              pnpm_10_29_2 = final.pnpm_10;
+            };
+
             # Prefer current FFmpeg for Telegram Desktop and tg_owt. / Telegram Desktop と tg_owt は新しい FFmpeg を優先。
             telegram-desktop = prev.telegram-desktop.override {
               unwrapped = prev.telegram-desktop.unwrapped.override {
