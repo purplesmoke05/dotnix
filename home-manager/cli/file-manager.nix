@@ -48,13 +48,13 @@
       ];
 
       plugin.prepend_previewers = [
-        { name = "*.xlsx"; run = "piper -- xlsx2csv -a \"$1\" | sed -n '1,240p'"; }
-        { name = "*.xlsm"; run = "piper -- xlsx2csv -a \"$1\" | sed -n '1,240p'"; }
-        { name = "*.csv"; run = "rich-preview"; }
-        { name = "*.json"; run = "rich-preview"; }
-        { name = "*.md"; run = "rich-preview"; }
-        { name = "*.rst"; run = "rich-preview"; }
-        { name = "*.ipynb"; run = "rich-preview"; }
+        { url = "*.xlsx"; run = "piper -- xlsx2csv -a \"$1\" | sed -n '1,240p'"; }
+        { url = "*.xlsm"; run = "piper -- xlsx2csv -a \"$1\" | sed -n '1,240p'"; }
+        { url = "*.csv"; run = "rich-preview"; }
+        { url = "*.json"; run = "rich-preview"; }
+        { url = "*.md"; run = "rich-preview"; }
+        { url = "*.rst"; run = "rich-preview"; }
+        { url = "*.ipynb"; run = "rich-preview"; }
         { mime = "application/{*zip,tar,bzip2,7z*,rar,xz,zstd,java-archive}"; run = "ouch --show-file-icons"; }
       ];
     };
