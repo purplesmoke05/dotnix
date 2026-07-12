@@ -236,6 +236,7 @@ in
           chain input {
             type filter hook input priority 20; policy accept;
 
+            iifname "${protonVpn.hotspotInterface}" ct state established,related accept
             iifname "${protonVpn.hotspotInterface}" ip saddr { 0.0.0.0/32, ${protonVpn.hotspot4} } udp sport 68 udp dport 67 accept
             iifname "${protonVpn.hotspotInterface}" ip saddr ${protonVpn.hotspot4} tcp dport { ${lib.concatMapStringsSep ", " toString protonVpn.hotspotAllowedHostTcpPorts} } accept
             iifname "${protonVpn.hotspotInterface}" ip saddr ${protonVpn.hotspot4} udp dport { ${lib.concatMapStringsSep ", " toString protonVpn.hotspotAllowedHostUdpPorts} } accept
