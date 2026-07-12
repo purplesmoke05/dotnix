@@ -1,4 +1,8 @@
-{ pkgs, inputs, lib, hyprsplit, ... }: {
+{ pkgs, inputs, lib, hyprsplit, hostname, ... }:
+let
+  quickTermMonitor = if hostname == "hq" then "DP-3" else "";
+in
+{
   imports = [
     ./rofi.nix
     ./ironbar.nix
@@ -156,12 +160,22 @@
       text = ''
         left_class="com.mitchellh.ghostty.quick.left"
         right_class="com.mitchellh.ghostty.quick.right"
+        preferred_monitor=${lib.escapeShellArg quickTermMonitor}
         hidden_workspace="99"
         state_file="''${XDG_RUNTIME_DIR:-/tmp}/quick-term-last-focused-$UID"
+        return_state_file="''${XDG_RUNTIME_DIR:-/tmp}/quick-term-return-window-$UID"
 
         get_client_pid() {
           _class="$1"
           hyprctl clients -j | jq -r --arg class "$_class" 'first(.[] | select(.class == $class) | .pid) // empty'
+        }
+
+        get_active_window_addr() {
+          hyprctl activewindow -j | jq -r '.address // empty'
+        }
+
+        get_active_window_class() {
+          hyprctl activewindow -j | jq -r '.class // ""'
         }
 
         get_client_workspace() {
@@ -208,12 +222,45 @@
           esac
         }
 
+        client_exists() {
+          _address="$1"
+
+          if [ -z "$_address" ]; then
+            return 1
+          fi
+
+          hyprctl clients -j | jq -e --arg address "$_address" 'any(.[]; .address == $address)' >/dev/null
+        }
+
         remember_last_focused_quick_term() {
           _class="$1"
 
           if is_quick_term_class "$_class"; then
             printf '%s\n' "$_class" > "$state_file"
           fi
+        }
+
+        remember_return_window() {
+          _address="$(get_active_window_addr)"
+          _class="$(get_active_window_class)"
+
+          if [ -n "$_address" ] && ! is_quick_term_class "$_class"; then
+            printf '%s\n' "$_address" > "$return_state_file"
+          fi
+        }
+
+        focus_return_window() {
+          if [ ! -r "$return_state_file" ]; then
+            return 1
+          fi
+
+          IFS= read -r _address < "$return_state_file" || return 1
+
+          if ! client_exists "$_address"; then
+            return 1
+          fi
+
+          hyprctl dispatch focuswindow "address:$_address" >/dev/null
         }
 
         get_preferred_quick_term_class() {
@@ -278,16 +325,44 @@
           printf '%s\n' "$_active_monitor"
         }
 
-        get_quick_term_geometry_for_active_monitor() {
-          _side="$1"
-          _active_monitor="$(get_active_monitor)"
+        get_target_monitor() {
+          if [ -n "$preferred_monitor" ]; then
+            _monitor="$(
+              hyprctl monitors -j | jq -r --arg monitor "$preferred_monitor" '
+                first(.[] | select(.name == $monitor) | .name) // empty
+              '
+            )"
 
-          if [ -z "$_active_monitor" ]; then
+            if [ -z "$_monitor" ]; then
+              printf 'quick-term monitor not found: %s\n' "$preferred_monitor" >&2
+              return 1
+            fi
+
+            printf '%s\n' "$_monitor"
+            return 0
+          fi
+
+          get_active_monitor
+        }
+
+        get_monitor_active_workspace() {
+          _monitor="$1"
+
+          hyprctl monitors -j | jq -r --arg monitor "$_monitor" '
+            first(.[] | select(.name == $monitor) | (.activeWorkspace.name // (.activeWorkspace.id | tostring))) // empty
+          '
+        }
+
+        get_quick_term_geometry_for_monitor() {
+          _monitor="$1"
+          _side="$2"
+
+          if [ -z "$_monitor" ]; then
             return 0
           fi
 
           _geometry="$(
-            hyprctl monitors -j | jq -r --arg monitor "$_active_monitor" --arg side "$_side" '
+            hyprctl monitors -j | jq -r --arg monitor "$_monitor" --arg side "$_side" '
               first(.[] | select(.name == $monitor)) as $m
               | ($m.scale | tonumber) as $scale
               | ($m.transform | tonumber) as $transform
@@ -380,12 +455,13 @@
           append_batch_command "dispatch movetoworkspacesilent $hidden_workspace,pid:$_pid"
         }
 
-        _focused_class="$(hyprctl activewindow -j | jq -r '.class // ""')"
+        _focused_class="$(get_active_window_class)"
         _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // empty')"
 
         if is_quick_term_visible_on_active_workspace "$_active_ws"; then
           if is_quick_term_class "$_focused_class"; then
             remember_last_focused_quick_term "$_focused_class"
+            focus_return_window || true
           fi
           _batch_commands=""
           append_quick_term_pin_state_commands "false" "$right_class" "$left_class"
@@ -396,6 +472,8 @@
           fi
           exit 0
         fi
+
+        remember_return_window
 
         _need_wait_left=0
         _need_wait_right=0
@@ -418,13 +496,24 @@
           wait_for_client "$right_class" || true
         fi
 
-        _active_ws="$(hyprctl activeworkspace -j | jq -r '.name // empty')"
-        _left_geometry="$(get_quick_term_geometry_for_active_monitor "left")"
-        _right_geometry="$(get_quick_term_geometry_for_active_monitor "right")"
+        _target_monitor="$(get_target_monitor)" || exit 1
+        if [ -z "$_target_monitor" ]; then
+          printf 'no monitor available for quick-term\n' >&2
+          exit 1
+        fi
+
+        _target_ws="$(get_monitor_active_workspace "$_target_monitor")"
+        if [ -z "$_target_ws" ]; then
+          printf 'no active workspace for quick-term monitor: %s\n' "$_target_monitor" >&2
+          exit 1
+        fi
+
+        _left_geometry="$(get_quick_term_geometry_for_monitor "$_target_monitor" "left")"
+        _right_geometry="$(get_quick_term_geometry_for_monitor "$_target_monitor" "right")"
 
         _batch_commands=""
-        append_quick_term_show_commands "$left_class" "$_left_geometry" "$_active_ws"
-        append_quick_term_show_commands "$right_class" "$_right_geometry" "$_active_ws"
+        append_quick_term_show_commands "$left_class" "$_left_geometry" "$_target_ws"
+        append_quick_term_show_commands "$right_class" "$_right_geometry" "$_target_ws"
         append_quick_term_pin_state_commands "true" "$right_class" "$left_class"
 
         _preferred_class="$(get_preferred_quick_term_class)"
