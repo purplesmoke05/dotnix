@@ -5,6 +5,14 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 DEFAULT_NIX="$REPO_ROOT/pkgs/github-copilot-cli/default.nix"
+FAKE_HASH="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
+artifacts=(
+  "x86_64-linux copilot-linux-x64"
+  "aarch64-linux copilot-linux-arm64"
+  "x86_64-darwin copilot-darwin-x64"
+  "aarch64-darwin copilot-darwin-arm64"
+)
 
 if [[ ! -f "$DEFAULT_NIX" ]]; then
   echo "Error: $DEFAULT_NIX not found." >&2
@@ -35,16 +43,50 @@ else
   echo "Latest release: v${latest_tag}"
 fi
 
-if [[ "$latest_tag" == "$current_version" ]]; then
-  echo "Already on latest version; hashes will be refreshed."
-fi
+is_truthy() {
+  case "${1:-}" in
+    1|true|yes|y)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
 
-artifacts=(
-  "x86_64-linux copilot-linux-x64"
-  "aarch64-linux copilot-linux-arm64"
-  "x86_64-darwin copilot-darwin-x64"
-  "aarch64-darwin copilot-darwin-arm64"
-)
+hashes_need_refresh() {
+  DEFAULT_NIX="$DEFAULT_NIX" \
+  FAKE_HASH="$FAKE_HASH" \
+  python3 <<'PY'
+import os
+import pathlib
+import re
+import sys
+
+default_nix = pathlib.Path(os.environ["DEFAULT_NIX"])
+fake_hash = os.environ["FAKE_HASH"]
+text = default_nix.read_text()
+systems = ("x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin")
+
+for system in systems:
+    pattern = re.escape(system) + r'\s*=\s*\{.*?hash\s*=\s*"([^"]*)"'
+    match = re.search(pattern, text, flags=re.S)
+    if match is None or match.group(1) in ("", fake_hash):
+        sys.exit(0)
+
+sys.exit(1)
+PY
+}
+
+if [[ "$latest_tag" == "$current_version" ]] && ! is_truthy "${COPILOT_CLI_REFRESH_HASHES:-0}"; then
+  if hashes_need_refresh; then
+    echo "Already on target version, but hashes need refresh."
+  else
+    echo "Already on latest version; nothing to update."
+    echo "Set COPILOT_CLI_REFRESH_HASHES=1 to recompute hashes."
+    exit 0
+  fi
+fi
 
 declare -A hashes
 

@@ -14,6 +14,8 @@ if [[ ! -f "$DEFAULT_NIX" ]]; then
 fi
 
 current_version="$(sed -n 's/^\s*version = "\([^"]*\)";/\1/p' "$DEFAULT_NIX" | head -n1)"
+current_src_hash="$(sed -n 's/^\s*hash = "\([^"]*\)";/\1/p' "$DEFAULT_NIX" | head -n1)"
+current_cargo_hash="$(sed -n 's/^\s*cargoHash = "\([^"]*\)";/\1/p' "$DEFAULT_NIX" | head -n1)"
 echo "Current version: ${current_version:-<unknown>}"
 
 if [[ -n "${RTK_VERSION_OVERRIDE:-}" ]]; then
@@ -37,6 +39,31 @@ else
   echo "Latest release: v${target_version}"
 fi
 
+is_truthy() {
+  case "${1:-}" in
+    1|true|yes|y)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+hash_needs_refresh() {
+  [[ -z "$1" || "$1" == "$FAKE_HASH" ]]
+}
+
+if [[ "$target_version" == "$current_version" ]] && ! is_truthy "${RTK_REFRESH_HASHES:-0}"; then
+  if hash_needs_refresh "$current_src_hash" || hash_needs_refresh "$current_cargo_hash"; then
+    echo "Already on target version, but hashes need refresh."
+  else
+    echo "Already on latest version; nothing to update."
+    echo "Set RTK_REFRESH_HASHES=1 to recompute hashes."
+    exit 0
+  fi
+fi
+
 update_default_nix() {
   local version="$1"
   local src_hash="$2"
@@ -52,22 +79,54 @@ update_default_nix() {
   ' "$DEFAULT_NIX"
 }
 
+prefetch_source_hash() {
+  local version="$1"
+  local url="https://github.com/rtk-ai/rtk/archive/refs/tags/v${version}.tar.gz"
+  local base32_hash
+
+  base32_hash="$(nix-prefetch-url --unpack --type sha256 "$url")"
+  nix hash convert --hash-algo sha256 --from nix32 --to sri "$base32_hash"
+}
+
 extract_got_hash() {
   sed -n 's/.*got:[[:space:]]*\(sha256-[A-Za-z0-9+/=]*\).*/\1/p' | tail -n1
 }
 
-build_and_expect_hash() {
-  local phase="$1"
+prefetch_cargo_hash() {
+  local version="$1"
+  local src_hash="$2"
   local log_file
   log_file="$(mktemp)"
+  local expr
+
+  expr="$(cat <<EOF
+let
+  flake = builtins.getFlake "path:${REPO_ROOT}";
+  pkgs = import flake.inputs.nixpkgs {
+    system = builtins.currentSystem;
+  };
+in
+(pkgs.rustPlatform.fetchCargoVendor {
+  pname = "rtk";
+  version = "${version}";
+  src = pkgs.fetchFromGitHub {
+    owner = "rtk-ai";
+    repo = "rtk";
+    tag = "v${version}";
+    hash = "${src_hash}";
+  };
+  hash = "";
+}).vendorStaging
+EOF
+)"
 
   set +e
-  nix build --no-link --no-write-lock-file "$INSTALLABLE" 2>&1 | tee "$log_file" >&2
+  nix build --impure --no-link --no-write-lock-file --expr "$expr" 2>&1 | tee "$log_file" >&2
   local status="${PIPESTATUS[0]}"
   set -e
 
   if [[ "$status" -eq 0 ]]; then
-    echo "Error: build succeeded while collecting ${phase} hash." >&2
+    echo "Error: cargo vendor derivation succeeded while collecting hash." >&2
     rm -f "$log_file"
     exit 1
   fi
@@ -77,7 +136,7 @@ build_and_expect_hash() {
   rm -f "$log_file"
 
   if [[ -z "$hash" ]]; then
-    echo "Error: unable to extract ${phase} hash from nix output." >&2
+    echo "Error: unable to extract cargo vendor hash from nix output." >&2
     exit 1
   fi
 
@@ -85,21 +144,21 @@ build_and_expect_hash() {
 }
 
 echo "Collecting source hash..."
-update_default_nix "$target_version" "$FAKE_HASH" "$FAKE_HASH"
-
-src_hash="$(build_and_expect_hash "source")"
+src_hash="$(prefetch_source_hash "$target_version")"
 echo "  source: $src_hash"
 
-echo "Collecting cargo hash..."
-update_default_nix "$target_version" "$src_hash" "$FAKE_HASH"
-
-cargo_hash="$(build_and_expect_hash "cargo")"
+echo "Collecting cargo vendor hash..."
+cargo_hash="$(prefetch_cargo_hash "$target_version" "$src_hash")"
 echo "  cargo: $cargo_hash"
 
 echo "Updating ${DEFAULT_NIX}..."
 update_default_nix "$target_version" "$src_hash" "$cargo_hash"
 
-echo "Verifying updated package..."
-nix build --no-link --no-write-lock-file "$INSTALLABLE"
+if is_truthy "${RTK_UPDATE_VERIFY:-0}"; then
+  echo "Verifying updated package..."
+  nix build --no-link --no-write-lock-file "$INSTALLABLE"
+else
+  echo "Skipping package build verification. Set RTK_UPDATE_VERIFY=1 to enable it."
+fi
 
 echo "Update complete: $target_version"
