@@ -258,20 +258,6 @@
             # gh-iteration package / gh-iteration パッケージ
             gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
-            # gemini-cli package / gemini-cli パッケージ
-            gemini-cli = final.callPackage ./pkgs/gemini-cli {
-              nodejs_22 = prev.nodejs_22.override {
-                "nodejs-slim" = prev."nodejs-slim_22".override {
-                  callPackage = path: args: prev.callPackage path (args // {
-                    nghttp2 = final.nghttp2_minimal;
-                    ngtcp2 = final.ngtcp2_openssl_patched;
-                    sqlite = final.sqlite_3_53;
-                  });
-                  openssl = final.openssl_3_6_patched;
-                };
-              };
-            };
-
             # claude-code package / claude-code パッケージ
             claude-code = final.callPackage ./pkgs/claude-code {
               bubblewrap = prev.bubblewrap.override {
@@ -293,6 +279,12 @@
 
             # github-copilot-cli package / github-copilot-cli パッケージ
             github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
+
+            # Hunk terminal diff viewer package / Hunk ターミナル diff ビューアパッケージ
+            hunk = final.callPackage ./pkgs/hunk { };
+
+            # Herdr AI agent multiplexer package / Herdr AI エージェントマルチプレクサパッケージ
+            herdr = final.callPackage ./pkgs/herdr { };
 
             # wtp package / wtp パッケージ
             wtp = final.callPackage ./pkgs/wtp { };
@@ -749,6 +741,8 @@
           wtp = pkgs.wtp;
           rtk = pkgs.rtk;
           pi = pkgs.pi;
+          hunk = pkgs.hunk;
+          herdr = pkgs.herdr;
         };
         formatter = pkgs.nixpkgs-fmt;
       }

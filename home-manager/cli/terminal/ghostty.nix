@@ -6,7 +6,10 @@ let
   ghosttyExe = lib.getExe config.programs.ghostty.package;
 
   commonKeybinds = [
-    "ctrl+g=scroll_to_top"
+    # Send Esc on Ctrl+G so Herdr can close prefix and picker modes. / Ctrl+G で Esc を送り、Herdr の prefix・picker モードを閉じる。
+    "ctrl+g=text:\\x1b"
+    # Keep scroll-to-top on Ctrl+Shift+Home to avoid terminal application key conflicts. / 端末アプリのキー競合を避けるため、先頭移動は Ctrl+Shift+Home に割り当てる。
+    "ctrl+shift+home=scroll_to_top"
     "ctrl+shift+g=scroll_to_bottom"
     "ctrl+shift+u=scroll_page_up"
     "ctrl+shift+d=scroll_page_down"
