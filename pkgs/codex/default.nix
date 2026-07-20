@@ -137,7 +137,16 @@ else
         set -- --no-alt-screen "$@"
       fi
 
-      exec -a "$0" "$binary" "$@"
+      ${if stdenv.hostPlatform.isLinux then ''
+        exec ${libcap}/bin/capsh \
+          --noamb \
+          --inh= \
+          --caps= \
+          --shell=${stdenv.shell} \
+          -- -c 'exec -a "$0" "$@"' "$0" "$binary" "$@"
+      '' else ''
+        exec -a "$0" "$binary" "$@"
+      ''}
       EOF
               substituteInPlace "$out/bin/codex" --replace "@codex_real@" "$out/bin/.codex-real"
               chmod 755 "$out/bin/codex"
