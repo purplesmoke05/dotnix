@@ -30,6 +30,11 @@ let
     "global:ctrl+5=toggle_quick_terminal"
   ];
 
+  linuxKeybinds = lib.optionals isLinux [
+    "alt+KeyT=new_tab"
+    "ctrl+shift+KeyT=new_tab"
+  ];
+
   commonSettings = {
     window-padding-color = "extend-always";
     theme = "TokyoNight Night";
@@ -70,7 +75,7 @@ let
     font-feature = "-dlig";
     auto-update-channel = "tip";
 
-    keybind = commonKeybinds ++ darwinKeybinds;
+    keybind = commonKeybinds ++ darwinKeybinds ++ linuxKeybinds;
   };
 
   darwinSettings = lib.optionalAttrs isDarwin {
@@ -83,6 +88,7 @@ let
   };
 
   linuxSettings = lib.optionalAttrs isLinux {
+    async-backend = "epoll";
     font-size = 10;
 
     gtk-tabs-location = "bottom";
