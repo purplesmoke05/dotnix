@@ -8,15 +8,15 @@
 
 buildNpmPackage rec {
   pname = "pi";
-  version = "0.80.6";
+  version = "0.81.1";
 
   src = fetchurl {
     url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-${version}.tgz";
-    hash = "sha512-vcfD6tOk402isLl3Cm/qbn2O10TvgroMp1+/fEGM24ZdvETFCdOYv5VZ7m59EI5fPsjfSJh+CpQ5bhBrhfOg7g==";
+    hash = "sha512-r6ovAsZOgAqbC/aU6s+/dPnv/sGZBuWyZNvi3pXjpbuX5wvp3XvGkQI7/VLvX2o9XpmpFaPUxKNym1WfkN/P8A==";
   };
 
   sourceRoot = "package";
-  npmDepsHash = "sha256-nAyoNxXGzd6Xrjfei8l568p9XwnpGow4LtBD8E2dKmQ=";
+  npmDepsHash = "sha256-HG+prCqmA/NBzO56NdnYxYZuauiGWA/IkUgRwlsoqBc=";
   dontNpmBuild = true;
   npmInstallFlags = [
     "--ignore-scripts"
