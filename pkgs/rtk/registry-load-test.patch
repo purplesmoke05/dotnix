@@ -1,0 +1,18 @@
+diff --git a/src/core/toml_filter.rs b/src/core/toml_filter.rs
+index 977e8d9..3495b7d 100644
+--- a/src/core/toml_filter.rs
++++ b/src/core/toml_filter.rs
+@@ -807,0 +808,13 @@ mod tests {
++    #[test]
++    fn test_production_registry_loads_builtin_filters() {
++        let registry = TomlFilterRegistry::load();
++
++        assert!(
++            registry
++                .filters
++                .iter()
++                .any(|filter| filter.name == "shellcheck"),
++            "production registry must load embedded built-in filters"
++        );
++    }
++
