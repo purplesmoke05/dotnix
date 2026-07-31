@@ -18,6 +18,7 @@
     stateVersion = "24.11";
   };
   programs.home-manager.enable = true;
+  systemd.user.startServices = "sd-switch";
 
   wayland.windowManager.hyprland.settings = {
     # Place DP ultrawide left and rotate DP 2.5K portrait on the right. / DPのウルトラワイドを左、DPの2.5Kを右で縦向きに配置。
