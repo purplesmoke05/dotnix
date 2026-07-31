@@ -111,6 +111,29 @@ let
     fi
   '';
 
+  stopProtonVpn = pkgs.writeShellScript "proton-vpn-stop" ''
+    set -euo pipefail
+
+    iface=${lib.escapeShellArg protonVpn.interfaceName}
+    conf=${lib.escapeShellArg protonVpn.runtimeConfigFile}
+
+    if ! ${pkgs.iproute2}/bin/ip link show dev "$iface" >/dev/null 2>&1; then
+      exit 0
+    fi
+
+    if [ ! -f "$conf" ]; then
+      echo "missing Proton WireGuard config while stopping $iface: $conf" >&2
+      exit 1
+    fi
+
+    ${pkgs.wireguard-tools}/bin/wg-quick down "$conf"
+
+    if ${pkgs.iproute2}/bin/ip link show dev "$iface" >/dev/null 2>&1; then
+      echo "Proton WireGuard interface still exists after shutdown: $iface" >&2
+      exit 1
+    fi
+  '';
+
   routeTailnetInProtonTable = pkgs.writeShellScript "proton-vpn-route-tailnet" ''
     set -euo pipefail
 
@@ -394,6 +417,12 @@ in
         Restart = "on-failure";
         RestartSec = 5;
       };
+      preStart = lib.mkBefore ''
+        ${stopProtonVpn}
+      '';
+      preStop = lib.mkForce ''
+        ${stopProtonVpn}
+      '';
       postStart = ''
         ${triggerTailnetRoute}
       '';
