@@ -122,6 +122,11 @@ in
     allowedTCPPorts = [ ]; # Global closed / グローバルで閉鎖
   };
 
+  services.xremap.deviceNames = [
+    "Topre REALFORCE C1H"
+    "Topre REALFORCE C1H Keyboard"
+  ];
+
   # USB polling / USB ポーリング
   # Fix usbhid at 1000Hz to cut latency. / usbhid を 1000Hz に固定し入力遅延を削減。
   boot.kernelParams = [ "usbhid.jspoll=1" ]; # 1ms interval = 1000Hz / 1ms 間隔
