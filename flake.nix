@@ -230,10 +230,6 @@
             electron_40 = withoutSpeechDispatcher prev.electron_40;
             electron_41 = withoutSpeechDispatcher prev.electron_41;
 
-            vesktop = prev.vesktop.override {
-              pnpm_10_29_2 = final.pnpm_10;
-            };
-
             # Prefer current FFmpeg for Telegram Desktop and tg_owt. / Telegram Desktop と tg_owt は新しい FFmpeg を優先。
             telegram-desktop = prev.telegram-desktop.override {
               unwrapped = prev.telegram-desktop.unwrapped.override {
@@ -300,6 +296,9 @@
             workiq = final.callPackage ./pkgs/workiq { };
             # Python helpers / Python ヘルパー
             inherit (mkPythonBuilders prev) buildPython pythonVersions;
+
+            # Keep Slither on Python 3.13 because py-evm does not support Python 3.14. / py-evm が Python 3.14 非対応のため Slither は Python 3.13 を使用。
+            slither-analyzer = final.python313Packages.slither-analyzer;
 
             # sui package / sui パッケージ
             sui = final.callPackage ./pkgs/sui { };
