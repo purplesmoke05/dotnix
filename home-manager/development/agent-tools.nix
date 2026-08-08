@@ -29,6 +29,9 @@ in
 
   # Keep prefix navigation and add Emacs-style shortcuts that work with the IME. / prefix 操作を維持し、IME でも使える Emacs 風ショートカットを追加する。
   xdg.configFile."herdr/config.toml".text = ''
+    [ui.sound]
+    enabled = true
+
     [keys]
     focus_pane_up = "prefix+k"
     focus_pane_down = "prefix+j"
