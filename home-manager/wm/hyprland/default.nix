@@ -1,6 +1,17 @@
 { pkgs, inputs, lib, hyprsplit, hostname, ... }:
 let
   quickTermMonitor = if hostname == "hq" then "DP-3" else "";
+  hyprlandPackage = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  hyprlandPipDrag = pkgs.callPackage ../../../pkgs/hyprland-pip-drag {
+    hyprland = hyprlandPackage;
+  };
+  pipWindowState = pkgs.writeShellApplication {
+    name = "pip-window-state";
+    runtimeInputs = [ pkgs.python3 ];
+    text = ''
+      exec python3 ${./pip-window-state.py} "$@"
+    '';
+  };
 in
 {
   imports = [
@@ -40,6 +51,7 @@ in
     libsecret
     networkmanagerapplet
     bluez
+    pipWindowState
     (pkgs.writeShellApplication {
       name = "hypr-media";
       runtimeInputs = with pkgs; [
@@ -804,7 +816,8 @@ in
       windowrulev2 = [
         "float,class:^(pavucontrol)$"
         "float,class:^(nm-connection-editor)$"
-        "float,class:^()$,title:^(Picture in picture)$"
+        "float,class:^()$,title:^(Picture in picture|ピクチャー イン ピクチャー)$"
+        "pin,class:^()$,title:^(Picture in picture|ピクチャー イン ピクチャー)$"
         "float,class:^(brave)$,title:^(Save File)$"
         "float,class:^(brave)$,title:^(Open File)$"
         "float,class:^(blueman-manager)$"
@@ -921,6 +934,12 @@ in
           ) 9
       ));
 
+      # Mouse window controls. / マウスによるウィンドウ操作。
+      bindm = [
+        "$mainMod, mouse:272, movewindow"
+        "$mainMod, mouse:273, resizewindow"
+      ];
+
       # Animations / アニメーション設定
       animations = {
         enabled = true;
@@ -950,6 +969,7 @@ in
     # Hyprland plugins / Hyprland プラグイン
     plugins = [
       hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces / モニター別ワークスペース
+      hyprlandPipDrag # Move browser PiP with an unmodified right drag. / ブラウザPiPを修飾キーなしの右ドラッグで移動。
     ];
   };
 
@@ -982,6 +1002,22 @@ in
       Environment = [ "HINTS_WINDOW_SYSTEM=hyprland" ];
     };
     Install = { WantedBy = [ "default.target" ]; };
+  };
+
+  # Persist browser PiP geometry. / ブラウザ PiP の位置とサイズを永続化。
+  systemd.user.services.pip-window-state = {
+    Unit = {
+      Description = "Persist Hyprland browser PiP geometry";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pipWindowState}/bin/pip-window-state daemon";
+      Restart = "on-failure";
+      RestartSec = 2;
+      Environment = [ "PIP_WINDOW_STATE_HYPRCTL=/run/current-system/sw/bin/hyprctl" ];
+    };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
   };
 
   # No client one-shot services / クライアント用 one-shot は未定義
