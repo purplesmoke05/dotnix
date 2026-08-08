@@ -29,7 +29,6 @@
     confluence-cli
     claude-code
     rtk
-    pi
     devbox
     ctop
     iftop

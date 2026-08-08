@@ -1,0 +1,39 @@
+diff --git a/src/browser.rs b/src/browser.rs
+index e678e50..ec48b01 100644
+--- a/src/browser.rs
++++ b/src/browser.rs
+@@ -20,6 +20,5 @@ use crate::platform;
+ /// Flags applied to every Chrome launch (both headless and headful).
+ const STEALTH_FLAGS: &[&str] = &[
+-    "--no-sandbox",
+     "--disable-extensions",
+     "--no-first-run",
+     "--disable-blink-features=AutomationControlled",
+diff --git a/src/main.rs b/src/main.rs
+index a17d420..819cd15 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -87,7 +87,7 @@ fn run() -> Result<()> {
+                 print_usage();
+                 return Ok(());
+             }
+-            "-u" | "-doc" | "-v" | "--rollback" if cmd.is_none() => {
++            "-u" | "-doc" | "-v" | "--version" | "--rollback" if cmd.is_none() => {
+                 cmd = Some(args[i].clone());
+             }
+             s if cmd.is_none() && !s.starts_with('-') => {
+diff --git a/src/mcp/server.rs b/src/mcp/server.rs
+index a12b014..33a51bb 100644
+--- a/src/mcp/server.rs
++++ b/src/mcp/server.rs
+@@ -415,7 +415,9 @@ pub async fn run_stdio() -> Result<()> {
+                                     }
+                                     // First-run warming: seed cache/cookies/HSTS
+                                     // by visiting a few top sites. Only runs once.
+-                                    if crate::session_profile::SessionProfile::claim_warming() {
++                                    if std::env::var("BLADE_WARM_PROFILE").as_deref() == Ok("1")
++                                        && crate::session_profile::SessionProfile::claim_warming()
++                                    {
+                                         if let Some(ref mut p) = page {
+                                             warm_profile(p).await;
+                                         }

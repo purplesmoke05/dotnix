@@ -273,6 +273,9 @@
             # Pi coding agent package / Pi コーディングエージェントパッケージ
             pi = final.callPackage ./pkgs/pi { };
 
+            # Bladebro agent browser package / Bladebro エージェントブラウザパッケージ
+            bladebro = final.callPackage ./pkgs/bladebro { };
+
             # github-copilot-cli package / github-copilot-cli パッケージ
             github-copilot-cli = final.callPackage ./pkgs/github-copilot-cli { };
 
@@ -742,6 +745,8 @@
           pi = pkgs.pi;
           hunk = pkgs.hunk;
           herdr = pkgs.herdr;
+        } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro) {
+          bladebro = pkgs.bladebro;
         };
         formatter = pkgs.nixpkgs-fmt;
       }
