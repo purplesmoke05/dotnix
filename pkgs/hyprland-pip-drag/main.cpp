@@ -11,7 +11,8 @@
 
 namespace {
 SP<HOOK_CALLBACK_FN> mouseButtonHook;
-bool                 movingPip = false;
+uint32_t             altModifierMask = 0;
+bool                 draggingPip     = false;
 
 bool isBrowserPip(const PHLWINDOW& window) {
     if (!window || !window->m_class.empty())
@@ -20,9 +21,9 @@ bool isBrowserPip(const PHLWINDOW& window) {
     return window->m_title == "Picture in picture" || window->m_title == "ピクチャー イン ピクチャー";
 }
 
-void stopMovingPip() {
+void stopPipDrag() {
     CKeybindManager::changeMouseBindMode(MBIND_INVALID);
-    movingPip = false;
+    draggingPip = false;
 }
 
 void onMouseButton(void*, SCallbackInfo& info, std::any data) {
@@ -32,15 +33,20 @@ void onMouseButton(void*, SCallbackInfo& info, std::any data) {
         return;
 
     if (event.state == WL_POINTER_BUTTON_STATE_RELEASED) {
-        if (!movingPip)
+        if (!draggingPip)
             return;
 
-        stopMovingPip();
+        stopPipDrag();
         info.cancelled = true;
         return;
     }
 
-    if (event.state != WL_POINTER_BUTTON_STATE_PRESSED || movingPip || g_pInputManager->m_dragMode != MBIND_INVALID)
+    if (event.state != WL_POINTER_BUTTON_STATE_PRESSED || draggingPip || g_pInputManager->m_dragMode != MBIND_INVALID)
+        return;
+
+    const auto modifiers = g_pInputManager->getModsFromAllKBs();
+    const auto dragMode  = modifiers == 0 ? MBIND_MOVE : modifiers == altModifierMask ? MBIND_RESIZE_FORCE_RATIO : MBIND_INVALID;
+    if (dragMode == MBIND_INVALID)
         return;
 
     const auto mouseCoords = g_pInputManager->getMouseCoordsInternal();
@@ -49,11 +55,11 @@ void onMouseButton(void*, SCallbackInfo& info, std::any data) {
     if (!isBrowserPip(window))
         return;
 
-    const auto result = CKeybindManager::changeMouseBindMode(MBIND_MOVE);
-    if (!result.success || result.passEvent || g_pInputManager->m_dragMode != MBIND_MOVE || g_pInputManager->m_currentlyDraggedWindow.lock() != window)
+    const auto result = CKeybindManager::changeMouseBindMode(dragMode);
+    if (!result.success || result.passEvent || g_pInputManager->m_dragMode != dragMode || g_pInputManager->m_currentlyDraggedWindow.lock() != window)
         return;
 
-    movingPip      = true;
+    draggingPip    = true;
     info.cancelled = true;
 }
 } // namespace
@@ -66,21 +72,25 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     if (std::string{__hyprland_api_get_hash()} != __hyprland_api_get_client_hash())
         throw std::runtime_error("[hyprland-pip-drag] Hyprland version mismatch");
 
+    altModifierMask = g_pKeybindManager->stringToModMask("ALT");
+    if (altModifierMask == 0)
+        throw std::runtime_error("[hyprland-pip-drag] Failed to resolve the Alt modifier mask");
+
     mouseButtonHook = HyprlandAPI::registerCallbackDynamic(handle, "mouseButton", onMouseButton);
     if (!mouseButtonHook)
         throw std::runtime_error("[hyprland-pip-drag] Failed to register mouseButton hook");
 
     return {
         "hyprland-pip-drag",
-        "Move browser picture-in-picture windows with an unmodified right drag",
+        "Move browser PiP with right drag and resize it at its current aspect ratio with Alt+right drag",
         "purplehaze",
-        "1.0.0",
+        "1.1.0",
     };
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    if (movingPip)
-        stopMovingPip();
+    if (draggingPip)
+        stopPipDrag();
 
     mouseButtonHook.reset();
 }

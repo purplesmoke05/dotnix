@@ -17,7 +17,8 @@ from pathlib import Path
 from typing import Any
 
 
-STATE_VERSION = 1
+STATE_VERSION = 3
+SUPPORTED_STATE_VERSIONS = {1, 2, STATE_VERSION}
 PIP_TITLES = {"Picture in picture", "ピクチャー イン ピクチャー"}
 RELEVANT_WINDOW_EVENTS = {
     "closewindow",
@@ -53,12 +54,21 @@ def env_float(name: str, default: float) -> float:
 
 
 @dataclass(frozen=True)
-class Geometry:
+class LegacyPosition:
+    monitor: str
+    x: int
+    y: int
+
+    def to_json(self) -> dict[str, int | str]:
+        return {"version": 2, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class Placement:
     monitor: str
     x: int
     y: int
     width: int
-    height: int
 
     def to_json(self) -> dict[str, int | str]:
         return {"version": STATE_VERSION, **asdict(self)}
@@ -103,7 +113,7 @@ class StateStore:
     def exists(self) -> bool:
         return self.path.exists()
 
-    def load(self) -> Geometry:
+    def load(self) -> LegacyPosition | Placement:
         try:
             with self.path.open(encoding="utf-8") as handle:
                 raw = json.load(handle)
@@ -118,9 +128,10 @@ class StateStore:
 
         if not isinstance(raw, dict):
             raise PipStateError(f"state file {self.path} must contain a JSON object")
-        if raw.get("version") != STATE_VERSION:
+        version = raw.get("version")
+        if version not in SUPPORTED_STATE_VERSIONS:
             raise PipStateError(
-                f"state file {self.path} has unsupported version {raw.get('version')!r}"
+                f"state file {self.path} has unsupported version {version!r}"
             )
 
         monitor = raw.get("monitor")
@@ -128,20 +139,22 @@ class StateStore:
             raise PipStateError(f"state file {self.path} has an invalid monitor")
 
         values: dict[str, int] = {}
-        for key in ("x", "y", "width", "height"):
+        for key in ("x", "y"):
             value = raw.get(key)
             if type(value) is not int:
                 raise PipStateError(f"state file {self.path} has an invalid {key}")
             values[key] = value
 
-        if values["width"] <= 0 or values["height"] <= 0:
-            raise PipStateError(
-                f"state file {self.path} has a non-positive window size"
-            )
+        if version == 2:
+            return LegacyPosition(monitor=monitor, **values)
 
-        return Geometry(monitor=monitor, **values)
+        width = raw.get("width")
+        if type(width) is not int or width <= 0:
+            raise PipStateError(f"state file {self.path} has an invalid width")
 
-    def save(self, geometry: Geometry) -> None:
+        return Placement(monitor=monitor, width=width, **values)
+
+    def save(self, placement: Placement) -> None:
         self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         fd, temporary_name = tempfile.mkstemp(
             dir=self.path.parent,
@@ -154,7 +167,7 @@ class StateStore:
             os.fchmod(fd, 0o600)
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 json.dump(
-                    geometry.to_json(), handle, ensure_ascii=False, sort_keys=True
+                    placement.to_json(), handle, ensure_ascii=False, sort_keys=True
                 )
                 handle.write("\n")
                 handle.flush()
@@ -205,18 +218,24 @@ class Hyprland:
     def monitors(self) -> list[dict[str, Any]]:
         return self._run_json("monitors")
 
-    def restore(self, address: str, monitor: Monitor, geometry: Geometry) -> None:
+    def restore(
+        self,
+        address: str,
+        monitor: Monitor,
+        placement: Placement,
+        window_size: tuple[int, int],
+    ) -> None:
         selector = f"address:{address}"
-        global_x = monitor.x + geometry.x
-        global_y = monitor.y + geometry.y
+        global_x = monitor.x + placement.x
+        global_y = monitor.y + placement.y
         batch = (
-            f"dispatch resizewindowpixel exact {geometry.width} {geometry.height},{selector} ; "
+            f"dispatch resizewindowpixel exact {window_size[0]} {window_size[1]},{selector} ; "
             f"dispatch movewindowpixel exact {global_x} {global_y},{selector}"
         )
         output = self._run("--batch", batch)
         if any(line.lower().startswith("error") for line in output.splitlines()):
             raise PipStateError(
-                f"hyprctl rejected PiP geometry restore: {output.strip()}"
+                f"hyprctl rejected PiP placement restore: {output.strip()}"
             )
 
 
@@ -233,8 +252,8 @@ class PipTracker:
         self.monitors: dict[int, Monitor] = {}
         self.active_address: str | None = None
         self.blocked_address: str | None = None
-        self.last_saved: Geometry | None = None
-        self.pending: Geometry | None = None
+        self.last_saved: Placement | None = None
+        self.pending: Placement | None = None
         self.pending_since: float | None = None
         self.multiple_error_active = False
 
@@ -267,21 +286,26 @@ class PipTracker:
                 f"PiP window refers to unknown monitor id {monitor_id}"
             ) from error
 
-    def _geometry_for_client(self, client: dict[str, Any]) -> Geometry:
+    def _placement_for_client(self, client: dict[str, Any]) -> Placement:
         monitor = self._monitor_for_client(client)
         position = client.get("at")
-        size = client.get("size")
-        if not self._integer_pair(position) or not self._integer_pair(size):
-            raise PipStateError("PiP window has invalid position or size")
-        if size[0] <= 0 or size[1] <= 0:
-            raise PipStateError("PiP window has a non-positive size")
-        return Geometry(
+        if not self._integer_pair(position):
+            raise PipStateError("PiP window has an invalid position")
+        size = self._size_for_client(client)
+        return Placement(
             monitor=monitor.name,
             x=position[0] - monitor.x,
             y=position[1] - monitor.y,
             width=size[0],
-            height=size[1],
         )
+
+    def _size_for_client(self, client: dict[str, Any]) -> tuple[int, int]:
+        size = client.get("size")
+        if not self._integer_pair(size):
+            raise PipStateError("PiP window has an invalid size")
+        if size[0] <= 0 or size[1] <= 0:
+            raise PipStateError("PiP window has a non-positive size")
+        return size[0], size[1]
 
     @staticmethod
     def _integer_pair(value: Any) -> bool:
@@ -298,12 +322,34 @@ class PipTracker:
         raise PipStateError(f"saved PiP monitor {name!r} is not connected")
 
     @staticmethod
-    def _fit_to_monitor(geometry: Geometry, monitor: Monitor) -> Geometry:
-        width = min(geometry.width, monitor.width)
-        height = min(geometry.height, monitor.height)
-        x = min(max(geometry.x, 0), monitor.width - width)
-        y = min(max(geometry.y, 0), monitor.height - height)
-        return Geometry(monitor=monitor.name, x=x, y=y, width=width, height=height)
+    def _fit_to_monitor(
+        placement: Placement,
+        monitor: Monitor,
+        current_size: tuple[int, int],
+    ) -> tuple[Placement, tuple[int, int]]:
+        current_width, current_height = current_size
+        width_for_monitor_height = max(
+            1,
+            monitor.height * current_width // current_height,
+        )
+        target_width = min(
+            placement.width,
+            monitor.width,
+            width_for_monitor_height,
+        )
+        target_height = max(
+            1,
+            (target_width * current_height + current_width // 2) // current_width,
+        )
+        x = min(max(placement.x, 0), monitor.width - target_width)
+        y = min(max(placement.y, 0), monitor.height - target_height)
+        fitted = Placement(
+            monitor=monitor.name,
+            x=x,
+            y=y,
+            width=target_width,
+        )
+        return fitted, (target_width, target_height)
 
     def _initialize(self, client: dict[str, Any]) -> None:
         address = client.get("address")
@@ -312,27 +358,45 @@ class PipTracker:
         if client.get("floating") is not True:
             raise PipStateError(f"PiP window {address} is not floating")
 
+        current_size = self._size_for_client(client)
         if not self.store.exists():
-            geometry = self._geometry_for_client(client)
-            self.store.save(geometry)
-            log(f"saved initial PiP geometry on {geometry.monitor}")
+            placement = self._placement_for_client(client)
+            self.store.save(placement)
+            log(
+                f"saved initial PiP position and width on {placement.monitor}"
+            )
         else:
             saved = self.store.load()
-            monitor = self._monitor_by_name(saved.monitor)
-            geometry = self._fit_to_monitor(saved, monitor)
-            if geometry != saved:
-                log(
-                    "adjusted saved PiP geometry to fit monitor "
-                    f"{monitor.name}: {saved} -> {geometry}"
+            if isinstance(saved, LegacyPosition):
+                saved = Placement(
+                    monitor=saved.monitor,
+                    x=saved.x,
+                    y=saved.y,
+                    width=current_size[0],
                 )
-            self.hyprland.restore(address, monitor, geometry)
-            if geometry != saved:
-                self.store.save(geometry)
-            log(f"restored PiP geometry on {geometry.monitor}")
+                log(
+                    "migrated position-only PiP state using the current window width"
+                )
+            monitor = self._monitor_by_name(saved.monitor)
+            placement, target_size = self._fit_to_monitor(
+                saved,
+                monitor,
+                current_size,
+            )
+            if placement != saved:
+                log(
+                    "adjusted saved PiP position and width to fit monitor "
+                    f"{monitor.name}: {saved} -> {placement}"
+                )
+            self.hyprland.restore(address, monitor, placement, target_size)
+            self.store.save(placement)
+            log(
+                f"restored PiP position and width on {placement.monitor}"
+            )
 
         self.active_address = address
         self.blocked_address = None
-        self.last_saved = geometry
+        self.last_saved = placement
         self.pending = None
         self.pending_since = None
 
@@ -341,7 +405,7 @@ class PipTracker:
             return
         self.store.save(self.pending)
         self.last_saved = self.pending
-        log(f"saved PiP geometry on {self.pending.monitor}")
+        log(f"saved PiP position and width on {self.pending.monitor}")
         self.pending = None
         self.pending_since = None
 
@@ -353,13 +417,13 @@ class PipTracker:
         self.pending_since = None
 
     def _track(self, client: dict[str, Any], now: float) -> None:
-        geometry = self._geometry_for_client(client)
-        if geometry == self.last_saved:
+        placement = self._placement_for_client(client)
+        if placement == self.last_saved:
             self.pending = None
             self.pending_since = None
             return
-        if geometry != self.pending:
-            self.pending = geometry
+        if placement != self.pending:
+            self.pending = placement
             self.pending_since = now
             return
         if (
@@ -395,14 +459,14 @@ class PipTracker:
             try:
                 self._initialize(client)
             except PipStateError as error:
-                log(f"cannot initialize PiP geometry: {error}")
+                log(f"cannot initialize PiP placement: {error}")
                 self.blocked_address = address if isinstance(address, str) else None
                 return False
         else:
             try:
                 self._track(client, time.monotonic())
             except PipStateError as error:
-                log(f"cannot track PiP geometry: {error}")
+                log(f"cannot track PiP placement: {error}")
                 self._clear_active()
                 self.blocked_address = address if isinstance(address, str) else None
                 return False
@@ -503,7 +567,7 @@ def run_daemon(hyprland: Hyprland, store: StateStore) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Persist and restore the geometry of the Hyprland browser PiP window."
+        description="Persist the position and width of the Hyprland browser PiP window."
     )
     parser.add_argument(
         "command", choices=("daemon", "status", "reset"), nargs="?", default="daemon"
@@ -524,7 +588,7 @@ def main() -> int:
         return 0
     if args.command == "reset":
         store.reset()
-        print(f"removed PiP geometry state: {store.path}")
+        print(f"removed PiP position and width state: {store.path}")
         return 0
 
     hyprctl = os.environ.get("PIP_WINDOW_STATE_HYPRCTL", "hyprctl")

@@ -969,7 +969,7 @@ in
     # Hyprland plugins / Hyprland プラグイン
     plugins = [
       hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces / モニター別ワークスペース
-      hyprlandPipDrag # Move browser PiP with an unmodified right drag. / ブラウザPiPを修飾キーなしの右ドラッグで移動。
+      hyprlandPipDrag # Move and aspect-ratio resize browser PiP. / ブラウザPiPを移動し、比率を保ってリサイズ。
     ];
   };
 
@@ -1004,10 +1004,10 @@ in
     Install = { WantedBy = [ "default.target" ]; };
   };
 
-  # Persist browser PiP geometry. / ブラウザ PiP の位置とサイズを永続化。
+  # Persist browser PiP position and width. / ブラウザ PiP の位置と横幅を永続化。
   systemd.user.services.pip-window-state = {
     Unit = {
-      Description = "Persist Hyprland browser PiP geometry";
+      Description = "Persist Hyprland browser PiP position and width";
       After = [ "graphical-session.target" ];
       PartOf = [ "graphical-session.target" ];
     };

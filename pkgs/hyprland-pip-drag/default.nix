@@ -12,7 +12,7 @@
 
 stdenv.mkDerivation {
   pname = "hyprland-pip-drag";
-  version = "1.0.0";
+  version = "1.1.0";
 
   src = ./.;
 
@@ -30,7 +30,7 @@ stdenv.mkDerivation {
   ] ++ hyprland.buildInputs;
 
   meta = {
-    description = "Move browser picture-in-picture windows with an unmodified right drag";
+    description = "Move browser picture-in-picture windows and resize them at their current aspect ratio";
     license = lib.licenses.mit;
     platforms = lib.platforms.linux;
   };

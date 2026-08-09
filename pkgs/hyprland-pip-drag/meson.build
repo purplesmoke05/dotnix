@@ -1,7 +1,7 @@
 project(
   'hyprland-pip-drag',
   'cpp',
-  version: '1.0.0',
+  version: '1.1.0',
   default_options: ['buildtype=release', 'cpp_std=c++23', 'warning_level=2'],
 )
 
