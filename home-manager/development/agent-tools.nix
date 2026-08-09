@@ -32,6 +32,9 @@ in
     [ui.sound]
     enabled = true
 
+    [advanced]
+    scrollback_limit_bytes = 100000000
+
     [keys]
     focus_pane_up = "prefix+k"
     focus_pane_down = "prefix+j"
