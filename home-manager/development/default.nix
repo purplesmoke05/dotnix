@@ -1,6 +1,7 @@
 { pkgs, ... }: {
   imports = [
     ./agent-tools.nix
+    ./headroom.nix
   ];
 
   # Development tools and programming languages

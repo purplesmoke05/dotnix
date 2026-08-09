@@ -270,6 +270,9 @@
               sqlite = final.sqlite_3_53;
             };
 
+            # Headroom launcher package / Headroom ランチャーパッケージ
+            headroom = final.callPackage ./pkgs/headroom { };
+
             # Pi coding agent package / Pi コーディングエージェントパッケージ
             pi = final.callPackage ./pkgs/pi { };
 
@@ -742,6 +745,7 @@
           uv = pkgs.uv;
           wtp = pkgs.wtp;
           rtk = pkgs.rtk;
+          headroom = pkgs.headroom;
           pi = pkgs.pi;
           hunk = pkgs.hunk;
           herdr = pkgs.herdr;
