@@ -144,6 +144,7 @@ in
       herdr
       herdrSound
       pi
+      prime-agent
     ]
     ++ lib.optionals bladebroSupported [
       bladebro

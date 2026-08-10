@@ -276,6 +276,9 @@
             # Pi coding agent package / Pi コーディングエージェントパッケージ
             pi = final.callPackage ./pkgs/pi { };
 
+            # Prime Agent coding and research agent package / Prime Agent コーディング・リサーチエージェントパッケージ
+            prime-agent = final.callPackage ./pkgs/prime-agent { };
+
             # Bladebro agent browser package / Bladebro エージェントブラウザパッケージ
             bladebro = final.callPackage ./pkgs/bladebro { };
 
@@ -747,6 +750,7 @@
           rtk = pkgs.rtk;
           headroom = pkgs.headroom;
           pi = pkgs.pi;
+          prime-agent = pkgs.prime-agent;
           hunk = pkgs.hunk;
           herdr = pkgs.herdr;
         } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro) {
