@@ -22,6 +22,8 @@ let
       # Use Ctrl chords for workspace switching while the IME is enabled. / IME 有効時の workspace 切り替えには Ctrl chord を使う。
       previous_workspace = "prefix+ctrl+p"
       next_workspace = "prefix+ctrl+n"
+      previous_agent = "prefix+["
+      next_agent = "prefix+]"
     '';
   herdrProfiles = {
     default = herdrConfig { soundEnabled = true; };
