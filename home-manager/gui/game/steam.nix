@@ -26,93 +26,6 @@ in
           <string>IPAGothic</string>
         </edit>
       </match>
-      <match target="pattern">
-        <test name="prgname" compare="contains">
-          <string>steamwebhelper</string>
-        </test>
-        <edit mode="prepend" name="family" binding="strong">
-          <string>Noto Sans CJK JP</string>
-          <string>IPAGothic</string>
-        </edit>
-      </match>
-      <!-- Alias Steam UI fonts / Steam UI フォントに別名を張る -->
-      <alias binding="same">
-        <family>Motiva Sans</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>Steam Sans</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>Segoe UI</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>Arial</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>Helvetica</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>Verdana</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>sans-serif</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>sans</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>GoNotoKurrent</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>GoNotoKurrent UI</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
-      <alias binding="same">
-        <family>GoNotoCurrent</family>
-        <prefer>
-          <family>Noto Sans CJK JP</family>
-          <family>IPAGothic</family>
-        </prefer>
-      </alias>
     </fontconfig>
   '';
 
@@ -140,14 +53,6 @@ in
     force = true;
   };
   home.file.".local/share/Steam/clientui/fonts/ipag.ttf" = {
-    source = "${pkgs.ipafont}/share/fonts/opentype/ipag.ttf";
-    force = true;
-  };
-  home.file.".local/share/fonts/NotoSansCJK-VF.otf.ttc" = {
-    source = "${pkgs.noto-fonts-cjk-sans}/share/fonts/opentype/noto-cjk/NotoSansCJK-VF.otf.ttc";
-    force = true;
-  };
-  home.file.".local/share/fonts/ipag.ttf" = {
     source = "${pkgs.ipafont}/share/fonts/opentype/ipag.ttf";
     force = true;
   };
