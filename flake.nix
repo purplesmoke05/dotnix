@@ -291,6 +291,12 @@
             # Herdr AI agent multiplexer package / Herdr AI エージェントマルチプレクサパッケージ
             herdr = final.callPackage ./pkgs/herdr { };
 
+            # Herdr workflow plugins / Herdr ワークフロープラグイン
+            herdr-reviewr-plugin = final.callPackage ./pkgs/herdr-reviewr-plugin { };
+            herdr-browser-plugin = final.callPackage ./pkgs/herdr-browser-plugin { };
+            herdr-plus-plugin = final.callPackage ./pkgs/herdr-plus-plugin { };
+            herdr-memex-plugin = final.callPackage ./pkgs/herdr-memex-plugin { };
+
             # wtp package / wtp パッケージ
             wtp = final.callPackage ./pkgs/wtp { };
 
@@ -753,6 +759,10 @@
           prime-agent = pkgs.prime-agent;
           hunk = pkgs.hunk;
           herdr = pkgs.herdr;
+          herdr-reviewr-plugin = pkgs.herdr-reviewr-plugin;
+          herdr-browser-plugin = pkgs.herdr-browser-plugin;
+          herdr-plus-plugin = pkgs.herdr-plus-plugin;
+          herdr-memex-plugin = pkgs.herdr-memex-plugin;
         } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro) {
           bladebro = pkgs.bladebro;
         };

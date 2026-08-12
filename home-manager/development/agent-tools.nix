@@ -10,6 +10,9 @@ let
       [advanced]
       scrollback_limit_bytes = 100000000
 
+      [experimental]
+      kitty_graphics = true
+
       [keys]
       focus_pane_up = "prefix+k"
       focus_pane_down = "prefix+j"
@@ -24,6 +27,36 @@ let
       next_workspace = "prefix+ctrl+n"
       previous_agent = "prefix+["
       next_agent = "prefix+]"
+
+      [[keys.command]]
+      key = "prefix+ctrl+r"
+      type = "plugin_action"
+      command = "persiyanov.reviewr.toggle"
+      description = "reviewr: toggle pane"
+
+      [[keys.command]]
+      key = "prefix+shift+b"
+      type = "shell"
+      command = "${pkgs.herdr}/bin/herdr plugin pane open --plugin official.browser --entrypoint browser --placement overlay --focus"
+      description = "browser: open overlay"
+
+      [[keys.command]]
+      key = "prefix+up"
+      type = "plugin_action"
+      command = "cloudmanic.herdr-plus.projects"
+      description = "herdr-plus: projects"
+
+      [[keys.command]]
+      key = "prefix+down"
+      type = "plugin_action"
+      command = "cloudmanic.herdr-plus.quick-actions"
+      description = "herdr-plus: quick actions"
+
+      [[keys.command]]
+      key = "prefix+m"
+      type = "plugin_action"
+      command = "nicosuave.memex.palette"
+      description = "memex: session palette"
     '';
   herdrProfiles = {
     default = herdrConfig { soundEnabled = true; };
@@ -32,6 +65,12 @@ let
   herdrProfileDirectory = "${config.xdg.configHome}/herdr/profiles";
   herdrStateDirectory = "${config.xdg.stateHome}/herdr";
   herdrActiveConfig = "${herdrStateDirectory}/config.toml";
+  herdrPlugins = [
+    pkgs.herdr-reviewr-plugin
+    pkgs.herdr-browser-plugin
+    pkgs.herdr-plus-plugin
+    pkgs.herdr-memex-plugin
+  ];
   herdrSound = pkgs.writeShellApplication {
     name = "herdr-sound";
     runtimeInputs = [
@@ -176,6 +215,15 @@ in
     fi
   '';
 
+  # Keep the pinned plugin roots registered for every Herdr session. / 固定したプラグインルートを全 Herdr session に登録する。
+  home.activation.linkHerdrPlugins = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+    lib.concatMapStringsSep "\n"
+      (plugin: ''
+        $DRY_RUN_CMD ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${plugin}"} --enabled
+      '')
+      herdrPlugins
+  );
+
   xdg.configFile =
     lib.mapAttrs'
       (profileName: text:
@@ -183,5 +231,13 @@ in
       herdrProfiles
     // {
       "herdr/config.toml".source = config.lib.file.mkOutOfStoreSymlink herdrActiveConfig;
+      # Let Herdr Plus own worktree layouts without racing reviewr's auto-open hook. / Herdr Plus に worktree layout を任せ、reviewr の自動起動との競合を避ける。
+      "herdr/plugins/config/persiyanov.reviewr/config.toml".text = ''
+        auto_open = false
+      '';
+      # Refresh the local session-history index when Herdr starts. / Herdr 起動時にローカルの session 履歴 index を更新する。
+      "herdr/plugins/config/nicosuave.memex/config.toml".text = ''
+        index_on_startup = true
+      '';
     };
 }
