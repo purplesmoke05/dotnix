@@ -296,6 +296,9 @@
             herdr-browser-plugin = final.callPackage ./pkgs/herdr-browser-plugin { };
             herdr-plus-plugin = final.callPackage ./pkgs/herdr-plus-plugin { };
             herdr-memex-plugin = final.callPackage ./pkgs/herdr-memex-plugin { };
+            herdr-navigator-plugin = final.callPackage ./pkgs/herdr-navigator-plugin { };
+            herdr-agent-usage-plugin = final.callPackage ./pkgs/herdr-agent-usage-plugin { };
+            herdr-worktrunk-plugin = final.callPackage ./pkgs/herdr-worktrunk-plugin { };
 
             # wtp package / wtp パッケージ
             wtp = final.callPackage ./pkgs/wtp { };
@@ -763,6 +766,9 @@
           herdr-browser-plugin = pkgs.herdr-browser-plugin;
           herdr-plus-plugin = pkgs.herdr-plus-plugin;
           herdr-memex-plugin = pkgs.herdr-memex-plugin;
+          herdr-navigator-plugin = pkgs.herdr-navigator-plugin;
+          herdr-agent-usage-plugin = pkgs.herdr-agent-usage-plugin;
+          herdr-worktrunk-plugin = pkgs.herdr-worktrunk-plugin;
         } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro) {
           bladebro = pkgs.bladebro;
         };

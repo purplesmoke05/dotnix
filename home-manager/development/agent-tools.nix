@@ -13,6 +13,14 @@ let
       [experimental]
       kitty_graphics = true
 
+      [ui.sidebar.agents]
+      row_gap = 0
+      rows = [
+        ["state_icon", "$title"],
+        ["$provider", "$limit"],
+        ["$context"],
+      ]
+
       [keys]
       focus_pane_up = "prefix+k"
       focus_pane_down = "prefix+j"
@@ -27,6 +35,12 @@ let
       next_workspace = "prefix+ctrl+n"
       previous_agent = "prefix+["
       next_agent = "prefix+]"
+
+      [[keys.command]]
+      key = "prefix+t"
+      type = "plugin_action"
+      command = "herdr-navigator.open"
+      description = "navigator: jump to anything"
 
       [[keys.command]]
       key = "prefix+ctrl+r"
@@ -57,6 +71,36 @@ let
       type = "plugin_action"
       command = "nicosuave.memex.palette"
       description = "memex: session palette"
+
+      [[keys.command]]
+      key = "ctrl+shift+u"
+      type = "plugin_action"
+      command = "usagebar.open-limits"
+      description = "agent usage: open limits"
+
+      [[keys.command]]
+      key = "ctrl+shift+m"
+      type = "plugin_action"
+      command = "usagebar.refresh"
+      description = "agent usage: refresh meters"
+
+      [[keys.command]]
+      key = "prefix+shift+g"
+      type = "plugin_action"
+      command = "worktrunk.open"
+      description = "worktrunk: switch or create from default branch"
+
+      [[keys.command]]
+      key = "prefix+shift+c"
+      type = "plugin_action"
+      command = "worktrunk.open-current"
+      description = "worktrunk: switch or create from current branch"
+
+      [[keys.command]]
+      key = "prefix+shift+d"
+      type = "plugin_action"
+      command = "worktrunk.remove"
+      description = "worktrunk: remove worktree"
     '';
   herdrProfiles = {
     default = herdrConfig { soundEnabled = true; };
@@ -70,6 +114,9 @@ let
     pkgs.herdr-browser-plugin
     pkgs.herdr-plus-plugin
     pkgs.herdr-memex-plugin
+    pkgs.herdr-navigator-plugin
+    pkgs.herdr-agent-usage-plugin
+    pkgs.herdr-worktrunk-plugin
   ];
   herdrSound = pkgs.writeShellApplication {
     name = "herdr-sound";
@@ -186,6 +233,7 @@ in
       herdrSound
       pi
       prime-agent
+      worktrunk
     ]
     ++ lib.optionals bladebroSupported [
       bladebro
@@ -238,6 +286,17 @@ in
       # Refresh the local session-history index when Herdr starts. / Herdr 起動時にローカルの session 履歴 index を更新する。
       "herdr/plugins/config/nicosuave.memex/config.toml".text = ''
         index_on_startup = true
+      '';
+      # Keep Agent Usage notifications opt-in while exposing context and rate-limit meters. / コンテキスト・レート制限表示を有効にしつつ、Agent Usage 通知は明示的な選択制に保つ。
+      "herdr/plugins/config/usagebar/config.toml".text = ''
+        [notify]
+        enabled = false
+        remaining_thresholds = [50, 20, 10, 5]
+      '';
+      # Open Worktrunk checkouts as native Herdr worktree workspaces. / Worktrunk の checkout を Herdr ネイティブの worktree workspace として開く。
+      "herdr/plugins/config/worktrunk/config.toml".text = ''
+        open_mode = "workspace"
+        show_remote_branches = false
       '';
     };
 }
