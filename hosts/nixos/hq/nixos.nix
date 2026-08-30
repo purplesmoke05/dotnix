@@ -48,6 +48,13 @@ in
 
   hq.protonVpn.enable = true;
 
+  # nsncd worker tuning / nsncd ワーカー数チューニング
+  # Default 8 workers saturated by long-lived NSS clients and blocked new
+  # lookups (sshd preauth timeouts) on 2026-08-30. Raise workers to 50.
+  systemd.services.nscd.environment = {
+    NSNCD_WORKER_COUNT = "50";
+  };
+
   # hostapd access point / hostapd アクセスポイント
   # Store passphrase outside the Nix store. / パスフレーズは平文ファイルに配置（Nix ストア非保存）。
   systemd.network.links."10-wlan-hotspot0" = {
