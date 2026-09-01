@@ -63,6 +63,8 @@ in
     jiraPinnedPkgs.jira-cli-go
     direnv
     github-copilot-cli
+    opencode
+    pi
 
     # GUIツール
     rectangle

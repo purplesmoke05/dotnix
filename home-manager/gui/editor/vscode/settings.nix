@@ -229,6 +229,7 @@
   };
   markdown-preview-enhanced = {
     codeBlockTheme = "github.css";
+    previewTheme = "atom-dark.css";
     revealjsTheme = "night.css";
   };
   markdownlint = {

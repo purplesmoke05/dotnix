@@ -498,7 +498,7 @@
   },
   {
     "command": "explorer.newFile",
-    "key": "ctrl+u ctrl+i"
+    "key": "ctrl+u ctrl+n"
   },
   {
     "command": "-workbench.action.openEditorAtIndex2",
@@ -1284,5 +1284,17 @@
   {
     "command": "workbench.action.chat.attachSelection",
     "key": "ctrl+enter"
+  },
+  {
+    "command": "explorer.newFolder",
+    "key": "ctrl+u d"
+  },
+  {
+    "command": "explorer.newFolder",
+    "key": "ctrl+u ctrl+d"
+  },
+  {
+    "command": "explorer.newFile",
+    "key": "ctrl+u n"
   }
 ]
