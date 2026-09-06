@@ -9,32 +9,40 @@
 }:
 
 let
-  version = "0.146.0";
+  version = "0.153.1";
 
   platforms = {
     x86_64-linux = {
       artifact = "codex-x86_64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-W6O5QFVDlTCB9mHQhU0mb3biq75R1BNJNVo23nZzd2o=";
+      sha256 = "sha256-CBiM3sQMKQnoSznYTtGtAPA6m/4DRv1CLvWQ+n0jSH8=";
+      hostArtifact = "codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz";
+      hostSha256 = "sha256-RTnhBlluIDyfburyD+MoqXUUR9fWVhviWWieoHlfg7A=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
       buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib libcap ];
     };
 
     aarch64-linux = {
       artifact = "codex-aarch64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-l1uskVYqvu3rj3ljbVGoZkmzHzSp3mo7ywWVZbbPH4c=";
+      sha256 = "sha256-fCbp9uQkv2GMM66CY/OzocHMMsgr+/1fJ7bIFAJhhmQ=";
+      hostArtifact = "codex-code-mode-host-aarch64-unknown-linux-musl.tar.gz";
+      hostSha256 = "sha256-JeIWCBhwbkjFEVUB1ZhvuMPoWsciZ/YZxJRLXhRlzEA=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
       buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib libcap ];
     };
 
     x86_64-darwin = {
       artifact = "codex-x86_64-apple-darwin.tar.gz";
-      sha256 = "sha256-cQ1yew+itKshiesb3Fq0AXfBaClq8mSRPrerPOhI0Es=";
+      sha256 = "sha256-GCG6qa9idGFIGnY//Ibj90+WFmH+iaaWXDA24W28SyI=";
+      hostArtifact = "codex-code-mode-host-x86_64-apple-darwin.tar.gz";
+      hostSha256 = "sha256-GE2wHxD2oC2t8ka5FEDMFtdaC9tA/0kcSW+IBTiJqSI=";
       nativeBuildInputs = [ makeWrapper ];
     };
 
     aarch64-darwin = {
       artifact = "codex-aarch64-apple-darwin.tar.gz";
-      sha256 = "sha256-J1ATLTAOZPHb/7lePZE/2cnceBK8jhvOXGE1cki3kp4=";
+      sha256 = "sha256-gY88ZcaXOuVFhrpS+ON8dnPz9bjgnHSFjBniXHRHkiY=";
+      hostArtifact = "codex-code-mode-host-aarch64-apple-darwin.tar.gz";
+      hostSha256 = "sha256-SoeqiaGYl268aKhQF7NiNO3RsSbftj2UwQog/Pq4FHk=";
       nativeBuildInputs = [ makeWrapper ];
     };
   };
@@ -51,15 +59,23 @@ if config == null then
 else
   let
     binaryName = lib.removeSuffix ".tar.gz" config.artifact;
+    hostBinaryName = lib.removeSuffix ".tar.gz" config.hostArtifact;
   in
   stdenv.mkDerivation rec {
     pname = "codex";
     inherit version;
 
-    src = fetchurl {
-      url = codexUrl stdenv.system config.artifact;
-      sha256 = config.sha256;
-    };
+    srcs = [
+      (fetchurl {
+        url = codexUrl stdenv.system config.artifact;
+        sha256 = config.sha256;
+      })
+      # codex looks up codex-code-mode-host next to its own executable
+      (fetchurl {
+        url = codexUrl stdenv.system config.hostArtifact;
+        sha256 = config.hostSha256;
+      })
+    ];
 
     nativeBuildInputs = config.nativeBuildInputs;
     buildInputs = config.buildInputs or [ ];
@@ -69,13 +85,16 @@ else
 
     unpackPhase = ''
       runHook preUnpack
-      tar -xzf "$src"
+      for srcFile in $srcs; do
+        tar -xzf "$srcFile"
+      done
       runHook postUnpack
     '';
 
     installPhase = ''
       runHook preInstall
       install -Dm755 "${binaryName}" "$out/bin/codex"
+      install -Dm755 "${hostBinaryName}" "$out/bin/codex-code-mode-host"
       runHook postInstall
     '';
 
