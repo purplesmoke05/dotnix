@@ -1,8 +1,11 @@
 diff --git a/src/core/toml_filter.rs b/src/core/toml_filter.rs
-index 977e8d9..3495b7d 100644
+index 977e8d9..80e1b2f 100644
 --- a/src/core/toml_filter.rs
 +++ b/src/core/toml_filter.rs
-@@ -807,0 +808,13 @@ mod tests {
+@@ -887,6 +887,19 @@ mod tests {
+             .expect("expected at least one filter")
+     }
+ 
 +    #[test]
 +    fn test_production_registry_loads_builtin_filters() {
 +        let registry = TomlFilterRegistry::load();
@@ -16,3 +19,5 @@ index 977e8d9..3495b7d 100644
 +        );
 +    }
 +
+     #[test]
+     fn command_matches_filter_agrees_with_find_matching_filter() {
