@@ -54,3 +54,10 @@ Responses must be in Japanese. / 返答は日本語のみで行うこと。
 - User/Host guard / ユーザー・ホストガード: `LAPTOP_USER`/`HQ_USER`/`DARWIN_USER` で上書き可。クロスホスト評価時のみ `DISABLE_HOST_GUARD=1`。
 - Locale & IME / ロケール・IME: `ja_JP.UTF-8` と `fcitx5-mozc` を `hosts/nixos/common/nixos.nix` で設定済み（追加作業不要）。
 - MCP: See `CLAUDE.md` for agent use / エージェント利用は `CLAUDE.md` を参照。
+
+## Bladebro / ブラウザ自動化
+
+- Tools: `act` (do), `see` (observe), `state` (tabs/cookies/login), `run` (branch/loop), `vision` (screenshot, last resort). / ツールは `act`・`see`・`state`・`run`・`vision`。
+- Hierarchy: `act` text > ref > label. Forms → `fill`. Sequences → `batch`. Branching → `run`. / 指定は text > ref > label。フォームは `fill`、連続操作は `batch`、分岐は `run`。
+- `see`: outline (最安) → content (閲覧) → model (ref 取得)。Listings → `extract=auto`. / `see` は outline → content → model。一覧は `extract=auto`。
+- Chrome runs on Xvfb `:99` with a separate profile under `~/.blade/`; it does not share the user's Brave session. / Chrome は Xvfb `:99` 上の別プロファイルで、普段のブラウザとは共有しない。
