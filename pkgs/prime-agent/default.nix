@@ -29,16 +29,16 @@ let
 in
 buildNpmPackage rec {
   pname = "prime-agent";
-  version = "0.9.1";
+  version = "0.9.3";
   nodejs = nodejs_24;
 
   src = fetchurl {
     url = "https://github.com/PrimeIntellect-ai/prime-agent/releases/download/v${version}/prime-agent-${version}.tgz";
-    hash = "sha256-VzvODNAE/GIFLpqSQImUG385Jmq3HmapTIWh+dNYNbo=";
+    hash = "sha256-znEEk4mHd3CqMbm+ZMRzaFqGFZrbvSRmvUPkqREyQvE=";
   };
 
   sourceRoot = "package";
-  npmDepsHash = "sha256-LEYe3VBGke04DsNFqdkWtEsoRNNnB7sfhk3C4oC9L18=";
+  npmDepsHash = "sha256-L7fwCPh1gHpchmcCXPDI+uIrBlxXx02k8EAXCVakoEs=";
   dontNpmBuild = true;
   npmInstallFlags = [
     "--ignore-scripts"
