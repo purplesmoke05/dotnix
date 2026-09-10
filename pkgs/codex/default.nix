@@ -9,12 +9,12 @@
 }:
 
 let
-  version = "0.153.4";
+  version = "0.154.0";
 
   platforms = {
     x86_64-linux = {
       artifact = "codex-x86_64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-9HlCTsoJJITcQNh64oxE9MxAI0pgBF1hMeSTgA2BSjA=";
+      sha256 = "sha256-1+GLJZeujyQvXzHunpDe70jbye3WNNmGj7ZDXQjAfwI=";
       hostArtifact = "codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz";
       hostSha256 = "sha256-RTnhBlluIDyfburyD+MoqXUUR9fWVhviWWieoHlfg7A=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
@@ -23,7 +23,7 @@ let
 
     aarch64-linux = {
       artifact = "codex-aarch64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-XNphgr2Uw6MPLrY6SVSJ6/f2kf3bFNcPSMbBpQcbbN4=";
+      sha256 = "sha256-WDtI3zKAQhO9zTOMLlrbBrNDQIIfp1enJswKUk+jPCc=";
       hostArtifact = "codex-code-mode-host-aarch64-unknown-linux-musl.tar.gz";
       hostSha256 = "sha256-JeIWCBhwbkjFEVUB1ZhvuMPoWsciZ/YZxJRLXhRlzEA=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
@@ -32,7 +32,7 @@ let
 
     x86_64-darwin = {
       artifact = "codex-x86_64-apple-darwin.tar.gz";
-      sha256 = "sha256-1pIA8L+EGx0aB/gLgM90Ki5Pwrq5GuikSxBC+OjKn6Q=";
+      sha256 = "sha256-EhnIN9j4E7STpCTBJcADi12coWJ5vG0/5s4Dej4Ypuc=";
       hostArtifact = "codex-code-mode-host-x86_64-apple-darwin.tar.gz";
       hostSha256 = "sha256-GE2wHxD2oC2t8ka5FEDMFtdaC9tA/0kcSW+IBTiJqSI=";
       nativeBuildInputs = [ makeWrapper ];
@@ -40,7 +40,7 @@ let
 
     aarch64-darwin = {
       artifact = "codex-aarch64-apple-darwin.tar.gz";
-      sha256 = "sha256-jPkR6mdlI7+yEh7FYYSNKrpWSJCtU2202KM1PyuYULE=";
+      sha256 = "sha256-NEMQoKWRwbGS4E/v8wQyGmmQfJSYuqrDMcp+FuvO+dc=";
       hostArtifact = "codex-code-mode-host-aarch64-apple-darwin.tar.gz";
       hostSha256 = "sha256-SoeqiaGYl268aKhQF7NiNO3RsSbftj2UwQog/Pq4FHk=";
       nativeBuildInputs = [ makeWrapper ];
