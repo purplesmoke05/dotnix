@@ -53,6 +53,8 @@
     VOLTA_HOME = "$HOME/.volta";
     PG_CONFIG = "${pkgs.libpq}/bin/pg_config";
     LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libpq ]}:$LD_LIBRARY_PATH";
+    # Enable opencode experimental background subagents (Task tool background mode).
+    OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS = "true";
   };
 
   # Add Volta binary directory to PATH

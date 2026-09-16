@@ -5,6 +5,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-jira.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     nixpkgs-logcli.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
+    # Used only to build the pinned opencode package (older nixpkgs lacks models-dev.jsonschema). / opencode のビルド依存用。
+    nixpkgs-opencode.url = "github:NixOS/nixpkgs/ef34387ddd751e1ab8857adf4676492d32eb24ec";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap = {
       url = "github:xremap/nix-flake";
@@ -264,6 +266,9 @@
               };
             };
 
+            # opencode package (pinned; built with nixpkgs-opencode for newer build deps) / opencode パッケージ
+            opencode = (import inputs.nixpkgs-opencode { system = final.stdenv.hostPlatform.system; }).callPackage ./pkgs/opencode { };
+
             # rtk package / rtk パッケージ
             rtk = final.callPackage ./pkgs/rtk {
               gitMinimal = final.gitMinimal_openssl_patched;
@@ -275,9 +280,6 @@
 
             # Pi coding agent package / Pi コーディングエージェントパッケージ
             pi = final.callPackage ./pkgs/pi { };
-
-            # Prime Agent coding and research agent package / Prime Agent コーディング・リサーチエージェントパッケージ
-            prime-agent = final.callPackage ./pkgs/prime-agent { };
 
             # Bladebro agent browser package / Bladebro エージェントブラウザパッケージ
             bladebro = final.callPackage ./pkgs/bladebro { };
@@ -759,8 +761,8 @@
           rtk = pkgs.rtk;
           headroom = pkgs.headroom;
           pi = pkgs.pi;
-          prime-agent = pkgs.prime-agent;
           hunk = pkgs.hunk;
+          opencode = pkgs.opencode;
           herdr = pkgs.herdr;
           herdr-reviewr-plugin = pkgs.herdr-reviewr-plugin;
           herdr-browser-plugin = pkgs.herdr-browser-plugin;

@@ -232,7 +232,6 @@ in
       herdr
       herdrSound
       pi
-      prime-agent
       worktrunk
     ]
     ++ lib.optionals bladebroSupported [
