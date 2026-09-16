@@ -5,15 +5,6 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 DEFAULT_NIX="$REPO_ROOT/pkgs/codex/default.nix"
-FAKE_HASH="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-
-artifacts=(
-  "x86_64-linux codex-x86_64-unknown-linux-musl.tar.gz"
-  "aarch64-linux codex-aarch64-unknown-linux-musl.tar.gz"
-  "x86_64-darwin codex-x86_64-apple-darwin.tar.gz"
-  "aarch64-darwin codex-aarch64-apple-darwin.tar.gz"
-)
-
 if [[ ! -f "$DEFAULT_NIX" ]]; then
   echo "Error: $DEFAULT_NIX not found." >&2
   exit 1
@@ -66,107 +57,61 @@ else
   echo "Latest ${release_channel} release: rust-v${latest_tag}"
 fi
 
-is_truthy() {
-  case "${1:-}" in
-    1|true|yes|y)
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
-hashes_need_refresh() {
-  DEFAULT_NIX="$DEFAULT_NIX" \
-  FAKE_HASH="$FAKE_HASH" \
-  python3 <<'PY'
-import os
-import pathlib
+python3 - "$DEFAULT_NIX" "$latest_tag" "${CODEX_REFRESH_HASHES:-0}" <<'PYTHON'
+import json
+from pathlib import Path
 import re
+import subprocess
 import sys
 
-default_nix = pathlib.Path(os.environ["DEFAULT_NIX"])
-fake_hash = os.environ["FAKE_HASH"]
-text = default_nix.read_text()
-systems = ("x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin")
+path = Path(sys.argv[1])
+version = sys.argv[2]
+refresh = sys.argv[3] in {"1", "true", "yes", "y"}
+if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-alpha\.[0-9]+)?", version):
+    sys.exit(f"Error: invalid release version: {version!r}")
 
-for system in systems:
-    pattern = re.escape(system) + r'\s*=\s*\{.*?sha256\s*=\s*"([^"]*)"'
-    match = re.search(pattern, text, flags=re.S)
-    if match is None or match.group(1) in ("", fake_hash):
-        sys.exit(0)
+text = path.read_text()
+version_pattern = re.compile(r'(version = ")(?P<version>[^"]+)(";)')
+current = version_pattern.search(text)
+if current is None:
+    sys.exit("Error: version not found in default.nix")
 
-sys.exit(1)
-PY
-}
+# Read both CLI and host assets from the package definition. / 本体と host の配布物をパッケージ定義から取得する。
+source_pattern = re.compile(
+    r'(?P<prefix>\b(?:artifact|hostArtifact) = "(?P<asset>[^"]+)";'
+    r'\s+(?:sha256|hostSha256) = ")(?P<hash>[^"]*)(?P<suffix>";)'
+)
+sources = list(source_pattern.finditer(text))
+if not sources:
+    sys.exit("Error: release artifacts not found in default.nix")
 
-if [[ "$latest_tag" == "$current_version" ]] && ! is_truthy "${CODEX_REFRESH_HASHES:-0}"; then
-  if hashes_need_refresh; then
-    echo "Already on target version, but hashes need refresh."
-  else
-    echo "Already on latest version; nothing to update."
-    echo "Set CODEX_REFRESH_HASHES=1 to recompute hashes."
-    exit 0
-  fi
-fi
+hashes_complete = all(
+    re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", source["hash"])
+    and source["hash"] != "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+    for source in sources
+)
+if version == current["version"] and hashes_complete and not refresh:
+    print("Already on target version; set CODEX_REFRESH_HASHES=1 to refresh hashes.")
+    sys.exit(0)
 
-declare -A hashes
-
-for entry in "${artifacts[@]}"; do
-  read -r system artifact <<<"$entry"
-  url="https://github.com/openai/codex/releases/download/rust-v${latest_tag}/${artifact}"
-  echo "Prefetching ${system} artifact: ${artifact}"
-  base32_hash=$(nix-prefetch-url --type sha256 "$url")
-  sri_hash=$(nix hash convert --hash-algo sha256 --from nix32 --to sri "$base32_hash")
-  hashes[$system]="$sri_hash"
-  echo "  -> $sri_hash"
-done
-
-echo "Updating ${DEFAULT_NIX}..."
-
-hash_json="{"
-sep=""
-for entry in "${artifacts[@]}"; do
-  read -r system _ <<<"$entry"
-  hash="${hashes[$system]}"
-  hash_json+="${sep}\"${system}\":\"${hash}\""
-  sep=","
-done
-hash_json+="}"
-
-DEFAULT_NIX="$DEFAULT_NIX" \
-LATEST_TAG="$latest_tag" \
-HASHES_JSON="$hash_json" \
-python3 <<'PY'
-import json
-import os
-import pathlib
-import re
-
-default_nix = pathlib.Path(os.environ["DEFAULT_NIX"])
-latest = os.environ["LATEST_TAG"]
-hashes = json.loads(os.environ["HASHES_JSON"])
-
-text = default_nix.read_text()
-
-text, count = re.subn(r'version = "[^"]*";', f'version = "{latest}";', text, count=1)
-if count == 0:
-    raise SystemExit("Failed to update version field in default.nix")
-
-for system, new_hash in hashes.items():
-    pattern = r'(%s = \{.*?sha256 = ")([^\"]*)(";)' % re.escape(system)
-    text, count = re.subn(
-        pattern,
-        lambda match: f"{match.group(1)}{new_hash}{match.group(3)}",
-        text,
-        count=1,
-        flags=re.S,
+hashes = {}
+for source in sources:
+    asset = source["asset"]
+    print(f"Prefetching {asset}...", flush=True)
+    url = f"https://github.com/openai/codex/releases/download/rust-v{version}/{asset}"
+    result = subprocess.run(
+        ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url],
+        check=True, stdout=subprocess.PIPE, text=True,
     )
-    if count == 0:
-        raise SystemExit(f"Failed to update hash for {system}")
+    hashes[asset] = json.loads(result.stdout)["hash"]
 
-default_nix.write_text(text)
-PY
-
-echo "Update complete."
+# Write only after every download succeeds. / すべてのダウンロードが成功してから書き込む。
+updated = source_pattern.sub(
+    lambda match: match["prefix"] + hashes[match["asset"]] + match["suffix"], text
+)
+updated = version_pattern.sub(
+    lambda match: match[1] + version + match[3], updated, count=1
+)
+path.write_text(updated)
+print(f"Updated {path} to {version}")
+PYTHON
