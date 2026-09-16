@@ -1,6 +1,12 @@
 { inputs, config, lib, pkgs, hostname, username, ... }:
 
 let
+  desktopServiceRestartPolicy = {
+    OOMPolicy = "stop";
+    Restart = "on-failure";
+    RestartSec = "5s";
+  };
+
   setVictrixPolling = pkgs.writeShellScript "set-victrix-binterval" ''
     shopt -s nullglob
     for iface in /sys$DEVPATH/*:1.*; do
@@ -94,6 +100,23 @@ in
     ];
   };
 
+  # Restart desktop helpers after failures, including OOM. / OOM を含む異常終了後にデスクトップ補助サービスを再起動。
+  systemd.user.services = {
+    "app-org.fcitx.Fcitx5@autostart" = {
+      overrideStrategy = "asDropin";
+      serviceConfig = desktopServiceRestartPolicy;
+    };
+    "app-StreamController@autostart" = {
+      overrideStrategy = "asDropin";
+      serviceConfig = desktopServiceRestartPolicy;
+    };
+    xremap = {
+      # Start after the Wayland compositor is ready. / Wayland コンポジターの準備後に起動。
+      after = [ "graphical-session.target" ];
+      serviceConfig = desktopServiceRestartPolicy;
+    };
+  };
+
   # Font Configuration / フォント構成
   # Cover Japanese fonts, programmer fonts, and emoji. / 日本語・プログラミング・絵文字を網羅。
   fonts = {
@@ -142,10 +165,6 @@ in
 
   # Key Remapping / キーカスタマイズ
   # Define CapsLock-to-Ctrl and Emacs-style bindings. / CapsLock→Ctrl や Emacs 互換操作を定義。
-  # Ensure xremap starts after the graphical session (Wayland compositor) is ready,
-  # so keymap processing can connect to the compositor. WantedBy alone does not imply ordering.
-  systemd.user.services.xremap.after = [ "graphical-session.target" ];
-
   services.xremap = {
     enable = true;
     userName = username;
