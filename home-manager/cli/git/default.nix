@@ -77,6 +77,7 @@
     extensions = with pkgs; [
       gh-markdown-preview
       gh-iteration
+      gh-stack
     ];
     settings = {
       editor = "nvim";
