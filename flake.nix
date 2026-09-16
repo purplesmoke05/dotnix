@@ -272,7 +272,6 @@
             # rtk package / rtk パッケージ
             rtk = final.callPackage ./pkgs/rtk {
               gitMinimal = final.gitMinimal_openssl_patched;
-              sqlite = final.sqlite_3_53;
             };
 
             # Headroom launcher package / Headroom ランチャーパッケージ
