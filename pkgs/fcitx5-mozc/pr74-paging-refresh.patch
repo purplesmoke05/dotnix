@@ -1,0 +1,12 @@
+--- a/src/unix/fcitx5/mozc_state.cc
++++ b/src/unix/fcitx5/mozc_state.cc
+@@ -312,8 +312,7 @@ bool MozcState::Paging(bool prev) {
+            : mozc::commands::SessionCommand::CONVERT_NEXT_PAGE;
+   mozc::commands::Output raw_response;
+   if (TrySendCommand(command, &raw_response, &error)) {
+-    engine_->parser()->ParseResponse(raw_response, ic_);
+-    return true;
++    return ParseResponse(raw_response);
+   }
+   return false;
+ }

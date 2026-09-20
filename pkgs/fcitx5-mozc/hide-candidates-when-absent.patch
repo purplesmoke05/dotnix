@@ -1,0 +1,16 @@
+--- a/src/unix/fcitx5/mozc_response_parser.cc
++++ b/src/unix/fcitx5/mozc_response_parser.cc
+@@ -395,6 +395,13 @@
+   if (response.has_candidates()) {
+     const mozc::commands::Candidates &candidates = response.candidates();
+     ParseCandidates(candidates, ic);
++  } else {
++    // mozc omits `candidates` when the candidate list should not be shown
++    // (candidate_list_visible_ is false on the initial conversion, while
++    // `all_candidate_words` is still present). Clear any previously shown
++    // list so a stale suggestion list does not remain visible. ibus-mozc
++    // does the same via HideLookupTable().
++    ic->inputPanel().setCandidateList(nullptr);
+   }
+ 
+   if (response.has_url()) {

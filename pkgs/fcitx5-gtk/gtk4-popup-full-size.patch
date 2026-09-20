@@ -1,0 +1,79 @@
+--- a/gtk4/gtk4inputwindow.cpp
++++ b/gtk4/gtk4inputwindow.cpp
+@@ -31,15 +31,47 @@
+     // You can add custom state fields here (e.g., colors, values, etc.)
+     fcitx::gtk::Gtk4InputWindow
+         *inputWindow; // Back-reference to the input window for interaction
++
++    // Requested candidate window size. The popover has no child widget, so its
++    // intrinsic measured size is tiny; measure() reports these instead.
++    int width;
++    int height;
+ };
+ 
+ G_DEFINE_TYPE(FcitxClientSidePopup, fcitx_client_side_popup, GTK_TYPE_POPOVER)
+ 
++static void fcitx_client_side_popup_measure(GtkWidget *widget,
++                                            GtkOrientation orientation,
++                                            int /*for_size*/, int *minimum,
++                                            int *natural,
++                                            int *minimum_baseline,
++                                            int *natural_baseline) {
++    auto *self = FCITX_CLIENT_SIDE_POPUP(widget);
++    const int size = orientation == GTK_ORIENTATION_HORIZONTAL ? self->width
++                                                               : self->height;
++    *minimum = MAX(size, 1);
++    *natural = MAX(size, 1);
++    if (minimum_baseline) {
++        *minimum_baseline = -1;
++    }
++    if (natural_baseline) {
++        *natural_baseline = -1;
++    }
++}
++
+ static void fcitx_client_side_popup_snapshot(GtkWidget *widget,
+                                              GtkSnapshot *snapshot) {
+     int width = gtk_widget_get_width(widget);
+     int height = gtk_widget_get_height(widget);
+ 
++    // FIXME: temporary diagnostic for the GTK4 client-side popup sizing bug.
++    // Enable with FCITX5_GTK_DEBUG_POPUP=1 and G_MESSAGES_DEBUG=all.
++    if (g_getenv("FCITX5_GTK_DEBUG_POPUP")) {
++        auto *popup = FCITX_CLIENT_SIDE_POPUP(widget);
++        g_debug("fcitx5-gtk popup: requested=%dx%d allocated=%dx%d",
++                popup->width, popup->height, width, height);
++    }
++
+     if (width <= 0 || height <= 0) {
+         return;
+     }
+@@ -85,6 +117,8 @@
+ 
+ static void fcitx_client_side_popup_init(FcitxClientSidePopup *self) {
+     self->inputWindow = nullptr; // Initialize back-reference
++    self->width = 0;
++    self->height = 0;
+     gtk_widget_add_css_class(GTK_WIDGET(self), "fcitx-popup");
+     gtk_widget_set_halign(GTK_WIDGET(self), GTK_ALIGN_START);
+     gtk_popover_set_position(GTK_POPOVER(self), GTK_POS_BOTTOM);
+@@ -180,6 +214,7 @@
+     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
+ 
+     // Hook up our overridden functions
++    widget_class->measure = fcitx_client_side_popup_measure;
+     widget_class->snapshot = fcitx_client_side_popup_snapshot;
+     G_OBJECT_CLASS(klass)->dispose = fcitx_client_side_popup_dispose;
+ }
+@@ -318,7 +353,11 @@
+ 
+     fcitx_client_side_popup_set_parent(FCITX_CLIENT_SIDE_POPUP(window_.get()),
+                                        parent_);
++    auto *popup = FCITX_CLIENT_SIDE_POPUP(window_.get());
++    popup->width = static_cast<int>(width_);
++    popup->height = static_cast<int>(height_);
+     gtk_widget_set_size_request(window_.get(), width_, height_);
++    gtk_widget_queue_resize(window_.get());
+     gtk_popover_set_pointing_to(GTK_POPOVER(window_.get()), &rect_);
+     gtk_popover_popup(GTK_POPOVER(window_.get()));
+     return true;

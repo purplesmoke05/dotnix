@@ -472,6 +472,21 @@
             # Hazkey package / Hazkey パッケージ
             fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
 
+            # fcitx5-mozc with the paging-refresh fix from fcitx/mozc PR #74. / fcitx5-mozc のページ更新バグ修正（PR #74）。
+            fcitx5-mozc = prev.fcitx5-mozc.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                ./pkgs/fcitx5-mozc/pr74-paging-refresh.patch
+                ./pkgs/fcitx5-mozc/hide-candidates-when-absent.patch
+              ];
+            });
+
+            # fcitx5-gtk GTK4 client-side candidate popup full-size fix. / GTK4 候補ウィンドウの全サイズ表示修正。
+            fcitx5-gtk = prev.fcitx5-gtk.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                ./pkgs/fcitx5-gtk/gtk4-popup-full-size.patch
+              ];
+            });
+
             # hints package (NixOS only) / hints パッケージ（NixOS 限定）
             hints = final.callPackage ./pkgs/hints {
               python3Packages = final.python312Packages;
