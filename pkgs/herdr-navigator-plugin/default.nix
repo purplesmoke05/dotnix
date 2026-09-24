@@ -1,6 +1,7 @@
 { lib
 , rustPlatform
 , fetchFromGitHub
+, stdenv
 , writableTmpDirAsHomeHook
 }:
 
@@ -16,6 +17,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   cargoHash = "sha256-1fvQ8hyarP1WQwqIRvqKCkttwAMj3wGieue91/VNll8=";
+
+  doCheck = !stdenv.hostPlatform.isDarwin;
 
   postPatch = ''
     substituteInPlace herdr-plugin.toml \

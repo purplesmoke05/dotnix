@@ -32,10 +32,12 @@
 
       # Default push behavior
       push = {
-        default = "simple";
+        default = "current";
         autoSetupRemote = true;
         followTags = true;
       };
+
+      branch.autoSetupMerge = "simple";
 
       # Default fetch behavior
       fetch = {

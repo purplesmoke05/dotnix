@@ -4,6 +4,8 @@ let
   bladebroSupported = lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro;
   herdrConfig = { soundEnabled }:
     ''
+      onboarding = false
+
       [ui.sound]
       enabled = ${lib.boolToString soundEnabled}
 

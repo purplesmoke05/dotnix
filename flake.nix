@@ -139,6 +139,11 @@
           in
           {
             # Common overrides / 共通オーバーライド
+            # Worktrunk process-table tests are unavailable in the Darwin sandbox. / DarwinのsandboxではWorktrunkのプロセス一覧テストを実行できない。
+            worktrunk = prev.worktrunk.overrideAttrs (_: {
+              doCheck = !prev.stdenv.hostPlatform.isDarwin;
+            });
+
             # Security-patched scanner-visible runtime libraries. / スキャナで見えるランタイムライブラリのセキュリティ修正版。
             openssl_3_6_patched = prev.openssl_3_6.overrideAttrs (_finalAttrs: _oldAttrs: {
               version = "3.6.3";
