@@ -16,7 +16,7 @@ let
       [ui.sidebar.agents]
       row_gap = 0
       rows = [
-        ["state_icon", "$title"],
+        ["state_icon", "agent", "$title"],
         ["$provider", "$limit"],
         ["$context"],
       ]
