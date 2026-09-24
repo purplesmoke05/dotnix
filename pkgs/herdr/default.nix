@@ -6,25 +6,25 @@
 }:
 
 let
-  version = "0.9.0";
+  version = "0.9.1";
 
   # Map Nix systems to release manifest assets. / Nix system を release manifest の asset に対応付ける。
   sources = {
     x86_64-linux = {
       asset = "herdr-linux-x86_64";
-      hash = "sha256-T6GgEVjdgEPaktMbJweAsNzBBgMDjZthysTYGrY/tx8=";
+      hash = "sha256-KgL+0WvrZR7wBuHUPwSPZSyk3FitBTzS1ERQVj1cVLc=";
     };
     aarch64-linux = {
       asset = "herdr-linux-aarch64";
-      hash = "sha256-nI2yD7fnQnsTjVNnET8WIf/TGfL2XW8AniWUApEV8NI=";
+      hash = "sha256-9Mz03nRfLLmjmpg+m6NwPa1Q7CpY3qgwJs6rchu9jZ4=";
     };
     x86_64-darwin = {
       asset = "herdr-macos-x86_64";
-      hash = "sha256-0MkgsqEmp0gJ+hSRQRyaCXpEeGysnCylG4GKmVWBzxY=";
+      hash = "sha256-BTvgY5k1/lSrXvvbRmUQVOT2p1OltDFTyIvWkSvOHpQ=";
     };
     aarch64-darwin = {
       asset = "herdr-macos-aarch64";
-      hash = "sha256-MrU98JhyYoBZx4mmnwKmuOKeFN3yZxFCHzRj9wwa7xc=";
+      hash = "sha256-X8en5636ylb6gKqJ3LAlaTNXJo2rgoW5zi0IojE8id4=";
     };
   };
 
