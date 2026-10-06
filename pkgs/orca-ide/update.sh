@@ -23,8 +23,7 @@ else
   target_version="${target_tag#v}"
 fi
 
-python3 - "$DEFAULT_NIX" "$target_version" "${ORCA_IDE_REFRESH_HASHES:-0}" <<'PYTHON'
-import json
+python3 - "$DEFAULT_NIX" "$target_version" "${ORCA_IDE_REFRESH_HASHES:-0}" "$REPO_ROOT/scripts/github-release-hashes" <<'PYTHON'
 from pathlib import Path
 import re
 import subprocess
@@ -33,6 +32,7 @@ import sys
 path = Path(sys.argv[1])
 version = sys.argv[2]
 refresh = sys.argv[3] in {"1", "true", "yes", "y"}
+release_hashes = sys.argv[4]
 if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
     sys.exit(f"Error: invalid release version: {version!r}")
 
@@ -64,23 +64,25 @@ if version == current_version and hashes_complete and not refresh:
     print("Already on target version; set ORCA_IDE_REFRESH_HASHES=1 to refresh hashes.")
     sys.exit(0)
 
-new_hashes = {}
-for entry in hashes:
-    arch = entry["arch"]
-    url = (
+# Hash from the release digests so the package for the other architecture is not downloaded. / 他 arch 向けパッケージをダウンロードしないよう、release digest から hash を取る。
+urls = {
+    entry["arch"]: (
         "https://github.com/stablyai/orca/releases/download/"
-        f"v{version}/orca-ide_{version}_{arch}.deb"
+        f"v{version}/orca-ide_{version}_{entry['arch']}.deb"
     )
-    print(f"Prefetching {arch} package...", flush=True)
-    result = subprocess.run(
-        ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url],
-        check=True,
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    new_hashes[arch] = json.loads(result.stdout)["hash"]
+    for entry in hashes
+}
+print("Resolving release hashes...", flush=True)
+result = subprocess.run(
+    [release_hashes, *urls.values()],
+    check=True,
+    stdout=subprocess.PIPE,
+    text=True,
+)
+url_hashes = dict(line.split("\t") for line in result.stdout.splitlines())
+new_hashes = {arch: url_hashes[url] for arch, url in urls.items()}
 
-# Write only after every download succeeds. / すべてのダウンロードが成功してから書き込む。
+# Write only after every hash resolves. / すべての hash が揃ってから書き込む。
 updated = hash_pattern.sub(
     lambda match: match["prefix"] + new_hashes[match["arch"]] + match["suffix"],
     text,

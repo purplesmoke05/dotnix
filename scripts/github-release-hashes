@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+# Print "URL<TAB>SRI" for each GitHub release asset URL without downloading it. / GitHub release asset の URL ごとに "URL<TAB>SRI" をダウンロードせずに出力する。
+# The sha256 comes from the release API's asset digest, which is the same flat hash fetchurl checks. / sha256 は release API の asset digest から取る。fetchurl が検証する flat hash と同じ値。
+# Assets without a digest, or releases the API cannot serve, fall back to `nix store prefetch-file`. / digest の無い asset や API が返せない release は `nix store prefetch-file` にフォールバックする。
+# Set GITHUB_TOKEN to lift the unauthenticated API limit. / unauthenticated の API 上限を避けるには GITHUB_TOKEN を設定する。
+
+import base64
+from datetime import datetime, timezone
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+URL_PATTERN = re.compile(
+    r"https://github\.com/(?P<repo>[^/]+/[^/]+)/releases/download/(?P<tag>[^/]+)/(?P<asset>[^/]+)"
+)
+
+
+def log(message):
+    print(message, file=sys.stderr, flush=True)
+
+
+def release_digests(repo, tag):
+    api = f"https://api.github.com/repos/{repo}/releases/tags/{urllib.parse.quote(tag, safe='')}"
+    request = urllib.request.Request(
+        api,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            release = json.load(response)
+    except urllib.error.HTTPError as error:
+        # Report the rate-limit headers verbatim so a retry can be timed from evidence. / retry 時刻を根拠から決められるよう rate-limit ヘッダーをそのまま報告する。
+        details = [f"HTTP {error.code}"]
+        for header in ("Retry-After", "X-RateLimit-Remaining"):
+            if error.headers.get(header) is not None:
+                details.append(f"{header}={error.headers[header]}")
+        reset = error.headers.get("X-RateLimit-Reset")
+        if reset and reset.isdigit():
+            details.append(
+                "X-RateLimit-Reset="
+                + datetime.fromtimestamp(int(reset), timezone.utc).isoformat()
+            )
+        log(f"GitHub API unavailable for {repo}@{tag} ({', '.join(details)}); downloading assets instead.")
+        return {}
+    except (urllib.error.URLError, TimeoutError) as error:
+        log(f"GitHub API unreachable for {repo}@{tag} ({error}); downloading assets instead.")
+        return {}
+
+    digests = {}
+    for asset in release.get("assets", []):
+        algorithm, _, hexdigest = (asset.get("digest") or "").partition(":")
+        if algorithm == "sha256" and re.fullmatch(r"[0-9a-f]{64}", hexdigest):
+            digests[asset["name"]] = "sha256-" + base64.b64encode(bytes.fromhex(hexdigest)).decode()
+    return digests
+
+
+def prefetch(url):
+    result = subprocess.run(
+        ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        sys.exit(f"Error: failed to download {url}")
+    return json.loads(result.stdout)["hash"]
+
+
+def main(urls):
+    if not urls:
+        sys.exit("usage: github-release-hashes URL...")
+
+    releases = {}
+    for url in urls:
+        match = URL_PATTERN.fullmatch(url)
+        if match is None:
+            sys.exit(f"Error: not a GitHub release asset URL: {url}")
+        release = (match["repo"], urllib.parse.unquote(match["tag"]))
+        if release not in releases:
+            releases[release] = release_digests(*release)
+
+    for url in urls:
+        match = URL_PATTERN.fullmatch(url)
+        asset = urllib.parse.unquote(match["asset"])
+        digests = releases[(match["repo"], urllib.parse.unquote(match["tag"]))]
+        if asset in digests:
+            log(f"{asset}: sha256 from release digest")
+            sri = digests[asset]
+        else:
+            log(f"{asset}: no release digest; downloading...")
+            sri = prefetch(url)
+        print(f"{url}\t{sri}", flush=True)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

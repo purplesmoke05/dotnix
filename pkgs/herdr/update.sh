@@ -92,8 +92,7 @@ if [[ "$latest_tag" == "$current_version" ]] && ! is_truthy "${HERDR_REFRESH_HAS
   fi
 fi
 
-declare -A hashes
-
+declare -A urls
 for entry in "${artifacts[@]}"; do
   read -r system asset_key <<<"$entry"
   url="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["assets"][sys.argv[2]])' "$manifest_file" "$asset_key")"
@@ -101,11 +100,22 @@ for entry in "${artifacts[@]}"; do
     echo "Error: asset URL not found in manifest for $asset_key." >&2
     exit 1
   fi
-  echo "Prefetching ${system} asset: ${url##*/}"
-  base32_hash=$(nix-prefetch-url --type sha256 "$url")
-  sri_hash=$(nix hash convert --hash-algo sha256 --from nix32 --to sri "$base32_hash")
-  hashes[$system]="$sri_hash"
-  echo "  -> $sri_hash"
+  urls[$system]="$url"
+done
+
+# Hash from the release digests so assets for other systems are not downloaded. / 他システム向け asset をダウンロードしないよう、release digest から hash を取る。
+echo "Resolving release hashes..."
+hash_lines="$("$REPO_ROOT/scripts/github-release-hashes" "${urls[@]}")"
+declare -A url_hashes
+while IFS=$'\t' read -r url sri_hash; do
+  url_hashes[$url]="$sri_hash"
+done <<<"$hash_lines"
+
+declare -A hashes
+for entry in "${artifacts[@]}"; do
+  read -r system _ <<<"$entry"
+  hashes[$system]="${url_hashes[${urls[$system]}]}"
+  echo "  $system -> ${hashes[$system]}"
 done
 
 echo "Updating ${DEFAULT_NIX}..."

@@ -88,16 +88,25 @@ if [[ "$latest_tag" == "$current_version" ]] && ! is_truthy "${COPILOT_CLI_REFRE
   fi
 fi
 
-declare -A hashes
-
+declare -A urls
 for entry in "${artifacts[@]}"; do
   read -r system name <<<"$entry"
-  url="https://github.com/github/copilot-cli/releases/download/v${latest_tag}/${name}.tar.gz"
-  echo "Prefetching ${system} artifact: ${name}.tar.gz"
-  base32_hash=$(nix-prefetch-url --type sha256 "$url")
-  sri_hash=$(nix hash convert --hash-algo sha256 --from nix32 --to sri "$base32_hash")
-  hashes[$system]="$sri_hash"
-  echo "  -> $sri_hash"
+  urls[$system]="https://github.com/github/copilot-cli/releases/download/v${latest_tag}/${name}.tar.gz"
+done
+
+# Hash from the release digests so artifacts for other systems are not downloaded.
+echo "Resolving release hashes..."
+hash_lines="$("$REPO_ROOT/scripts/github-release-hashes" "${urls[@]}")"
+declare -A url_hashes
+while IFS=$'\t' read -r url sri_hash; do
+  url_hashes[$url]="$sri_hash"
+done <<<"$hash_lines"
+
+declare -A hashes
+for entry in "${artifacts[@]}"; do
+  read -r system _ <<<"$entry"
+  hashes[$system]="${url_hashes[${urls[$system]}]}"
+  echo "  $system -> ${hashes[$system]}"
 done
 
 echo "Updating ${DEFAULT_NIX}..."

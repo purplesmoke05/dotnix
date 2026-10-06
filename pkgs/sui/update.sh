@@ -99,15 +99,25 @@ if [[ "$target_version" == "$current_version" ]] && ! is_truthy "${SUI_REFRESH_H
   fi
 fi
 
-declare -A hashes
+declare -A urls
 for entry in "${systems[@]}"; do
   IFS=: read -r system suffix <<<"$entry"
-  url="https://github.com/MystenLabs/sui/releases/download/mainnet-v${target_version}/sui-mainnet-v${target_version}-ubuntu-${suffix}.tgz"
-  echo "Prefetching $system..."
-  base32_hash=$(nix-prefetch-url --type sha256 "$url")
-  sri_hash=$(nix hash to-sri --type sha256 "$base32_hash")
-  hashes[$system]="$sri_hash"
-  echo "  -> $sri_hash"
+  urls[$system]="https://github.com/MystenLabs/sui/releases/download/mainnet-v${target_version}/sui-mainnet-v${target_version}-ubuntu-${suffix}.tgz"
+done
+
+# Hash from the release digests so the ~1 GiB archives are not downloaded just to be hashed.
+echo "Resolving release hashes..."
+hash_lines="$("$REPO_ROOT/scripts/github-release-hashes" "${urls[@]}")"
+declare -A url_hashes
+while IFS=$'\t' read -r url sri_hash; do
+  url_hashes[$url]="$sri_hash"
+done <<<"$hash_lines"
+
+declare -A hashes
+for entry in "${systems[@]}"; do
+  IFS=: read -r system _ <<<"$entry"
+  hashes[$system]="${url_hashes[${urls[$system]}]}"
+  echo "  $system -> ${hashes[$system]}"
 done
 
 hash_json="{"

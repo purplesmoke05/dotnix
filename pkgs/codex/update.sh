@@ -57,8 +57,7 @@ else
   echo "Latest ${release_channel} release: rust-v${latest_tag}"
 fi
 
-python3 - "$DEFAULT_NIX" "$latest_tag" "${CODEX_REFRESH_HASHES:-0}" <<'PYTHON'
-import json
+python3 - "$DEFAULT_NIX" "$latest_tag" "${CODEX_REFRESH_HASHES:-0}" "$REPO_ROOT/scripts/github-release-hashes" <<'PYTHON'
 from pathlib import Path
 import re
 import subprocess
@@ -67,6 +66,7 @@ import sys
 path = Path(sys.argv[1])
 version = sys.argv[2]
 refresh = sys.argv[3] in {"1", "true", "yes", "y"}
+release_hashes = sys.argv[4]
 if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:-alpha\.[0-9]+)?", version):
     sys.exit(f"Error: invalid release version: {version!r}")
 
@@ -94,18 +94,19 @@ if version == current["version"] and hashes_complete and not refresh:
     print("Already on target version; set CODEX_REFRESH_HASHES=1 to refresh hashes.")
     sys.exit(0)
 
-hashes = {}
-for source in sources:
-    asset = source["asset"]
-    print(f"Prefetching {asset}...", flush=True)
-    url = f"https://github.com/openai/codex/releases/download/rust-v{version}/{asset}"
-    result = subprocess.run(
-        ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url],
-        check=True, stdout=subprocess.PIPE, text=True,
-    )
-    hashes[asset] = json.loads(result.stdout)["hash"]
+# Hash from the release digests so assets for other systems are not downloaded. / 他システム向け asset をダウンロードしないよう、release digest から hash を取る。
+urls = {
+    source["asset"]: f"https://github.com/openai/codex/releases/download/rust-v{version}/{source['asset']}"
+    for source in sources
+}
+print("Resolving release hashes...", flush=True)
+result = subprocess.run(
+    [release_hashes, *urls.values()], check=True, stdout=subprocess.PIPE, text=True
+)
+url_hashes = dict(line.split("\t") for line in result.stdout.splitlines())
+hashes = {asset: url_hashes[url] for asset, url in urls.items()}
 
-# Write only after every download succeeds. / すべてのダウンロードが成功してから書き込む。
+# Write only after every hash resolves. / すべての hash が揃ってから書き込む。
 updated = source_pattern.sub(
     lambda match: match["prefix"] + hashes[match["asset"]] + match["suffix"], text
 )
