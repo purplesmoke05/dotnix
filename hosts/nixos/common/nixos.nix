@@ -108,6 +108,8 @@ in
     };
     "app-StreamController@autostart" = {
       overrideStrategy = "asDropin";
+      # Preserve the graphical session's PATH. / GUI セッションの PATH を引き継ぐ。
+      path = lib.mkForce [ ];
       serviceConfig = desktopServiceRestartPolicy;
     };
     xremap = {
