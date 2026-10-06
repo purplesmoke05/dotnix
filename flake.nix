@@ -294,6 +294,9 @@
             # Hunk terminal diff viewer package / Hunk ターミナル diff ビューアパッケージ
             hunk = final.callPackage ./pkgs/hunk { };
 
+            # Orca agent development environment package / Orca エージェント開発環境パッケージ
+            orca-ide = final.callPackage ./pkgs/orca-ide { };
+
             # Herdr AI agent multiplexer package / Herdr AI エージェントマルチプレクサパッケージ
             herdr = final.callPackage ./pkgs/herdr { };
 
@@ -792,6 +795,8 @@
           herdr-worktrunk-plugin = pkgs.herdr-worktrunk-plugin;
         } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro) {
           bladebro = pkgs.bladebro;
+        } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.orca-ide) {
+          orca-ide = pkgs.orca-ide;
         };
         formatter = pkgs.nixpkgs-fmt;
       }

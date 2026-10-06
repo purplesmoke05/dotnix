@@ -18,6 +18,7 @@
   home.packages = with pkgs; [
     loupe
     onlyoffice-desktopeditors
+    orca-ide
     slack
     streamcontroller
     streamcontroller-hypr
