@@ -8,16 +8,16 @@
 }:
 
 let
-  version = "1.79.1";
+  version = "1.80.1";
 
   sources = {
     x86_64-linux = {
       url = "https://github.com/MystenLabs/sui/releases/download/mainnet-v${version}/sui-mainnet-v${version}-ubuntu-x86_64.tgz";
-      hash = "sha256-VHswkel1uKa0B4Rzo4aNhumFFWtnFajEr7f9cxOjar8=";
+      hash = "sha256-l/mu0Q4ML+MgTORjmsmS4USbF8FPIvMOn5A+rVSsczY=";
     };
     aarch64-linux = {
       url = "https://github.com/MystenLabs/sui/releases/download/mainnet-v${version}/sui-mainnet-v${version}-ubuntu-aarch64.tgz";
-      hash = "sha256-RyM32NaktaJkKoX2jzD8WHTFIWl8WbAx36x0iql2a30=";
+      hash = "sha256-0le4Lbx/hPhPqV8aquQTtygT/+cozLXBAS5xSSkmLyA=";
     };
   };
 
