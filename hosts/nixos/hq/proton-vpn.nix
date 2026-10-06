@@ -7,7 +7,6 @@ let
     interfaceName = "proton0";
     stateDir = "/var/lib/proton-vpn";
     runtimeDir = "/run/proton-vpn";
-    sourceConfigFile = "/var/lib/proton-vpn/proton0.conf";
     runtimeConfigFile = "/run/proton-vpn/proton0.conf";
     dnsServers = [
       "tcp://10.2.0.1"
@@ -38,59 +37,23 @@ let
     tailscalePort = 41641;
   };
 
+  protonScripts = pkgs.runCommand "proton-vpn-scripts" { } ''
+    mkdir -p "$out"
+    cp ${./proton-vpn-healthcheck.py} "$out/proton-vpn-healthcheck.py"
+    cp ${./proton_vpn_profiles.py} "$out/proton_vpn_profiles.py"
+  '';
+
+  profileCommand = "${pkgs.python3}/bin/python3 ${protonScripts}/proton_vpn_profiles.py --state-dir ${lib.escapeShellArg protonVpn.stateDir} --runtime-config ${lib.escapeShellArg protonVpn.runtimeConfigFile}";
+
+  profileTool = pkgs.writeShellScriptBin "proton-vpn-profiles" ''
+    export PATH=${lib.makeBinPath [ pkgs.nftables ]}:"$PATH"
+    exec ${profileCommand} "$@"
+  '';
+
   loadEndpointSet = pkgs.writeShellScript "proton-vpn-load-endpoint-set" ''
     set -euo pipefail
-
-    conf=${lib.escapeShellArg protonVpn.runtimeConfigFile}
-
-    if [ ! -f "$conf" ]; then
-      echo "missing Proton WireGuard config: $conf" >&2
-      exit 1
-    fi
-
-    endpoint="$(${pkgs.gawk}/bin/awk -F= '
-      /^[[:space:]]*Endpoint[[:space:]]*=/ {
-        value=$2
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-        print value
-        exit
-      }
-    ' "$conf")"
-
-    if [ -z "$endpoint" ]; then
-      echo "missing Endpoint in Proton WireGuard config: $conf" >&2
-      exit 1
-    fi
-
-    if [[ "$endpoint" =~ ^\[([0-9A-Fa-f:.]+)\]:([0-9]+)$ ]]; then
-      host="''${BASH_REMATCH[1]}"
-      port="''${BASH_REMATCH[2]}"
-      family=ip6
-    elif [[ "$endpoint" =~ ^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):([0-9]+)$ ]]; then
-      host="''${BASH_REMATCH[1]}"
-      port="''${BASH_REMATCH[2]}"
-      family=ip
-    else
-      echo "Proton Endpoint must be an IP literal, not a hostname: $endpoint" >&2
-      exit 1
-    fi
-
-    if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
-      echo "invalid Proton Endpoint port: $endpoint" >&2
-      exit 1
-    fi
-
-    ${pkgs.nftables}/bin/nft flush set inet proton-killswitch proton_vpn4_endpoints
-    ${pkgs.nftables}/bin/nft flush set inet proton-killswitch proton_vpn6_endpoints
-
-    case "$family" in
-      ip)
-        ${pkgs.nftables}/bin/nft add element inet proton-killswitch proton_vpn4_endpoints "{ $host . $port }"
-        ;;
-      ip6)
-        ${pkgs.nftables}/bin/nft add element inet proton-killswitch proton_vpn6_endpoints "{ $host . $port }"
-        ;;
-    esac
+    export PATH=${lib.makeBinPath [ pkgs.nftables ]}:"$PATH"
+    ${profileCommand} endpoints
   '';
 
   loadEndpointSetIfPresent = pkgs.writeShellScript "proton-vpn-load-endpoint-set-if-present" ''
@@ -106,9 +69,7 @@ let
       exit 0
     fi
 
-    if ! ${loadEndpointSet}; then
-      echo "warning: failed to refresh Proton VPN endpoint nftables set" >&2
-    fi
+    ${loadEndpointSet}
   '';
 
   stopProtonVpn = pkgs.writeShellScript "proton-vpn-stop" ''
@@ -126,7 +87,15 @@ let
       exit 1
     fi
 
+    fwmark="$(${pkgs.wireguard-tools}/bin/wg show "$iface" fwmark)"
     ${pkgs.wireguard-tools}/bin/wg-quick down "$conf"
+
+    # wg-quick leaves routes belonging to other interfaces behind. / wg-quick は別インターフェースの経路を残す。
+    if [ "$fwmark" != off ]; then
+      printf -v table '%d' "$fwmark"
+      ${pkgs.iproute2}/bin/ip -4 route flush table "$table" exact ${lib.escapeShellArg protonVpn.tailnet4}
+      ${pkgs.iproute2}/bin/ip -6 route flush table "$table" exact ${lib.escapeShellArg protonVpn.tailnet6}
+    fi
 
     if ${pkgs.iproute2}/bin/ip link show dev "$iface" >/dev/null 2>&1; then
       echo "Proton WireGuard interface still exists after shutdown: $iface" >&2
@@ -198,7 +167,10 @@ let
 
 in
 {
-  options.hq.protonVpn.enable = lib.mkEnableOption "Proton VPN routing for hq";
+  options.hq.protonVpn = {
+    enable = lib.mkEnableOption "Proton VPN routing for hq";
+    autoRecover.enable = lib.mkEnableOption "recovery after repeated Proton VPN connectivity failures";
+  };
 
   config = lib.mkIf cfg.enable {
     assertions = [
@@ -317,33 +289,9 @@ in
       deps = [ "users" "groups" ];
       text = ''
         state_dir=${lib.escapeShellArg protonVpn.stateDir}
-        conf=${lib.escapeShellArg protonVpn.sourceConfigFile}
-
         install -d -m 0700 -o root -g root "$state_dir"
-
-        if [ ! -f "$conf" ]; then
-          echo "missing Proton WireGuard config: $conf" >&2
-          echo "create it from Proton's WireGuard config and use an IP-literal Endpoint" >&2
-          exit 1
-        fi
-
-        chown root:root "$conf"
-        chmod 0600 "$conf"
-
-        if ! ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*Endpoint[[:space:]]*=[[:space:]]*((([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]+)|(\[[0-9A-Fa-f:.]+\]:[0-9]+))[[:space:]]*$' "$conf"; then
-          echo "Endpoint in $conf must be an IP literal so the kill switch does not need pre-VPN DNS" >&2
-          exit 1
-        fi
-
-        if ! ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*AllowedIPs[[:space:]]*=.*(^|[,[:space:]])0\.0\.0\.0/0([,[:space:]]|$)' "$conf"; then
-          echo "AllowedIPs in $conf must include 0.0.0.0/0 for Proton default routing" >&2
-          exit 1
-        fi
-
-        if ! ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*AllowedIPs[[:space:]]*=.*(^|[,[:space:]])::/0([,[:space:]]|$)' "$conf"; then
-          echo "AllowedIPs in $conf must include ::/0 for Proton IPv6 default routing" >&2
-          exit 1
-        fi
+        install -d -m 0700 -o root -g root "$state_dir/profiles"
+        ${profileCommand} validate
       '';
     };
 
@@ -352,73 +300,18 @@ in
       ExecStartPost = lib.mkAfter [ "${loadEndpointSetIfPresent}" ];
     };
 
-    systemd.services.proton-vpn-prepare-config = {
-      description = "Prepare Proton VPN WireGuard config";
-      before = [
-        "proton-vpn-load-endpoint-set.service"
-        "wg-quick-${protonVpn.interfaceName}.service"
-      ];
-      requiredBy = [
-        "proton-vpn-load-endpoint-set.service"
-        "wg-quick-${protonVpn.interfaceName}.service"
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-      };
-      script = ''
-        source_conf=${lib.escapeShellArg protonVpn.sourceConfigFile}
-        runtime_dir=${lib.escapeShellArg protonVpn.runtimeDir}
-        runtime_conf=${lib.escapeShellArg protonVpn.runtimeConfigFile}
-
-        install -d -m 0700 -o root -g root "$runtime_dir"
-        tmp="$runtime_conf.tmp"
-
-        ${pkgs.gawk}/bin/awk '
-          /^[[:space:]]*[Dd][Nn][Ss][[:space:]]*=/ { next }
-          { print }
-        ' "$source_conf" > "$tmp"
-
-        chown root:root "$tmp"
-        chmod 0600 "$tmp"
-        mv "$tmp" "$runtime_conf"
-      '';
-    };
-
-    systemd.services.proton-vpn-load-endpoint-set = {
-      description = "Load Proton VPN endpoint into nftables";
-      after = [
-        "nftables.service"
-        "proton-vpn-prepare-config.service"
-      ];
-      before = [ "wg-quick-${protonVpn.interfaceName}.service" ];
-      requires = [
-        "nftables.service"
-        "proton-vpn-prepare-config.service"
-      ];
-      requiredBy = [ "wg-quick-${protonVpn.interfaceName}.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-      };
-      script = ''
-        ${loadEndpointSet}
-      '';
-    };
-
     systemd.services."wg-quick-${protonVpn.interfaceName}" = {
-      after = [
-        "proton-vpn-prepare-config.service"
-        "proton-vpn-load-endpoint-set.service"
-      ];
-      requires = [
-        "proton-vpn-prepare-config.service"
-        "proton-vpn-load-endpoint-set.service"
-      ];
+      after = [ "nftables.service" ];
+      requires = [ "nftables.service" ];
       serviceConfig = {
-        Restart = "on-failure";
+        # The monitor owns recovery across profiles. / 監視処理が接続先をまたぐ復旧を管理する。
+        Restart = if cfg.autoRecover.enable then "no" else "on-failure";
         RestartSec = 5;
       };
       preStart = lib.mkBefore ''
         ${stopProtonVpn}
+        ${profileCommand} prepare
+        ${loadEndpointSet}
       '';
       preStop = lib.mkForce ''
         ${stopProtonVpn}
@@ -430,6 +323,7 @@ in
 
     systemd.services.proton-vpn-tailnet-route = {
       description = "Route tailnet traffic inside Proton VPN policy table";
+      partOf = [ "wg-quick-${protonVpn.interfaceName}.service" ];
       after = [
         "wg-quick-${protonVpn.interfaceName}.service"
         "tailscaled.service"
@@ -447,16 +341,43 @@ in
       '';
     };
 
+    systemd.services.proton-vpn-healthcheck = lib.mkIf cfg.autoRecover.enable {
+      description = "Check Proton VPN connectivity and rotate saved profiles on failure";
+      after = [ "wg-quick-${protonVpn.interfaceName}.service" ];
+      path = [ pkgs.systemd pkgs.wireguard-tools pkgs.iproute2 pkgs.nftables ];
+      serviceConfig = {
+        Type = "oneshot";
+        RuntimeDirectory = "proton-vpn-healthcheck";
+        RuntimeDirectoryMode = "0700";
+        RuntimeDirectoryPreserve = true;
+        UMask = "0077";
+        TimeoutStartSec = 120;
+        ExecStart = "${pkgs.python3}/bin/python3 ${protonScripts}/proton-vpn-healthcheck.py --interface ${protonVpn.interfaceName} --state-file /run/proton-vpn-healthcheck/state.json --profiles-dir ${protonVpn.stateDir}";
+      };
+    };
+
+    systemd.timers.proton-vpn-healthcheck = lib.mkIf cfg.autoRecover.enable {
+      description = "Periodically check Proton VPN connectivity";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "2min";
+        OnUnitInactiveSec = "30s";
+        AccuracySec = "1s";
+      };
+    };
+
     systemd.services.tailscaled.postStart = lib.mkAfter ''
       ${triggerTailnetRouteIfProtonActive}
     '';
 
     systemd.tmpfiles.rules = [
       "d ${protonVpn.stateDir} 0700 root root -"
+      "d ${protonVpn.stateDir}/profiles 0700 root root -"
       "d ${protonVpn.runtimeDir} 0700 root root -"
     ];
 
     environment.systemPackages = with pkgs; [
+      profileTool
       nftables
       wireguard-tools
     ];

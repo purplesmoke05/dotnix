@@ -47,6 +47,7 @@ in
   networking.wireless.interfaces = [ "wlp5s0" ];
 
   hq.protonVpn.enable = true;
+  hq.protonVpn.autoRecover.enable = true;
 
   # nsncd worker tuning / nsncd ワーカー数チューニング
   # Default 8 workers saturated by long-lived NSS clients and blocked new
