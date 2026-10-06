@@ -28,6 +28,7 @@
     codex
     opencode
     confluence-cli
+    officecli
     claude-code
     rtk
     devbox

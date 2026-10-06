@@ -7,6 +7,8 @@
     nixpkgs-logcli.url = "github:NixOS/nixpkgs/6c9a78c09ff4d6c21d0319114873508a6ec01655";
     # Used only to build the pinned opencode package (older nixpkgs lacks models-dev.jsonschema). / opencode のビルド依存用。
     nixpkgs-opencode.url = "github:NixOS/nixpkgs/ef34387ddd751e1ab8857adf4676492d32eb24ec";
+    # OfficeCLI uses the patched .NET runtime from this input. / OfficeCLI はこの入力の修正版 .NET を使用。
+    nixpkgs-officecli.url = "github:NixOS/nixpkgs/c59305bab2065cfecc4944690d9eedbb56f3a9fa";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     xremap = {
       url = "github:xremap/nix-flake";
@@ -317,6 +319,8 @@
 
             # excel-cli package / excel-cli パッケージ
             excel-cli = final.callPackage ./pkgs/excel-cli { };
+            # Pinned OfficeCLI with local preview assets. / 描画資産も固定した OfficeCLI。
+            officecli = (import inputs.nixpkgs-officecli { system = final.stdenv.hostPlatform.system; }).callPackage ./pkgs/officecli { };
             # m365 package / m365 パッケージ
             m365 = final.callPackage ./pkgs/m365 { };
             # workiq package / workiq パッケージ
@@ -776,6 +780,7 @@
           sbomnix = pkgs.sbomnix;
           confluence-cli = pkgs.confluence-cli;
           excel-cli = pkgs.excel-cli;
+          officecli = pkgs.officecli;
           m365 = pkgs.m365;
           workiq = pkgs.workiq;
           uv = pkgs.uv;

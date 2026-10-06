@@ -1,0 +1,94 @@
+--- a/src/officecli/Handlers/Excel/ExcelHandler.HtmlPreview.cs
++++ b/src/officecli/Handlers/Excel/ExcelHandler.HtmlPreview.cs
+@@ -3006,10 +3006,12 @@
+                     style.Append($"font-size:{fs:0.##}pt;");
+                 var fontName = rPr.GetFirstChild<RunFont>()?.Val?.Value;
+                 if (!string.IsNullOrEmpty(fontName))
+-                    style.Append($"font-family:'{fontName}';");
++                    style.Append($"font-family:'{CssSanitize(fontName)}';");
+             }
+             var text = HtmlEncode(run.Text?.Text ?? "");
+-            var span = style.Length > 0 ? $"<span style=\"{style}\">{text}</span>" : $"<span>{text}</span>";
++            var span = style.Length > 0
++                ? $"<span style=\"{HtmlEncode(style.ToString())}\">{text}</span>"
++                : $"<span>{text}</span>";
+             // Mirror the cell-level vertical-align path (GetCellVerticalAlign /
+             // WrapVerticalAlign): wrap in semantic <sup>/<sub> which gives both
+             // the baseline shift and the ~0.83em size reduction, while the inner
+@@ -3028,10 +3030,7 @@
+         if (color == null) return null;
+         var rgb = color.Rgb?.Value;
+         if (!string.IsNullOrEmpty(rgb))
+-        {
+-            if (rgb.Length > 6) rgb = rgb[^6..];   // strip ARGB alpha
+-            return $"#{rgb}";
+-        }
++            return FormatColorForCss(rgb);
+         if (color.Theme?.Value is uint themeIdx)
+         {
+             var tint = color.Tint?.Value;
+--- a/src/officecli/Core/HtmlScreenshot.cs
++++ b/src/officecli/Core/HtmlScreenshot.cs
+@@ -36,7 +36,6 @@
+         {
+             "--headless=new",
+             "--disable-gpu",
+-            "--no-sandbox",
+             "--virtual-time-budget=15000",
+             "--timeout=20000",  // wall-clock backstop: a stalled resource is not rescued by virtual time (issue #181)
+         };
+@@ -88,7 +87,6 @@
+         {
+             "--headless=new",
+             "--disable-gpu",
+-            "--no-sandbox",
+             "--hide-scrollbars",
+             $"--force-device-scale-factor={scale}",
+             $"--window-size={w},{h}",
+@@ -356,6 +354,12 @@
+ 
+     private static IEnumerable<(string, Func<string, string, int, int, (bool, string?)>)> Backends()
+     {
++        // Honor the selected browser without falling back. / 指定されたブラウザを使用し、他へ切り替えない。
++        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("OFFICECLI_BROWSER")))
++        {
++            yield return ("chrome", TryChrome);
++            yield break;
++        }
+         yield return ("playwright", TryPlaywright);
+         yield return ("chrome", TryChrome);
+         yield return ("firefox", TryFirefox);
+@@ -389,7 +393,6 @@
+         {
+             "--headless=new",
+             "--disable-gpu",
+-            "--no-sandbox",
+             "--hide-scrollbars",
+             $"--window-size={w},{h}",
+             // Without these caps, new-headless --screenshot waits for the
+@@ -411,6 +414,17 @@
+ 
+     private static string? FindChrome()
+     {
++        var browserOverride = Environment.GetEnvironmentVariable("OFFICECLI_BROWSER");
++        if (!string.IsNullOrEmpty(browserOverride))
++        {
++            var browserPath = Path.GetFullPath(browserOverride);
++            if (!File.Exists(browserPath))
++                throw new FileNotFoundException(
++                    $"OFFICECLI_BROWSER points to a missing browser executable: {browserPath}",
++                    browserPath);
++            return browserPath;
++        }
++
+         string[] names = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+                           "chrome", "microsoft-edge", "microsoft-edge-stable", "msedge"];
+         var pathHit = WhichFirst(names);
+@@ -559,7 +573,6 @@
+             {
+                 "--headless=new",
+                 "--disable-gpu",
+-                "--no-sandbox",
+                 "--hide-scrollbars",
+                 "--enable-logging=stderr",
+                 "--v=0",

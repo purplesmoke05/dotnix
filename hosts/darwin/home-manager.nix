@@ -34,6 +34,7 @@ in
     dive
     confluence-cli
     excel-cli
+    officecli
     m365
     workiq
     pinnedLogcli

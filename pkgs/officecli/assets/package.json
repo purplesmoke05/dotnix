@@ -1,0 +1,16 @@
+{
+  "name": "officecli-browser-assets",
+  "version": "1.0.153",
+  "private": true,
+  "description": "Pinned, offline browser assets embedded by OfficeCLI previews.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@mermaid-js/layout-elk": "0.1.9",
+    "katex": "0.16.21",
+    "mermaid": "11.17.2",
+    "three": "0.170.0"
+  }
+}
