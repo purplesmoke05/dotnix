@@ -8,23 +8,23 @@
 }:
 
 let
-  version = "0.49.0";
+  version = "0.51.0";
   sources = {
     x86_64-linux = {
       asset = "rtk-x86_64-unknown-linux-musl.tar.gz";
-      hash = "sha256-cngjHf1+anMKSrf4R7GVvPAiicLVdiKw2rdaZBEQDI8=";
+      hash = "sha256-UCjTsZqPCZDTD+yfuwfjJ4K8VpjmGPsYYarYqcy6TrU=";
     };
     aarch64-linux = {
       asset = "rtk-aarch64-unknown-linux-gnu.tar.gz";
-      hash = "sha256-yOpLZWCEHnMVfBNP1KMpORTG7eQueG7phc9JH95pG6c=";
+      hash = "sha256-jW0arZ5ptCSB7acDlQfR9+6TaY+HcTzs2HPSh8GTFjI=";
     };
     x86_64-darwin = {
       asset = "rtk-x86_64-apple-darwin.tar.gz";
-      hash = "sha256-0pc4j0qKeG55q+X1W4BFFyW/6MWDW0c2wF18/01o9ic=";
+      hash = "sha256-vTnIFT9BRzWDYMfcUWZagTHMnuFvgfaalAL/pQC+PMI=";
     };
     aarch64-darwin = {
       asset = "rtk-aarch64-apple-darwin.tar.gz";
-      hash = "sha256-u7/rq7Imhpk6gNpzGqTV01EW+4riSrsAYI76Ao4TrgE=";
+      hash = "sha256-iBfYtxr8AqyL8G6yS8xBwwZZKrc1to6P7p2xug3ny1k=";
     };
   };
   srcConfig = sources.${stdenv.hostPlatform.system}
