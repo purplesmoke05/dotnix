@@ -1139,30 +1139,51 @@ let
     ];
   };
 
-  workspaceDigits = map builtins.toString (lib.range 1 9) ++ [ "0" ];
-  workspaceDisplayDigit =
-    workspace:
-    if workspace <= 10 then
-      builtins.elemAt workspaceDigits (workspace - 1)
+  displayLayout = import ./display-layout.nix;
+  workspaceSlots = lib.range 1 displayLayout.workspacesPerMonitor;
+  leftWorkspaceTarget = { role = "left"; description = displayLayout.hq.left; };
+  rightWorkspaceTarget = { role = "right"; description = displayLayout.hq.right; };
+  primaryWorkspaceTarget = { role = "primary"; monitorId = 0; };
+  secondaryWorkspaceTarget = { role = "secondary"; monitorId = 1; };
+  workspaceTargets =
+    if hostname == "hq" then
+      [ leftWorkspaceTarget rightWorkspaceTarget ]
     else
-      builtins.elemAt workspaceDigits (workspace - 11);
-  workspaceSuffixVar = workspace: "workspace_${builtins.toString workspace}_suffix";
-  mkWorkspaceModule = workspace: {
+      [ primaryWorkspaceTarget secondaryWorkspaceTarget ];
+  workspaceDigits = map builtins.toString (lib.range 1 9) ++ [ "0" ];
+  workspaceDisplayDigit = slot: builtins.elemAt workspaceDigits (slot - 1);
+  workspaceSuffixVar = role: slot: "workspace_${role}_${builtins.toString slot}_suffix";
+  workspaceModuleName = role: slot: "workspace-${role}-${builtins.toString slot}";
+  workspaceClick =
+    target: slot:
+    let
+      slotText = builtins.toString slot;
+      batch = "dispatch focusmonitor desc:${target.description}; dispatch split:workspace ${slotText}";
+      workspace = target.monitorId * displayLayout.workspacesPerMonitor + slot;
+    in
+    if target ? description then
+      "!${hyprctlBin} --batch ${lib.escapeShellArg batch}"
+    else
+      "!${hyprctlBin} dispatch workspace ${builtins.toString workspace}";
+  mkWorkspaceModule = target: slot: {
     type = "custom";
-    name = "workspace-${builtins.toString workspace}";
+    name = workspaceModuleName target.role slot;
     class = "workspace-pill";
     bar = [
       {
         type = "button";
         class = "workspace-button";
         justify = "center";
-        on_click = "!${hyprctlBin} dispatch workspace ${builtins.toString workspace}";
-        label = "<span weight=\"800\">${workspaceDisplayDigit workspace}</span>\n<span size=\"smaller\">#${workspaceSuffixVar workspace}</span>";
+        on_click = workspaceClick target slot;
+        # Keep each segment valid while cached variables initialize. / キャッシュ変数の初期化中も各断片が有効なマークアップになるようにする。
+        label = "<span weight=\"800\">${workspaceDisplayDigit slot}</span>\n#${workspaceSuffixVar target.role slot}";
       }
     ];
   };
-  primaryWorkspaceModules = map mkWorkspaceModule (lib.range 1 10);
-  secondaryWorkspaceModules = map (index: mkWorkspaceModule (index + 10)) (lib.range 1 10);
+  primaryWorkspaceModules = map (mkWorkspaceModule primaryWorkspaceTarget) workspaceSlots;
+  secondaryWorkspaceModules = map (mkWorkspaceModule secondaryWorkspaceTarget) workspaceSlots;
+  leftWorkspaceModules = map (mkWorkspaceModule leftWorkspaceTarget) workspaceSlots;
+  rightWorkspaceModules = map (mkWorkspaceModule rightWorkspaceTarget) workspaceSlots;
 
   mkFocused = maxLength: {
     type = "focused";
@@ -1425,11 +1446,9 @@ let
     position = "top";
   };
 
-  desktopStart = primaryWorkspaceModules;
-  compactStart = primaryWorkspaceModules;
-  desktopStartSecondary = secondaryWorkspaceModules;
+  desktopStart = if hostname == "hq" then leftWorkspaceModules else primaryWorkspaceModules;
+  compactStart = if hostname == "hq" then rightWorkspaceModules else primaryWorkspaceModules;
   desktopCenter = [ (mkFocused 42) ];
-  compactCenter = [ (mkFocused 18) ];
 
   workspaceStateScript = lib.getExe (pkgs.writeShellApplication {
     name = "ironbar-workspace-state";
@@ -1591,7 +1610,7 @@ let
             ;;
         esac
 
-        printf '%s' "$suffix"
+        printf '<span size="smaller">%s</span>' "$suffix"
       }
 
       should_refresh_for_event() {
@@ -1599,7 +1618,7 @@ let
 
         event_name="$1"
         case "$event_name" in
-          workspace*|focusedmon*|movewindow*|openwindow*|closewindow*|createworkspace*|destroyworkspace*|renameworkspace*)
+          workspace*|focusedmon*|monitoradded*|monitorremoved*|movewindow*|openwindow*|closewindow*|createworkspace*|destroyworkspace*|renameworkspace*)
             return 0
             ;;
           *)
@@ -1609,21 +1628,23 @@ let
       }
 
       update_state() {
-        local clients_json focused_json rows ws count has_brave focused suffix module_name
+        local clients_json monitors_json rows role slot count has_brave focused suffix module_name
 
         clients_json="$(hyprctl clients -j 2>/dev/null)" || return 1
-        focused_json="$(hyprctl activeworkspace -j 2>/dev/null)" || return 1
+        monitors_json="$(hyprctl monitors -j 2>/dev/null)" || return 1
 
         rows="$(
           jq -nr \
             --argjson clients "$clients_json" \
-            --argjson focused "$focused_json" \
+            --argjson monitors "$monitors_json" \
+            --argjson targets ${lib.escapeShellArg (builtins.toJSON workspaceTargets)} \
+            --argjson workspace_count ${builtins.toString displayLayout.workspacesPerMonitor} \
             '
               def app_id: (.class // .initialClass // .title // .address // "unknown") | ascii_downcase;
               def is_brave: ((.class // .initialClass // "") | ascii_downcase | contains("brave"));
               def is_quick_term: ((.class // .initialClass // "") | test("^com\\.mitchellh\\.ghostty\\.quick\\.(left|right)$"));
               def stats:
-                reduce ($clients[] | select(.workspace.id >= 1 and .workspace.id <= 20 and (is_quick_term | not))) as $client
+                reduce ($clients[] | select((.workspace.id // 0) > 0 and (is_quick_term | not))) as $client
                   ({};
                     .[($client.workspace.id | tostring)] = (
                       (.[($client.workspace.id | tostring)] // { apps: [], brave: false })
@@ -1631,28 +1652,44 @@ let
                       | .brave = (.brave or ($client | is_brave))
                     )
                   );
+              def monitor_for($target):
+                if ($target | has("description")) then
+                  first($monitors[] | select(.description | startswith($target.description))) // null
+                else
+                  first($monitors[] | select(.id == $target.monitorId)) // null
+                end;
+              def rows_for($target; $stats):
+                (monitor_for($target)) as $monitor
+                | if $monitor == null then
+                    range(1; $workspace_count + 1)
+                    | [$target.role, ., 0, 0, 0]
+                  else
+                    ($monitor.id * $workspace_count) as $base
+                    | range(1; $workspace_count + 1) as $slot
+                    | ($base + $slot) as $workspace
+                    | ($stats[($workspace | tostring)] // { apps: [], brave: false }) as $state
+                    | [
+                        $target.role,
+                        $slot,
+                        ($state.apps | unique | length),
+                        (if $state.brave then 1 else 0 end),
+                        (if $monitor.activeWorkspace.id == $workspace then 1 else 0 end)
+                      ]
+                  end;
               (stats) as $stats
-              | (($focused.id // -1)) as $focused
-              | range(1; 21)
-              | . as $ws
-              | ($stats[($ws | tostring)] // { apps: [], brave: false }) as $state
-              | [
-                  $ws,
-                  ($state.apps | unique | length),
-                  (if $state.brave then 1 else 0 end),
-                  (if $focused == $ws then 1 else 0 end)
-                ]
+              | $targets[]
+              | rows_for(.; $stats)
               | @tsv
             '
         )" || return 1
 
-        while IFS=$'\t' read -r ws count has_brave focused; do
-          [ -n "$ws" ] || continue
+        while IFS=$'\t' read -r role slot count has_brave focused; do
+          [ -n "$role" ] || continue
 
           suffix="$(build_suffix "$count" "$has_brave")" || return 1
-          set_var_if_changed "workspace_''${ws}_suffix" "$suffix" || return 1
+          set_var_if_changed "workspace_''${role}_''${slot}_suffix" "$suffix" || return 1
 
-          module_name="workspace-$ws"
+          module_name="workspace-$role-$slot"
           set_class_if_changed "$module_name" "focused" "$focused" || return 1
         done <<< "$rows"
       }
@@ -1686,6 +1723,12 @@ let
           if ! ironbar_ipc ping >/dev/null 2>&1; then
             break
           fi
+
+          case "$event_name" in
+            monitoradded*|monitorremoved*)
+              last_classes=()
+              ;;
+          esac
 
           if ! update_state; then
             break
@@ -1743,35 +1786,32 @@ let
     end = desktopEnd;
   };
 
-  ironbarConfig = defaultBar // {
-    monitors = {
-      "DP-2" = barDefaults // {
-        name = "ironbar-dp2";
-        height = 36;
-        margin = {
-          top = 8;
-          left = 8;
-          right = 8;
-          bottom = 0;
-        };
-        start = compactStart;
-        center = compactCenter;
-        end = compactEnd;
-      };
-      "DP-3" = barDefaults // {
-        name = "ironbar-dp3";
-        height = 40;
-        margin = {
-          top = 8;
-          left = 12;
-          right = 12;
-          bottom = 0;
-        };
-        start = desktopStartSecondary;
-        center = desktopCenter;
-        end = desktopEnd;
-      };
+  compactBar = barDefaults // {
+    name = if hostname == "hq" then "ironbar-right" else "ironbar-dp2";
+    height = 36;
+    margin = {
+      top = 8;
+      left = 8;
+      right = 8;
+      bottom = 0;
     };
+    start = compactStart;
+    center = if hostname == "hq" then [ ] else [ (mkFocused 18) ];
+    end = compactEnd;
+  };
+
+  ironbarConfig = defaultBar // {
+    monitors =
+      if hostname == "hq" then {
+        "${displayLayout.hq.left}" = defaultBar;
+        "${displayLayout.hq.right}" = compactBar;
+      } else {
+        "DP-2" = compactBar;
+        "DP-3" = defaultBar // {
+          name = "ironbar-dp3";
+          start = secondaryWorkspaceModules;
+        };
+      };
   };
 in
 {
@@ -1786,23 +1826,25 @@ in
         pkgs.jq
       ];
       text = ''
-        active_monitor="$(hyprctl activeworkspace -j 2>/dev/null | jq -r '.monitor // empty')"
+        bar_name="ironbar-default"
+        active_monitor="$(${hyprctlBin} monitors -j | jq -ce 'first(.[] | select(.focused == true))')"
 
-        if [ -z "$active_monitor" ]; then
-          active_monitor="$(hyprctl monitors -j 2>/dev/null | jq -r 'first(.[] | select(.focused == true) | .name) // empty')"
-        fi
+        ${if hostname == "hq" then ''
+          right_description=${lib.escapeShellArg displayLayout.hq.right}
+          active_description="$(printf '%s\n' "$active_monitor" | jq -er '.description')"
 
-        case "$active_monitor" in
-          DP-2)
-            bar_name="ironbar-dp2"
-            ;;
-          DP-3)
-            bar_name="ironbar-dp3"
-            ;;
-          *)
-            bar_name="ironbar-default"
-            ;;
-        esac
+          case "$active_description" in
+            "$right_description"*)
+              bar_name="ironbar-right"
+              ;;
+          esac
+        '' else ''
+          active_name="$(printf '%s\n' "$active_monitor" | jq -er '.name')"
+          case "$active_name" in
+            DP-2) bar_name="ironbar-dp2" ;;
+            DP-3) bar_name="ironbar-dp3" ;;
+          esac
+        ''}
 
         exec ironbar bar "$bar_name" toggle-popup power-menu
       '';

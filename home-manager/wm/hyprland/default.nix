@@ -1,6 +1,8 @@
 { pkgs, inputs, lib, hyprsplit, hostname, ... }:
 let
-  quickTermMonitor = if hostname == "hq" then "DP-3" else "";
+  displayLayout = import ./display-layout.nix;
+  quickTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
+  devTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.right}" else "DP-2";
   hyprlandPackage = inputs.hyprland.packages.${pkgs.system}.hyprland;
   hyprlandPipDrag = pkgs.callPackage ../../../pkgs/hyprland-pip-drag {
     hyprland = hyprlandPackage;
@@ -341,7 +343,7 @@ in
           if [ -n "$preferred_monitor" ]; then
             _monitor="$(
               hyprctl monitors -j | jq -r --arg monitor "$preferred_monitor" '
-                first(.[] | select(.name == $monitor) | .name) // empty
+                first(.[] | select(.name == $monitor or ("desc:" + .description) == $monitor) | .name) // empty
               '
             )"
 
@@ -558,7 +560,7 @@ in
       bashOptions = [ "errexit" "nounset" "pipefail" ];
       text = ''
         dev_class="com.mitchellh.ghostty.dev.monitor"
-        preferred_monitor="DP-2"
+        preferred_monitor=${lib.escapeShellArg devTermMonitor}
         workspace_number="1"
         state_file="''${XDG_RUNTIME_DIR:-/tmp}/dev-monitor-term-last-focused-$UID"
 
@@ -576,9 +578,9 @@ in
 
         get_target_monitor() {
           _monitor="$(
-            hyprctl monitors -j 2>/dev/null | jq -r --arg monitor "$preferred_monitor" '
-              first(.[] | select(.name == $monitor) | .name) // empty
-            ' || true
+            hyprctl monitors -j | jq -r --arg monitor "$preferred_monitor" '
+              first(.[] | select(.name == $monitor or ("desc:" + .description) == $monitor) | .name) // empty
+            '
           )"
 
           if [ -n "$_monitor" ]; then
@@ -586,9 +588,14 @@ in
             return 0
           fi
 
-          hyprctl monitors -j 2>/dev/null | jq -r '
-            first(.[] | select(.focused == true) | .name) // first(.[] | .name) // empty
-          ' || true
+          ${if hostname == "hq" then ''
+            printf 'dev terminal monitor not found: %s\n' "$preferred_monitor" >&2
+            return 1
+          '' else ''
+            hyprctl monitors -j | jq -r '
+              first(.[] | select(.focused == true) | .name) // first(.[] | .name) // empty
+            '
+          ''}
         }
 
         get_monitor_active_workspace() {
@@ -767,7 +774,7 @@ in
 
       # Hyprsplit config / Hyprsplit 設定
       "plugin:hyprsplit:persistent_workspaces" = true;
-      "plugin:hyprsplit:num_workspaces" = 10;
+      "plugin:hyprsplit:num_workspaces" = displayLayout.workspacesPerMonitor;
 
       # Environment variables / 環境変数
       env = [
@@ -844,10 +851,10 @@ in
         "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
         "noanim, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
 
-        # Street Fighter 6 on DP-2 fullscreen. / Street Fighter 6 を DP-2 でフルスクリーン。
-        "monitor DP-2, class:^(steam_app_1364780)$"
+        # Street Fighter 6 fullscreen. / Street Fighter 6 をフルスクリーン表示。
         "fullscreen, class:^(steam_app_1364780)$"
-
+      ] ++ lib.optionals (hostname != "hq") [
+        "monitor DP-2, class:^(steam_app_1364780)$"
         "workspace 2 silent,class:^(steam)$"
       ];
 

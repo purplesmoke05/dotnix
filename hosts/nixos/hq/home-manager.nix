@@ -1,6 +1,10 @@
 # Home Manager configuration / Home Manager 設定
-# Define the laptop user's environment. / ラップトップ向け個人環境を定義。
-{ pkgs, username, lib, ... }: {
+# Define the hq user's environment. / hq 向け個人環境を定義。
+{ pkgs, username, lib, ... }:
+let
+  displays = (import ../../../home-manager/wm/hyprland/display-layout.nix).hq;
+in
+{
   # Module imports / モジュール読み込み
   # Bring in development, CLI, GUI, and Hyprland modules. / 開発・CLI・GUI・Hyprland を統合。
   imports = [
@@ -23,25 +27,21 @@
   wayland.windowManager.hyprland.settings = {
     # Place DP ultrawide left and rotate DP 2.5K portrait on the right. / DPのウルトラワイドを左、DPの2.5Kを右で縦向きに配置。
     monitor = [
-      "DP-3,preferred,0x0,1,transform,0,vrr,1" # Ultrawide on DP-3 left / 左側DP-3のウルトラワイド。
-      "DP-2,2560x1600@120,auto,1.25,transform,3,vrr,1" # Portrait 2.5K 16:10 on DP-2 right with VRR and 1.25x scale / 右側DP-2の2.5K 16:10縦、VRR有効＋1.25倍スケール。
+      "desc:${displays.left},preferred,0x0,1,transform,0,vrr,1"
+      "desc:${displays.right},2560x1600@120,auto,1.25,transform,3,vrr,1"
     ];
 
-    # Pin gamescope to DP-2 workspace 3 fullscreen. / gamescope を DP-2 のワークスペース3でフルスクリーン。
-    workspace = [
-      "3,monitor:DP-2"
-    ];
+    # Pin applications to displays without depending on workspace numbering. / ワークスペース番号に依存せず表示先の画面を固定する。
     windowrulev2 = lib.mkAfter [
-      "workspace 19 silent,class:^(browser-automation)$"
-      "workspace 19 silent,class:^(google-chrome)$,title:(OpenAI|ChatGPT|Phone number required|Check your phone)"
+      "monitor desc:${displays.left},class:^(browser-automation)$"
+      "monitor desc:${displays.left},class:^(google-chrome)$,title:(OpenAI|ChatGPT|Phone number required|Check your phone)"
 
-      "workspace 3 silent,class:^(gamescope)$"
-      "monitor DP-2,class:^(gamescope)$"
-      "fullscreen,class:^(gamescope)$"
+      "monitor desc:${displays.right},class:^(steam)$"
+      "monitor desc:${displays.right},class:^(gamescope)$"
+      # Keep gamescope windows tiled; ignore client fullscreen requests. / gamescope はタイル表示し、全画面要求は抑止する。
+      "suppressevent fullscreen,class:^(gamescope)$"
 
-      # Pin Street Fighter 6 to DP-2 workspace 3. / Street Fighter 6 を DP-2 のワークスペース3に固定。
-      "workspace 3 silent,class:^(steam_app_1364780)$"
-      "monitor DP-2,class:^(steam_app_1364780)$"
+      "monitor desc:${displays.right},class:^(steam_app_1364780)$"
     ];
   };
 }
