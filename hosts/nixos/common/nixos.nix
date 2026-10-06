@@ -391,7 +391,6 @@ in
     qt6Packages.fcitx5-qt
     qt5.qtbase
     qt6.qtbase
-    steam
     unzip
     zip
     _7zz

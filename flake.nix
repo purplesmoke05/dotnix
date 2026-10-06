@@ -138,6 +138,39 @@
                   --replace-fail "${electron}" "$out" \
                   --replace-fail "$old_libexec" "$out/libexec"
               '';
+
+            # Wrap an app's launchers so they drop the capabilities that Hyprland's setcap
+            # wrapper raises into the ambient set for every session process. / Hyprland の setcap
+            # ラッパーがセッション全プロセスへ ambient capability として継承させている権限を、起動時に落とす。
+            # xdg-desktop-portal opens /proc/<pid>/root to classify a caller, and the kernel's
+            # ptrace-style check refuses a target that holds capabilities the portal lacks, so it
+            # denies file dialogs and other portal requests with AccessDenied. / ポータルは
+            # /proc/<pid>/root を開いて呼び出し元を判定するが、自分が持たない capability を持つ
+            # 相手は ptrace 相当の検査で拒否されるため、ファイルダイアログ等を AccessDenied で拒否する。
+            capDrop =
+              bins: drv:
+              drv.overrideAttrs (old:
+              let
+                wrapLaunchers = final.lib.concatMapStrings
+                  (bin: ''
+                    if [ -L "$out/bin/${bin}" ] || [ -e "$out/bin/${bin}" ]; then
+                      mv "$out/bin/${bin}" "$out/bin/.${bin}-capdrop"
+                      makeWrapper ${final.lib.getExe' final.util-linux "setpriv"} "$out/bin/${bin}" \
+                        --add-flags "--ambient-caps=-all --inh-caps=-all $out/bin/.${bin}-capdrop"
+                    fi
+                  '')
+                  bins;
+              in
+              {
+                nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
+              } // (
+                # FHS launchers use buildCommand without fixupPhase. / FHS ランチャーは fixupPhase を通らず buildCommand で生成される。
+                if old ? buildCommand then {
+                  buildCommand = old.buildCommand + wrapLaunchers;
+                } else {
+                  postFixup = (old.postFixup or "") + wrapLaunchers;
+                }
+              ));
           in
           {
             # Common overrides / 共通オーバーライド
@@ -335,16 +368,27 @@
             sui = final.callPackage ./pkgs/sui { };
 
             # StreamController package override with local patches. / ローカルパッチ適用版 StreamController。
-            streamcontroller = prev.streamcontroller.overrideAttrs (old: {
+            streamcontroller = capDrop [ "streamcontroller" ] (prev.streamcontroller.overrideAttrs (old: {
               nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.perl ];
               postPatch = (old.postPatch or "") + ''
                 perl -0pi -e 's|deck_controller = DeckController\(self, deck\)\n\s*self\.deck_controller\.append\(deck_controller\)|try:\n                deck_controller = DeckController(self, deck)\n            except Exception:\n                log.exception("Failed to initialize deck controller. Skipping deck until reconnect.")\n                try:\n                    deck.close()\n                except Exception:\n                    pass\n                try:\n                    self.reset_all_decks()\n                except Exception:\n                    pass\n                continue\n            self.deck_controller.append(deck_controller)|s' src/backend/DeckManagement/DeckManager.py
                 perl -0pi -e 's|def add_newly_connected_deck\(self, deck:StreamDeck, is_fake: bool = False\):\n\s*deck_controller = DeckController\(self, deck\)|def add_newly_connected_deck(self, deck:StreamDeck, is_fake: bool = False):\n        try:\n            deck_controller = DeckController(self, deck)\n        except Exception:\n            log.exception("Failed to initialize newly connected deck.")\n            try:\n                deck.close()\n            except Exception:\n                pass\n            try:\n                self.reset_all_decks()\n            except Exception:\n                pass\n            return|s' src/backend/DeckManagement/DeckManager.py
               '';
-            });
+            }));
 
             # StreamController OSPlugin patch / StreamController OSPlugin パッチ
             streamcontroller-osplugin-patch = final.callPackage ./pkgs/streamcontroller-osplugin-patch { };
+
+            # Apps whose file dialogs the portal denies until they stop inheriting the session
+            # capabilities; see capDrop above. / セッション継承の権限を落とすまで、ポータルに
+            # ファイルダイアログを拒否されるアプリ。詳細は上の capDrop を参照。
+            brave = capDrop [ "brave" ] prev.brave;
+            vesktop = capDrop [ "vesktop" ] prev.vesktop;
+            vscode = capDrop [ "code" ] prev.vscode;
+            loupe = capDrop [ "loupe" ] prev.loupe;
+
+            # Bubblewrap rejects inherited capabilities before starting Steam. / Bubblewrap は継承した権限を拒否して Steam 起動前に終了する。
+            steam = capDrop [ "steam" ] prev.steam;
 
           };
 
