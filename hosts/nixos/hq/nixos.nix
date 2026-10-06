@@ -144,7 +144,13 @@ in
   services.xserver.videoDrivers = [ "amdgpu" ];
 
   fileSystems."/mnt/data" = {
-    device = "/dev/sda";
+    device = "/dev/disk/by-uuid/ba763924-2cb5-4e27-a3d5-9dad25e2ebf3";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  };
+
+  fileSystems."/mnt/storage" = {
+    device = "/dev/disk/by-uuid/1380b841-c6cd-4a6f-a983-62845ac433c3";
     fsType = "ext4";
     options = [ "defaults" "nofail" ];
   };
