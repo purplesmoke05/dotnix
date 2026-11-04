@@ -2,6 +2,7 @@
   imports = [
     ./agent-tools.nix
     ./headroom.nix
+    ./japanese-writing.nix
   ];
 
   # Development tools and programming languages
