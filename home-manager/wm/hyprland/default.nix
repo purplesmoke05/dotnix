@@ -1014,7 +1014,7 @@ in
       Restart = "on-failure";
       Environment = [ "HINTS_WINDOW_SYSTEM=hyprland" ];
     };
-    Install = { WantedBy = [ "default.target" ]; };
+    Install = { WantedBy = [ "graphical-session.target" ]; };
   };
 
   # Persist browser PiP position and width. / ブラウザ PiP の位置と横幅を永続化。
