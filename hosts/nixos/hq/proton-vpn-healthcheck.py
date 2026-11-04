@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import secrets
 import socket
+import ssl
 import struct
 import subprocess
 import time
@@ -28,7 +29,7 @@ FAILURE_THRESHOLD = 3
 RESTART_COOLDOWN = 300
 NETWORK_ERRORS = {
     errno.ENETDOWN, errno.ENETUNREACH, errno.EHOSTUNREACH, errno.ENODEV,
-    errno.EADDRNOTAVAIL, errno.ECONNREFUSED, errno.ECONNRESET, errno.ETIMEDOUT,
+    errno.EADDRNOTAVAIL, errno.ECONNREFUSED, errno.ECONNRESET, errno.EPIPE, errno.ETIMEDOUT,
 }
 
 
@@ -77,10 +78,17 @@ def bound_socket(interface, family, kind):
     return connection
 
 
-def connect_tcp(interface, target):
+def connect_tls(interface, target):
     family = socket.AF_INET6 if ":" in target[0] else socket.AF_INET
+    # Proton can answer TCP on the VPN server, so only a TLS reply proves the path beyond it. / Proton は VPN サーバーで TCP に応答することがあるため、その先の疎通は TLS の応答で確かめる。
+    # Certificates stay unverified so a clock or CA problem is not mistaken for an outage. / 時刻や CA の不備を障害と誤認しないよう、証明書は検証しない。
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
     with bound_socket(interface, family, socket.SOCK_STREAM) as connection:
         connection.connect(target)
+        with context.wrap_socket(connection):
+            pass
 
 
 class DNSResponseError(Exception):
@@ -123,7 +131,7 @@ def network_check(description, operation):
     try:
         operation()
         return True
-    except DNSResponseError as error:
+    except (DNSResponseError, ssl.SSLError) as error:
         print(f"probe failed: {description}: {error}", flush=True)
     except OSError as error:
         # A broken probe must fail visibly, without restarting the VPN. / 監視自体の権限不備では VPN を再起動しない。
@@ -133,7 +141,7 @@ def network_check(description, operation):
     return False
 
 
-def probe(interface, connect=connect_tcp, resolve=query_configured_dns):
+def probe(interface, connect=connect_tls, resolve=query_configured_dns):
     for targets in PROBE_TARGETS:
         if not any(network_check(f"{interface} -> {target[0]}:{target[1]}",
                                  lambda target=target: connect(interface, target)) for target in targets):

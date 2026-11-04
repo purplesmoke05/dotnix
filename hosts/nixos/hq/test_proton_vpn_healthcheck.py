@@ -5,13 +5,15 @@ import importlib.util
 import io
 from pathlib import Path
 import socket
+import ssl
 import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from dataclasses import dataclass
-from unittest.mock import Mock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 
 module_dir = str(Path(__file__).parent)
@@ -407,7 +409,21 @@ class ProbeTests(unittest.TestCase):
         self.assertFalse(health.probe("proton0", connect=connect, resolve=resolve))
         self.assertEqual(resolve.call_count, 1)
 
-    def test_connect_tcp_uses_target_address_family_and_bound_interface(self):
+    def test_tls_failure_is_unreachable_and_skips_dns(self):
+        for error in (
+            ssl.SSLEOFError(ssl.SSL_ERROR_EOF, "EOF occurred in violation of protocol"),
+            ssl.SSLError("wrong version number"),
+            BrokenPipeError(errno.EPIPE, "broken pipe"),
+        ):
+            with self.subTest(error=error):
+                connect = Mock(side_effect=error)
+                resolve = Mock(return_value=None)
+
+                self.assertFalse(health.probe("proton0", connect=connect, resolve=resolve))
+                self.assertEqual(connect.call_count, 2)
+                resolve.assert_not_called()
+
+    def test_connect_tls_uses_target_address_family_and_bound_interface(self):
         for target, family in (
             (("1.1.1.1", 443), socket.AF_INET),
             (("2606:4700:4700::1111", 443), socket.AF_INET6),
@@ -416,10 +432,16 @@ class ProbeTests(unittest.TestCase):
                 connection = Mock()
                 connection.__enter__ = Mock(return_value=connection)
                 connection.__exit__ = Mock(return_value=None)
-                with patch.object(health, "bound_socket", return_value=connection) as bound:
-                    health.connect_tcp("proton0", target)
+                context = MagicMock()
+                with patch.object(health, "bound_socket", return_value=connection) as bound, patch.object(
+                    health.ssl, "SSLContext", return_value=context
+                ):
+                    health.connect_tls("proton0", target)
                 bound.assert_called_once_with("proton0", family, socket.SOCK_STREAM)
                 connection.connect.assert_called_once_with(target)
+                context.wrap_socket.assert_called_once_with(connection)
+                self.assertFalse(context.check_hostname)
+                self.assertEqual(context.verify_mode, ssl.CERT_NONE)
 
     def test_bound_socket_sets_timeout_and_binds_to_interface(self):
         connection = Mock()
@@ -432,6 +454,40 @@ class ProbeTests(unittest.TestCase):
             socket.SOL_SOCKET, socket.SO_BINDTODEVICE, b"proton0\0"
         )
         self.assertIs(result, connection)
+
+
+class TlsHandshakeTests(unittest.TestCase):
+    """A local listener acts like a VPN server that accepts TCP without reaching the target."""
+
+    def setUp(self):
+        self.enterContext(contextlib.redirect_stdout(io.StringIO()))
+        self.server = socket.create_server(("127.0.0.1", 0))
+        self.addCleanup(self.server.close)
+
+    def reachable(self, reply):
+        def serve():
+            connection, _ = self.server.accept()
+            with connection:
+                connection.recv(4096)
+                reply(connection)
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        self.addCleanup(thread.join, 5)
+        target = self.server.getsockname()[:2]
+        with patch.object(health, "CONNECT_TIMEOUT", 0.2):
+            return health.network_check("tls", lambda: health.connect_tls("lo", target))
+
+    def test_connection_closed_after_client_hello_is_unreachable(self):
+        self.assertFalse(self.reachable(lambda connection: None))
+
+    def test_silent_peer_is_unreachable(self):
+        self.assertFalse(self.reachable(lambda connection: connection.recv(1)))
+
+    def test_non_tls_reply_is_unreachable(self):
+        self.assertFalse(
+            self.reachable(lambda connection: connection.sendall(b"HTTP/1.1 400 Bad Request\r\n\r\n"))
+        )
 
 
 class DnsSocket:
