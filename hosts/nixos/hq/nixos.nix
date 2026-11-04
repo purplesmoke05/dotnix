@@ -49,6 +49,35 @@ in
   hq.protonVpn.enable = true;
   hq.protonVpn.autoRecover.enable = true;
 
+  # Display manager / ディスプレイマネージャー
+  # greetd auto-logs into Hyprland and shows tuigreet after logout. GDM pulled in GNOME Shell. / greetd で Hyprland に自動ログインし、ログアウト後は tuigreet を出す。GDM は GNOME Shell 一式を引き込んでいた。
+  services.greetd =
+    let
+      # GDM imported the systemd user environment (Home Manager's environment.d) into the session.
+      # greetd provides only the PAM environment, so add the variables PAM left unset.
+      # GDM は systemd user 環境（Home Manager の environment.d）をセッションに取り込んでいた。greetd は PAM の環境だけなので、PAM が設定しない変数を補う。
+      hyprlandSession = pkgs.writeShellScript "hyprland-session" ''
+        while IFS= read -r assignment; do
+          name=''${assignment%%=*}
+          [ -n "''${!name+x}" ] || export "$assignment"
+        done < <(${config.systemd.package}/lib/systemd/user-environment-generators/30-systemd-environment-d-generator)
+        exec Hyprland
+      '';
+    in
+    {
+      enable = true;
+      useTextGreeter = true;
+      settings = {
+        # GDM did not source /etc/profile or ~/.profile either. / GDM と同じく profile は読まない。
+        general.source_profile = false;
+        initial_session = {
+          command = "${hyprlandSession}";
+          user = username;
+        };
+        default_session.command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${hyprlandSession}";
+      };
+    };
+
   # nsncd worker tuning / nsncd ワーカー数チューニング
   # Default 8 workers saturated by long-lived NSS clients and blocked new
   # lookups (sshd preauth timeouts) on 2026-08-30. Raise workers to 50.

@@ -151,12 +151,8 @@ in
   };
 
   # Display Server / ディスプレイサーバー
-  # Keep a pure Wayland session via GDM and Hyprland. / GDM + Hyprland で純粋な Wayland セッションを維持。
+  # Keep a pure Wayland session with Hyprland; each host picks its display manager. / Hyprland で純粋な Wayland セッションを維持。ディスプレイマネージャーはホストごとに選ぶ。
   services.xserver.enable = false;
-  services.displayManager.gdm = {
-    enable = true;
-  };
-  services.displayManager.defaultSession = "hyprland";
   services.desktopManager.gnome.enable = false;
 
   # Keyboard Layout / キーボード配列
@@ -334,15 +330,6 @@ in
   # Accessibility / アクセシビリティ
   # Keep speech synthesis disabled unless a screen reader stack is configured. / スクリーンリーダースタック未構成時は音声合成を無効化。
   services.speechd.enable = false;
-
-  # Auto-login / 自動ログイン
-  # Enable auto-login with systemd tweaks. / systemd workaround で即ログイン。
-  services.displayManager.autoLogin.enable = true;
-  services.displayManager.autoLogin.user = username;
-
-  # GNOME auto-login workaround / GNOME 自動ログイン対策
-  systemd.services."getty@tty1".enable = false;
-  systemd.services."autovt@tty1".enable = false;
 
   # Shell & audio tools / シェルとオーディオ支援ツール
   programs = {

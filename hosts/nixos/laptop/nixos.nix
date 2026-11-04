@@ -18,6 +18,17 @@
   services.thermald.enable = true;
   services.upower.enable = true; # Provide battery telemetry for Hyprpanel. / Hyprpanel のバッテリー情報取得用に UPower を有効化。
 
+  # Display manager / ディスプレイマネージャー
+  # Auto-login into Hyprland through GDM. / GDM で Hyprland に自動ログイン。
+  services.displayManager.gdm.enable = true;
+  services.displayManager.defaultSession = "hyprland";
+  services.displayManager.autoLogin.enable = true;
+  services.displayManager.autoLogin.user = username;
+
+  # GNOME auto-login workaround / GNOME 自動ログイン対策
+  systemd.services."getty@tty1".enable = false;
+  systemd.services."autovt@tty1".enable = false;
+
   # User configuration / ユーザー設定
   # Grant admin and network groups to primary user. / 管理権限とネットワーク権限を付与。
   users.users.${username} = {
