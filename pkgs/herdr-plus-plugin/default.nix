@@ -5,25 +5,25 @@
 }:
 
 let
-  version = "0.1.20";
+  version = "0.1.24";
 
   # Map Nix systems to Herdr Plus release assets. / Nix system を Herdr Plus の release asset に対応付ける。
   sources = {
     x86_64-linux = {
-      asset = "herdr-plus_0.1.20_linux_amd64.tar.gz";
-      hash = "sha256-ic4zGjDwmgwEofwNoLNzISKDgZqszKl3zl5UrZmuM48=";
+      asset = "herdr-plus_${version}_linux_amd64.tar.gz";
+      hash = "sha256-0fNz6s7xnxy4xLU4Eftin6lgBJ22qAxcOCn1R4XF0tg=";
     };
     aarch64-linux = {
-      asset = "herdr-plus_0.1.20_linux_arm64.tar.gz";
-      hash = "sha256-/Kmy+ei1+BEY30E95dUEFPForge6jbd0acIGOLXIk1I=";
+      asset = "herdr-plus_${version}_linux_arm64.tar.gz";
+      hash = "sha256-gipsFvo4OnLGIXkkHV76w2DlGo8NxNcqIgz1HpQaIDQ=";
     };
     x86_64-darwin = {
-      asset = "herdr-plus_0.1.20_darwin_amd64.tar.gz";
-      hash = "sha256-KYyAg/PRWmiS6kM/g5nJT+vq2qsZQ3XxcTpYedrcYDY=";
+      asset = "herdr-plus_${version}_darwin_amd64.tar.gz";
+      hash = "sha256-4adsBJdp846S5CnNOLy4ahvsR9/u+qr5uqNHfJCHQDM=";
     };
     aarch64-darwin = {
-      asset = "herdr-plus_0.1.20_darwin_arm64.tar.gz";
-      hash = "sha256-0rB6eCKTZzj4uOarv+35oceiyH2802YemGeBf1lzh0s=";
+      asset = "herdr-plus_${version}_darwin_arm64.tar.gz";
+      hash = "sha256-wj8Magdqe56/4kr+yemjXCAHGAaTnZRBq/cHC6HRbYA=";
     };
   };
 
@@ -38,7 +38,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     owner = "cloudmanic";
     repo = "herdr-plus";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-W95USA0EwP5Oml3qb/wkPqRn+yaaevNBhQuyl9pqaxY=";
+    hash = "sha256-2NnPlZSPBoZa22A02q/FQLm1a7+FH/tCzALZSpP5rkQ=";
   };
 
   binaryArchive = fetchurl {
