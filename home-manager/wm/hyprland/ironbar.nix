@@ -296,442 +296,737 @@ let
   });
   vulnStatusStaleSeconds = 36 * 60 * 60;
   vulnStatusFindingLimit = 12;
+  vulnStatusDisplayLimit = 6;
+  # Days since the deployed nixpkgs revision before the NIX segment turns yellow
+  # or red. Browser and Electron security releases reach nixpkgs within days.
+  vulnStatusLagWarnDays = 14;
+  vulnStatusLagAlertDays = 30;
+  vulnStatusSbomKeep = 5;
+  # Findings reviewed as not applicable. Each entry names an exact package
+  # version, so its findings count again once the version changes and need a new
+  # review.
+  vulnStatusReviewed = pkgs.writeText "nix-vuln-status-reviewed.json" (builtins.toJSON [
+    {
+      # Commits in nixpkgs' 2.44-master.patch fix these, except CVE-2026-0861,
+      # which GLIBC-SA-2026-0001 lists as fixed since 2.43.
+      package = "glibc";
+      version = "2.44-57";
+      ids = [
+        "CVE-2026-0861"
+        "CVE-2026-18374"
+        "CVE-2026-19499"
+        "CVE-2026-19542"
+        "CVE-2026-77117"
+        "CVE-2026-80489"
+        "CVE-2026-8674"
+        "CVE-2026-86805"
+        "CVE-2026-89092"
+        "CVE-2026-95818"
+        "CVE-2026-97399"
+      ];
+    }
+    {
+      # The CPE ranges have no upper bound. The Debian security tracker lists
+      # the fixes in 4.19 to 6.7.
+      package = "linux";
+      version = "7.3.1";
+      ids = [
+        "CVE-2019-3016"
+        "CVE-2019-3819"
+        "CVE-2019-3887"
+        "CVE-2020-27815"
+        "CVE-2021-20194"
+        "CVE-2021-3564"
+        "CVE-2022-38096"
+      ];
+    }
+    {
+      # Only affects the AArch64 stack protector. These hosts are x86_64.
+      package = "gcc";
+      version = "16.2.0";
+      ids = [ "CVE-2023-4039" ];
+    }
+    {
+      package = "gcc-wrapper";
+      version = "16.2.0";
+      ids = [ "CVE-2023-4039" ];
+    }
+    {
+      # Both advisories list 5.42.3-RC1 as the fix. The CPE ranges ignore that
+      # branch.
+      package = "perl";
+      version = "5.42.3";
+      ids = [
+        "CVE-2026-13221"
+        "CVE-2026-57432"
+      ];
+    }
+    {
+      # CVE-2024-3220 only affects Windows. CVE-2026-87910 needs a system without
+      # link support.
+      package = "python3";
+      version = "3.14.8";
+      ids = [
+        "CVE-2024-3220"
+        "CVE-2026-87910"
+      ];
+    }
+    {
+      # GnuTLS and wolfSSL builds only. Every libcurl in the closure links OpenSSL.
+      package = "curl";
+      version = "8.22.0";
+      ids = [
+        "CVE-2026-107928"
+        "CVE-2026-87866"
+      ];
+    }
+    {
+      # 2.42.4 is only affected on the legacy mount(2) path without /proc.
+      package = "util-linux";
+      version = "2.42.4";
+      ids = [ "CVE-2026-53613" ];
+    }
+    {
+      # Needs the recursive-nix experimental feature, which is not enabled.
+      package = "nix";
+      version = "2.34.9";
+      ids = [ "CVE-2026-64846" ];
+    }
+    {
+      # These need the Unbound daemon. Only libunbound is present, linked by
+      # libgnutls-dane, which nothing in the closure links.
+      package = "unbound";
+      version = "1.26.1";
+      ids = [
+        "CVE-2026-109125"
+        "CVE-2026-35501"
+        "CVE-2026-50106"
+        "CVE-2026-96405"
+        "CVE-2026-97206"
+      ];
+    }
+  ]);
+  vulnStatusStatusColor = ''
+    def color:
+      if . == "ok" then "#a6da95"
+      elif . == "warn" or . == "missing" then "#eed49f"
+      elif . == "alert" or . == "error" then "#ed8796"
+      else "#a5adcb"
+      end;
+  '';
+  nixVulnStatusSbom = pkgs.writeShellApplication {
+    name = "nix-vuln-status-sbom";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.diffutils
+      pkgs.findutils
+      pkgs.jq
+      pkgs.nix
+      pkgs.sbomnix
+    ];
+    text = ''
+      set -euo pipefail
+
+      usage() {
+        printf '%s\n' \
+          "Usage: nix-vuln-status-sbom --flake PATH [--config NAME] [--public-nix PATH] [--expect STORE_PATH]" \
+          "" \
+          "Generates the SBOM that nix-vuln-status-refresh scans for the NixOS system" \
+          "built from the flake at PATH. The SBOM is saved only when the evaluated" \
+          "system equals --expect (default: /run/current-system)." >&2
+      }
+
+      flake=""
+      config_name="hq"
+      public_nix=""
+      expect=""
+
+      while [ "$#" -gt 0 ]; do
+        case "$1" in
+          --flake|--config|--public-nix|--expect)
+            if [ "$#" -lt 2 ]; then
+              usage
+              exit 2
+            fi
+            case "$1" in
+              --flake) flake="$2" ;;
+              --config) config_name="$2" ;;
+              --public-nix) public_nix="$2" ;;
+              --expect) expect="$2" ;;
+            esac
+            shift
+            ;;
+          -h|--help)
+            usage
+            exit 0
+            ;;
+          *)
+            usage
+            exit 2
+            ;;
+        esac
+        shift
+      done
+
+      if [ -z "$flake" ]; then
+        usage
+        exit 2
+      fi
+
+      flake="$(realpath "$flake")"
+      if [ -n "$public_nix" ]; then
+        public_nix="$(realpath "$public_nix")"
+      fi
+      if [ -z "$expect" ]; then
+        expect="$(readlink -f /run/current-system)"
+      fi
+
+      cache_dir="''${XDG_CACHE_HOME:-$HOME/.cache}/nix-vuln-status"
+      sbom_dir="$cache_dir/sbom"
+      wrapper_dir="$cache_dir/sbom-flake"
+      mkdir -p "$sbom_dir" "$wrapper_dir"
+      work_dir="$(mktemp -d "$cache_dir/sbom.XXXXXX")"
+      trap 'rm -rf "$work_dir"' EXIT
+
+      started_epoch="$(date -u +%s)"
+
+      # sbomnix cannot pass --override-input, so a wrapper flake re-exports the
+      # target with public-nix overridden the same way `make switch` does.
+      {
+        printf '{\n'
+        printf '  inputs.target.url = "path:%s";\n' "$flake"
+        if [ -n "$public_nix" ]; then
+          printf '  inputs.target.inputs.public-nix.url = "path:%s";\n' "$public_nix"
+        fi
+        printf '  outputs = { target, ... }: { inherit (target) nixosConfigurations; };\n'
+        printf '}\n'
+      } > "$work_dir/flake.nix"
+      if ! cmp -s "$work_dir/flake.nix" "$wrapper_dir/flake.nix"; then
+        mv "$work_dir/flake.nix" "$wrapper_dir/flake.nix"
+        rm -f "$wrapper_dir/flake.lock"
+      fi
+
+      # A new lock copies the public-nix narHash from the target's own lock,
+      # which is stale whenever public-nix has local changes, so both inputs
+      # are fetched again explicitly.
+      update_inputs=(target)
+      if [ -n "$public_nix" ]; then
+        update_inputs+=(target/public-nix)
+      fi
+      nix flake update --flake "path:$wrapper_dir" "''${update_inputs[@]}"
+
+      # sbomnix builds its target, so a flake that has moved on since the build
+      # is rejected before anything is built.
+      toplevel_ref="path:$wrapper_dir#nixosConfigurations.$config_name.config.system.build.toplevel"
+      evaluated="$(nix eval --raw "$toplevel_ref.outPath")"
+      if [ "$evaluated" != "$expect" ]; then
+        printf 'nix-vuln-status-sbom: the flake evaluates to %s, not %s; it no longer matches that system, so no SBOM was generated\n' \
+          "$evaluated" "$expect" >&2
+        exit 1
+      fi
+
+      (
+        cd "$work_dir"
+        sbomnix --verbose 0 --exclude-cpe-matching --cdx "$work_dir/sbom.cdx.json" "$toplevel_ref"
+      )
+
+      output_path="$(jq -r '[.metadata.component.properties[]? | select(.name == "nix:output_path") | .value][0] // ""' "$work_dir/sbom.cdx.json")"
+      if [ "$output_path" != "$expect" ]; then
+        printf 'nix-vuln-status-sbom: evaluated %s but expected %s; the flake no longer matches that system, so the SBOM was not saved\n' \
+          "''${output_path:-nothing}" "$expect" >&2
+        exit 1
+      fi
+
+      name="$(basename "$expect")"
+      components="$(jq '(.components // []) | length' "$work_dir/sbom.cdx.json")"
+      with_cpe="$(jq '[.components[]? | select((.cpe // "") != "")] | length' "$work_dir/sbom.cdx.json")"
+      finished_epoch="$(date -u +%s)"
+      jq -n \
+        --arg generatedAt "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        --argjson generatedAtEpoch "$finished_epoch" \
+        --argjson durationSeconds "$((finished_epoch - started_epoch))" \
+        --arg toplevel "$expect" \
+        --arg flake "$flake" \
+        --arg config "$config_name" \
+        --arg publicNix "$public_nix" \
+        --arg sbomnix "${pkgs.sbomnix.version}" \
+        --argjson components "$components" \
+        --argjson componentsWithCpe "$with_cpe" \
+        '{
+          generatedAt: $generatedAt,
+          generatedAtEpoch: $generatedAtEpoch,
+          durationSeconds: $durationSeconds,
+          toplevel: $toplevel,
+          flake: $flake,
+          config: $config,
+          publicNix: (if $publicNix == "" then null else $publicNix end),
+          sbomnix: $sbomnix,
+          components: $components,
+          componentsWithCpe: $componentsWithCpe
+        }' > "$work_dir/meta.json"
+      mv "$work_dir/sbom.cdx.json" "$sbom_dir/$name.cdx.json"
+      mv "$work_dir/meta.json" "$sbom_dir/$name.meta.json"
+
+      # Keep SBOMs for the newest systems only; rollbacks rarely go further back.
+      find "$sbom_dir" -maxdepth 1 -name '*.cdx.json' -printf '%T@ %p\n' \
+        | sort -rn \
+        | tail -n +${builtins.toString (vulnStatusSbomKeep + 1)} \
+        | cut -d' ' -f2- \
+        | while IFS= read -r old_sbom; do
+            rm -f "$old_sbom" "''${old_sbom%.cdx.json}.meta.json"
+          done
+
+      printf 'nix-vuln-status-sbom: %s components, %s with an exact CPE -> %s\n' \
+        "$components" "$with_cpe" "$sbom_dir/$name.cdx.json"
+    '';
+  };
   nixVulnStatusRefresh = pkgs.writeShellApplication {
     name = "nix-vuln-status-refresh";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.curl
+      pkgs.findutils
+      pkgs.gawk
+      pkgs.gnused
+      pkgs.go
+      pkgs.govulncheck
       pkgs.grype
       pkgs.jq
-      pkgs.osv-scanner
-      pkgs.sbomnix
+      pkgs.nix
+      pkgs.unzip
     ];
     text = ''
       set -euo pipefail
 
       cache_dir="''${XDG_CACHE_HOME:-$HOME/.cache}/nix-vuln-status"
       status_file="$cache_dir/status.json"
+      sbom_dir="$cache_dir/sbom"
       target_path="''${NIX_VULN_STATUS_TARGET:-/run/current-system}"
 
       mkdir -p "$cache_dir"
       work_dir="$(mktemp -d "$cache_dir/scan.XXXXXX")"
+      started_epoch="$(date -u +%s)"
+      status_written=0
 
-      cleanup() {
+      # A go.mod with a toolchain line in the working directory must not make
+      # `go version` download another toolchain.
+      export GOTOOLCHAIN=local
+      cd "$work_dir"
+
+      write_failure() {
+        jq -n \
+          --arg generatedAt "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+          --argjson generatedAtEpoch "$(date -u +%s)" \
+          --arg message "$1" \
+          '{
+            schema: 2,
+            generatedAt: $generatedAt,
+            generatedAtEpoch: $generatedAtEpoch,
+            status: "error",
+            error: $message,
+            checks: {}
+          }' > "$cache_dir/status.json.tmp"
+        mv "$cache_dir/status.json.tmp" "$status_file"
+      }
+
+      finish() {
+        local exit_code=$?
+        if [ "$status_written" -eq 0 ]; then
+          write_failure "refresh stopped with exit $exit_code; see journalctl --user -u nix-vuln-status" || true
+        fi
         rm -rf "$work_dir"
       }
-      trap cleanup EXIT
-
-      now_epoch="$(date -u +%s)"
-      now_iso="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+      trap finish EXIT
 
       summarize_log() {
-        log_file="$1"
-
-        if [ ! -s "$log_file" ]; then
-          printf 'no command output'
+        if [ ! -s "$1" ]; then
+          printf 'no output'
           return 0
         fi
-
-        tr '\n' ' ' < "$log_file" | cut -c 1-240
+        tr '\n' ' ' < "$1" | cut -c 1-200
       }
 
-      add_error() {
-        errors_json="$1"
-        message="$2"
-
-        jq -c --arg message "$message" '. + [$message]' <<< "$errors_json"
+      # Saves the JSON at the URL, or `null` when it cannot be fetched, so that
+      # jq --slurpfile always has something to read.
+      fetch_json() {
+        if curl -fsSL --max-time 60 --retry 2 -o "$2" "$1" 2>> "$work_dir/fetch.log" \
+          && jq -e . "$2" > /dev/null 2>&1; then
+          return 0
+        fi
+        printf 'null\n' > "$2"
+        printf '%s\n' "$1" >> "$work_dir/fetch-failed.txt"
       }
 
-      target_store_path="$(readlink -f "$target_path" 2>/dev/null || true)"
+      target_store_path="$(readlink -f "$target_path" 2> /dev/null || true)"
       if [ -z "$target_store_path" ] || [ ! -e "$target_store_path" ]; then
-        jq -n \
-          --arg generatedAt "$now_iso" \
-          --argjson generatedAtEpoch "$now_epoch" \
-          --arg targetPath "$target_path" \
-          '{
-            generatedAt: $generatedAt,
-            generatedAtEpoch: $generatedAtEpoch,
-            status: "error",
-            summary: {
-              scanTargetCount: 0,
-              packageCount: 0,
-              findingCount: 0,
-              cpeFindingCount: 0,
-              highOrCriticalCount: 0,
-              errorCount: 1,
-              sbomComponentCount: 0
-            },
-            errors: ["scan target does not exist: " + $targetPath],
-            packages: []
-          }' > "$work_dir/status.json"
-        mv "$work_dir/status.json" "$status_file"
+        write_failure "scan target does not exist: $target_path"
+        status_written=1
         exit 1
       fi
+      target_name="$(basename "$target_store_path")"
+      nix-store --query --requisites "$target_store_path" > "$work_dir/closure.txt"
+      : > "$work_dir/fetch-failed.txt"
 
-      targets_json="$(
+      # CVE: grype against the SBOM that `make switch` generated for this
+      # system. Only packages with an exact nixpkgs CPE can match, and matches
+      # without a version range, fixed by a CVE-named patch, or listed in
+      # vulnStatusReviewed are not counted.
+      sbom_file="$sbom_dir/$target_name.cdx.json"
+      sbom_meta="$sbom_dir/$target_name.meta.json"
+      if [ ! -s "$sbom_meta" ]; then
+        sbom_meta="$work_dir/sbom-meta.json"
+        printf '{}\n' > "$sbom_meta"
+      fi
+      if [ ! -s "$sbom_file" ]; then
+        jq -n '{status: "missing", message: "No SBOM for this system yet. make switch generates it after the build."}' \
+          > "$work_dir/cve.json"
+      elif ! grype -q "sbom:$sbom_file" -o json --file "$work_dir/grype.json" > "$work_dir/grype.log" 2>&1 \
+        || ! jq -e . "$work_dir/grype.json" > /dev/null 2>&1; then
+        jq -n --arg message "grype failed: $(summarize_log "$work_dir/grype.log")" '{status: "error", message: $message}' \
+          > "$work_dir/cve.json"
+      else
         jq -n \
-          --arg storePath "$target_store_path" \
-          --arg targetPath "$target_path" \
-          --arg name "$(basename "$target_store_path")" \
-          '[
-            {
-              id: "current-system",
-              name: $name,
-              pname: "current-system",
-              version: null,
-              storePath: $storePath,
-              targetPath: $targetPath,
-              knownVulnerabilities: []
-            }
-          ]'
-      )"
-
-      package_files=()
-
-      while IFS= read -r target; do
-        id="$(jq -r '.id' <<< "$target")"
-        name="$(jq -r '.name' <<< "$target")"
-        pname="$(jq -r '.pname' <<< "$target")"
-        version="$(jq -r '.version // "unknown"' <<< "$target")"
-        store_path="$(jq -r '.storePath' <<< "$target")"
-        target_path_label="$(jq -r '.targetPath // .storePath' <<< "$target")"
-        known_vulnerabilities="$(jq -c '(.knownVulnerabilities // [])' <<< "$target")"
-        known_count="$(jq 'length' <<< "$known_vulnerabilities")"
-
-        errors='[]'
-        status="clean"
-        sbom_components=0
-        grype_matches=0
-        grype_cpe_matches=0
-        grype_non_cpe_matches=0
-        grype_high=0
-        grype_critical=0
-        grype_exit=0
-        grype_findings='[]'
-        grype_cpe_findings='[]'
-        osv_vulnerabilities=0
-        osv_exit=0
-        osv_findings='[]'
-        error_count=0
-
-        sbom="$work_dir/$id.cdx.json"
-        grype_json="$work_dir/$id.grype.json"
-        osv_json="$work_dir/$id.osv.json"
-
-        set +e
-        (
-          cd "$work_dir"
-          sbomnix --verbose 0 --exclude-cpe-matching --cdx "$sbom" "$store_path"
-        ) > "$work_dir/$id.sbom.log" 2>&1
-        sbom_exit=$?
-        set -e
-
-        if [ "$sbom_exit" -ne 0 ]; then
-          status="error"
-          error_count=1
-          sbom_message="$(summarize_log "$work_dir/$id.sbom.log")"
-          errors="$(add_error "$errors" "sbomnix exited $sbom_exit: $sbom_message")"
-        elif ! jq -e . "$sbom" >/dev/null 2>&1; then
-          status="error"
-          error_count=1
-          errors="$(add_error "$errors" "sbomnix did not write valid CycloneDX JSON")"
-        else
-          sbom_components="$(jq '(.components // []) | length' "$sbom")"
-
-          set +e
-          grype -q "sbom:$sbom" -o json --file "$grype_json" > "$work_dir/$id.grype.log" 2>&1
-          grype_exit=$?
-          set -e
-
-          if jq -e . "$grype_json" >/dev/null 2>&1; then
-            grype_summary="$(
-              jq -c \
-                --argjson findingLimit "${builtins.toString vulnStatusFindingLimit}" \
-                '
-                  def is_cpe_only:
-                    ((.matchDetails // []) | length > 0)
-                    and all(.matchDetails[]?.type; . == "cpe-match");
-                  def severity_rank:
-                    (.vulnerability.severity // "" | ascii_downcase) as $severity
-                    | if $severity == "critical" then 0
-                      elif $severity == "high" then 1
-                      elif $severity == "medium" then 2
-                      elif $severity == "low" then 3
-                      elif $severity == "negligible" then 4
-                      else 5
-                      end;
-                  def match_type:
-                    ((.matchDetails // []) | map(.type // "unknown") | unique) as $types
-                    | if ($types | length) > 0 then ($types | join(",")) else "unknown" end;
-                  def finding:
-                    {
-                      id: (.vulnerability.id // "unknown"),
-                      severity: (.vulnerability.severity // "unknown"),
-                      package: (.artifact.name // "unknown"),
-                      version: (.artifact.version // "unknown"),
-                      type: (.artifact.type // null),
-                      purl: (.artifact.purl // null),
-                      fixState: (.vulnerability.fix.state // null),
-                      fixVersions: ((.vulnerability.fix.versions // [])[:3]),
-                      matchType: match_type,
-                      dataSource: (.vulnerability.dataSource // null)
-                    };
-                  def unique_findings:
-                    reduce .[] as $finding ([];
-                      if any(.[]; .id == $finding.id and .package == $finding.package and .version == $finding.version and .matchType == $finding.matchType) then
-                        .
-                      else
-                        . + [$finding]
-                      end
-                    );
-                  (.matches // []) as $matches
-                  | ($matches | map(select(is_cpe_only))) as $cpe
-                  | ($matches | map(select(is_cpe_only | not))) as $nonCpe
-                  | {
-                      totalCount: ($matches | length),
-                      cpeCount: ($cpe | length),
-                      nonCpeCount: ($nonCpe | length),
-                      highCount: (
-                        $nonCpe
-                        | map(select((.vulnerability.severity // "" | ascii_downcase) == "high"))
-                        | length
-                      ),
-                      criticalCount: (
-                        $nonCpe
-                        | map(select((.vulnerability.severity // "" | ascii_downcase) == "critical"))
-                        | length
-                      ),
-                      findings: {
-                        grype: (
-                          $nonCpe
-                          | sort_by(severity_rank, (.vulnerability.id // ""), (.artifact.name // ""))
-                          | map(finding)
-                          | unique_findings
-                          | .[:$findingLimit]
-                        ),
-                        grypeCpe: (
-                          $cpe
-                          | sort_by(severity_rank, (.vulnerability.id // ""), (.artifact.name // ""))
-                          | map(finding)
-                          | unique_findings
-                          | .[:$findingLimit]
-                        )
-                      }
-                    }
-                ' "$grype_json"
-            )"
-            grype_matches="$(jq -r '.totalCount' <<< "$grype_summary")"
-            grype_cpe_matches="$(jq -r '.cpeCount' <<< "$grype_summary")"
-            grype_non_cpe_matches="$(jq -r '.nonCpeCount' <<< "$grype_summary")"
-            grype_high="$(jq -r '.highCount' <<< "$grype_summary")"
-            grype_critical="$(jq -r '.criticalCount' <<< "$grype_summary")"
-            grype_findings="$(jq -c '.findings.grype' <<< "$grype_summary")"
-            grype_cpe_findings="$(jq -c '.findings.grypeCpe' <<< "$grype_summary")"
-          else
-            status="error"
-            error_count=1
-            grype_message="$(summarize_log "$work_dir/$id.grype.log")"
-            errors="$(add_error "$errors" "grype exited $grype_exit without valid JSON: $grype_message")"
-          fi
-
-          set +e
-          osv-scanner scan source -L "$sbom" --format json --output "$osv_json" --verbosity error \
-            > "$work_dir/$id.osv.log" 2>&1
-          osv_exit=$?
-          set -e
-
-          if jq -e . "$osv_json" >/dev/null 2>&1; then
-            osv_summary="$(
-              jq -c \
-                --argjson findingLimit "${builtins.toString vulnStatusFindingLimit}" \
-                '
-                  def severity_label:
-                    (.severity // []) as $severity
-                    | if ($severity | type) == "array" and ($severity | length) > 0 then
-                        ($severity | map(.score // .type // empty) | join(","))
-                      else
-                        "unknown"
-                      end;
-                  def unique_findings:
-                    reduce .[] as $finding ([];
-                      if any(.[]; .id == $finding.id and .package == $finding.package and .version == $finding.version) then
-                        .
-                      else
-                        . + [$finding]
-                      end
-                    );
-                  [
-                    .results[]?.packages[]? as $pkg
-                    | $pkg.vulnerabilities[]?
-                    | {
-                        id: (.id // "unknown"),
-                        aliases: ((.aliases // [])[:3]),
-                        severity: severity_label,
-                        package: ($pkg.package.name // $pkg.package.purl // "unknown"),
-                        version: ($pkg.package.version // "unknown"),
-                        ecosystem: ($pkg.package.ecosystem // null),
-                        summary: (.summary // null)
-                      }
-                  ] as $findings
-                  | {
-                      count: ($findings | length),
-                      findings: ($findings | sort_by(.id, .package) | unique_findings | .[:$findingLimit])
-                    }
-                ' "$osv_json"
-            )"
-            osv_vulnerabilities="$(jq -r '.count' <<< "$osv_summary")"
-            osv_findings="$(jq -c '.findings' <<< "$osv_summary")"
-          else
-            status="error"
-            error_count=1
-            osv_message="$(summarize_log "$work_dir/$id.osv.log")"
-            errors="$(add_error "$errors" "osv-scanner exited $osv_exit without valid JSON: $osv_message")"
-          fi
-        fi
-
-        finding_count=$((known_count + grype_non_cpe_matches + osv_vulnerabilities))
-        cpe_finding_count=$grype_cpe_matches
-        high_or_critical_count=$((grype_high + grype_critical))
-
-        if [ "$status" != "error" ] && [ "$finding_count" -gt 0 ]; then
-          status="finding"
-        elif [ "$status" != "error" ] && [ "$cpe_finding_count" -gt 0 ]; then
-          status="cpe"
-        fi
-
-        package_file="$work_dir/package-$id.json"
-        jq -n \
-          --arg id "$id" \
-          --arg name "$name" \
-          --arg pname "$pname" \
-          --arg version "$version" \
-          --arg storePath "$store_path" \
-          --arg targetPath "$target_path_label" \
-          --arg status "$status" \
-          --argjson knownVulnerabilities "$known_vulnerabilities" \
-          --argjson knownCount "$known_count" \
-          --argjson sbomComponentCount "$sbom_components" \
-          --argjson grypeCount "$grype_non_cpe_matches" \
-          --argjson grypeCpeCount "$grype_cpe_matches" \
-          --argjson grypeTotalCount "$grype_matches" \
-          --argjson grypeHigh "$grype_high" \
-          --argjson grypeCritical "$grype_critical" \
-          --argjson grypeExit "$grype_exit" \
-          --argjson osvCount "$osv_vulnerabilities" \
-          --argjson osvExit "$osv_exit" \
-          --argjson findingCount "$finding_count" \
-          --argjson cpeFindingCount "$cpe_finding_count" \
-          --argjson highOrCriticalCount "$high_or_critical_count" \
-          --argjson errorCount "$error_count" \
-          --argjson errors "$errors" \
-          --argjson grypeFindings "$grype_findings" \
-          --argjson grypeCpeFindings "$grype_cpe_findings" \
-          --argjson osvFindings "$osv_findings" \
-          '{
-            id: $id,
-            name: $name,
-            pname: $pname,
-            version: $version,
-            storePath: $storePath,
-            targetPath: $targetPath,
-            status: $status,
-            knownVulnerabilities: $knownVulnerabilities,
-            summary: {
-              knownCount: $knownCount,
-              sbomComponentCount: $sbomComponentCount,
-              grypeCount: $grypeCount,
-              grypeCpeCount: $grypeCpeCount,
-              grypeTotalCount: $grypeTotalCount,
-              grypeHigh: $grypeHigh,
-              grypeCritical: $grypeCritical,
-              osvCount: $osvCount,
-              findingCount: $findingCount,
-              cpeFindingCount: $cpeFindingCount,
-              highOrCriticalCount: $highOrCriticalCount,
-              errorCount: $errorCount
-            },
-            findings: {
-              grype: $grypeFindings,
-              grypeCpe: $grypeCpeFindings,
-              osv: $osvFindings
-            },
-            scannerExitCodes: {
-              grype: $grypeExit,
-              osvScanner: $osvExit
-            },
-            errors: $errors
-          }' > "$package_file"
-        package_files+=("$package_file")
-      done < <(jq -c '.[]' <<< "$targets_json")
-
-      if [ "''${#package_files[@]}" -eq 0 ]; then
-        jq -n \
-          --arg generatedAt "$now_iso" \
-          --argjson generatedAtEpoch "$now_epoch" \
-          '{
-            generatedAt: $generatedAt,
-            generatedAtEpoch: $generatedAtEpoch,
-            status: "error",
-            summary: {
-              scanTargetCount: 0,
-              packageCount: 0,
-              findingCount: 0,
-              cpeFindingCount: 0,
-              highOrCriticalCount: 0,
-              errorCount: 1,
-              sbomComponentCount: 0
-            },
-            errors: ["no vulnerability scan targets were configured"],
-            packages: []
-          }' > "$work_dir/status.json"
-        mv "$work_dir/status.json" "$status_file"
-        exit 1
+          --slurpfile sbom "$sbom_file" \
+          --slurpfile grype "$work_dir/grype.json" \
+          --slurpfile meta "$sbom_meta" \
+          --slurpfile reviewed ${vulnStatusReviewed} \
+          --argjson limit ${builtins.toString vulnStatusFindingLimit} \
+          '
+            def sevrank:
+              (.severity // "" | ascii_downcase) as $severity
+              | if $severity == "critical" then 0
+                elif $severity == "high" then 1
+                elif $severity == "medium" then 2
+                elif $severity == "low" then 3
+                else 4
+                end;
+            # sbomnix writes timestamps such as 2026-11-03T19:36:26.396335+09:00,
+            # which fromdateiso8601 cannot parse.
+            def isoepoch:
+              (capture("^(?<datetime>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})(\\.[0-9]+)?(?<zone>Z|[+-][0-9]{2}:[0-9]{2})$") // null) as $parts
+              | if $parts == null then null
+                else ($parts.datetime + "Z" | fromdateiso8601)
+                  - (if $parts.zone == "Z" then 0
+                     else (($parts.zone[1:3] | tonumber) * 3600 + ($parts.zone[4:6] | tonumber) * 60)
+                       * (if $parts.zone[0:1] == "-" then -1 else 1 end)
+                     end)
+                end;
+            ($sbom[0].components // []) as $components
+            | ($components
+                | map(select(.purl != null) | {key: .purl, value: [(.pedigree.patches // [])[].resolves[]?.id | ascii_upcase]})
+                | from_entries) as $patched
+            | ($reviewed[0]
+                | map(. as $entry | $entry.ids[] | {key: "\($entry.package) \($entry.version) \(.)", value: true})
+                | from_entries) as $reviewedKeys
+            | [ $grype[0].matches[]?
+                | . as $match
+                | ($match.artifact.purl // "") as $purl
+                | ([$match.vulnerability.id // ""] + [($match.relatedVulnerabilities // [])[] | .id // empty] | map(ascii_upcase)) as $ids
+                | {
+                    id: ($match.vulnerability.id // "unknown"),
+                    severity: ($match.vulnerability.severity // "Unknown"),
+                    package: ($match.artifact.name // "unknown"),
+                    version: ($match.artifact.version // "unknown"),
+                    fixVersions: (($match.vulnerability.fix.versions // [])[:3]),
+                    ranged: ([$match.matchDetails[]?.found.versionConstraint // "none"] | any(startswith("none")) | not),
+                    patched: any($ids[]; . as $id | (($patched[$purl] // []) | index($id)) != null),
+                    reviewed: any($ids[]; $reviewedKeys["\($match.artifact.name // "") \($match.artifact.version // "") \(.)"] // false)
+                  }
+              ] as $rows
+            | ($rows | map(select(.ranged and (.patched | not) and (.reviewed | not)))) as $counted
+            # One CVE can match several packages, such as ffmpeg and ffmpeg-headless.
+            # Totals count it once. The package list still shows every match.
+            | ($counted | unique_by(.id)) as $distinct
+            | ([$distinct[] | select(sevrank <= 1)] | length) as $highOrCritical
+            | {
+                status: (
+                  if ($counted | length) == 0 then "ok"
+                  elif $highOrCritical > 0 then "alert"
+                  else "warn"
+                  end
+                ),
+                count: ($distinct | length),
+                matches: ($counted | length),
+                highOrCritical: $highOrCritical,
+                bySeverity: ($distinct | group_by(.severity) | map({key: .[0].severity, value: length}) | from_entries),
+                excluded: {
+                  noVersionRange: ([$rows[] | select(.ranged | not)] | length),
+                  patched: ([$rows[] | select(.ranged and .patched)] | length),
+                  reviewed: ([$rows[] | select(.ranged and (.patched | not) and .reviewed)] | length)
+                },
+                coverage: {
+                  components: ($components | length),
+                  withCpe: ([$components[] | select((.cpe // "") != "")] | length)
+                },
+                sbom: {
+                  generatedAt: ($meta[0].generatedAt // $sbom[0].metadata.timestamp // null),
+                  generatedAtEpoch: ($meta[0].generatedAtEpoch // ($sbom[0].metadata.timestamp // "" | isoepoch) // null)
+                },
+                packages: (
+                  $counted
+                  | group_by([.package, .version])
+                  | map({package: .[0].package, version: .[0].version, count: length, worst: (map(sevrank) | min)})
+                  | sort_by(.worst, -.count)
+                  | .[:$limit]
+                ),
+                findings: (
+                  $counted
+                  | unique_by([.id, .package, .version])
+                  | sort_by(sevrank, .package, .id)
+                  | .[:$limit]
+                  | map(del(.ranged, .patched, .reviewed))
+                )
+              }
+          ' > "$work_dir/cve.json"
       fi
 
-      jq -s \
-        --arg generatedAt "$now_iso" \
-        --argjson generatedAtEpoch "$now_epoch" \
-        --arg sbomnixVersion "${pkgs.sbomnix.version}" \
-        --arg grypeVersion "${pkgs.grype.version}" \
-        --arg osvScannerVersion "${pkgs.osv-scanner.version}" \
+      # GO: govulncheck on every Go binary in the closure. Only findings whose
+      # vulnerable function is present in the binary are counted.
+      while IFS= read -r store_path; do
+        for sub_dir in bin libexec; do
+          if [ -d "$store_path/$sub_dir" ]; then
+            printf '%s\n' "$store_path/$sub_dir"
+          fi
+        done
+      done < "$work_dir/closure.txt" > "$work_dir/bin-dirs.txt"
+      : > "$work_dir/go-version.txt"
+      if [ -s "$work_dir/bin-dirs.txt" ]; then
+        xargs -a "$work_dir/bin-dirs.txt" go version > "$work_dir/go-version.txt" 2> /dev/null || true
+      fi
+      sed -nE 's/^(.*): (go[0-9][^ ]*)$/\1\t\2/p' "$work_dir/go-version.txt" \
+        | while IFS=$'\t' read -r bin_path go_version; do
+            printf '%s\t%s\n' "$(readlink -f "$bin_path")" "$go_version"
+          done \
+        | sort -u -t $'\t' -k1,1 > "$work_dir/go-binaries.tsv"
+
+      go_db_dir="$work_dir/go-vulndb"
+      if [ ! -s "$work_dir/go-binaries.tsv" ]; then
+        jq -n '{status: "ok", binaries: 0, scanned: 0, failed: 0, affectedBinaries: 0, count: 0, stdlib: 0, modules: 0, goVersions: [], binariesTop: [], findings: []}' \
+          > "$work_dir/go.json"
+      elif ! curl -fsSL --max-time 120 --retry 2 -o "$work_dir/vulndb.zip" https://vuln.go.dev/vulndb.zip 2> "$work_dir/vulndb.log" \
+        || ! unzip -q "$work_dir/vulndb.zip" -d "$go_db_dir" 2>> "$work_dir/vulndb.log"; then
+        jq -n --arg message "Go vulnerability database download failed: $(summarize_log "$work_dir/vulndb.log")" '{status: "error", message: $message}' \
+          > "$work_dir/go.json"
+      else
+        mkdir -p "$work_dir/go"
+        index=0
+        while IFS=$'\t' read -r bin_path go_version; do
+          index=$((index + 1))
+          if govulncheck -mode=binary -db "file://$go_db_dir" -format json "$bin_path" > "$work_dir/go/raw.json" 2> "$work_dir/go/raw.err"; then
+            jq -s \
+              --arg binary "$bin_path" \
+              --arg go "$go_version" \
+              '
+                (map(select(.osv) | .osv | {key: .id, value: {summary: (.summary // ""), cves: [(.aliases // [])[] | select(startswith("CVE-"))]}}) | from_entries) as $osv
+                | [ .[] | select(.finding) | .finding
+                    | select((.trace[0].function // "") != "")
+                    | {id: .osv, module: (.trace[0].module // "unknown"), fixed: (.fixed_version // null)}
+                  ]
+                | unique_by(.id)
+                | {binary: $binary, go: $go, vulns: map(. + ($osv[.id] // {summary: "", cves: []}))}
+              ' "$work_dir/go/raw.json" > "$work_dir/go/$index.json"
+          else
+            jq -n \
+              --arg binary "$bin_path" \
+              --arg go "$go_version" \
+              --arg error "$(summarize_log "$work_dir/go/raw.err")" \
+              '{binary: $binary, go: $go, error: $error, vulns: []}' > "$work_dir/go/$index.json"
+          fi
+        done < "$work_dir/go-binaries.tsv"
+        rm -f "$work_dir/go/raw.json" "$work_dir/go/raw.err"
+        jq -s \
+          --argjson limit ${builtins.toString vulnStatusFindingLimit} \
+          '
+            def display:
+              (capture("^/nix/store/[a-z0-9]{32}-(?<pkg>[^/]+)/(.*/)?(?<file>[^/]+)$") // null) as $parts
+              | if $parts == null then .
+                else ($parts.file | sub("^\\."; "") | sub("-wrapped$"; "")) + " (" + $parts.pkg + ")"
+                end;
+            . as $bins
+            | [$bins[] | select(.error == null)] as $scanned
+            | ([$scanned[] | .vulns[]] | unique_by(.id)) as $distinct
+            | {
+                status: (
+                  if ($bins | length) > 0 and ($scanned | length) == 0 then "error"
+                  elif ($distinct | length) > 0 then "warn"
+                  else "ok"
+                  end
+                ),
+                binaries: ($bins | length),
+                scanned: ($scanned | length),
+                failed: (($bins | length) - ($scanned | length)),
+                affectedBinaries: ([$scanned[] | select((.vulns | length) > 0)] | length),
+                count: ($distinct | length),
+                stdlib: ([$distinct[] | select(.module == "stdlib")] | length),
+                modules: ([$distinct[] | select(.module != "stdlib")] | length),
+                goVersions: ($bins | group_by(.go) | map({go: .[0].go, binaries: length}) | sort_by(-.binaries)),
+                binariesTop: (
+                  $scanned
+                  | map(select((.vulns | length) > 0) | {name: (.binary | display), count: (.vulns | length)})
+                  | sort_by(-.count, .name)
+                  | .[:$limit]
+                ),
+                findings: (
+                  [$scanned[] | .vulns[]]
+                  | group_by(.id)
+                  | map(.[0] + {binaries: length})
+                  | sort_by(-.binaries, .id)
+                  | .[:$limit]
+                )
+              }
+          ' "$work_dir"/go/[0-9]*.json > "$work_dir/go.json"
+      fi
+
+      # NIX: how far the deployed system is behind. Most fixes arrive through a
+      # nixpkgs update, so the age of the nixpkgs revision is the main signal;
+      # end-of-life kernels and Electron runtimes and outdated browsers are
+      # checked against their upstream release data.
+      nixos_version="$(cat "$target_store_path/nixos-version" 2> /dev/null || true)"
+      system_kernel="$(find "$target_store_path/kernel-modules/lib/modules" -mindepth 1 -maxdepth 1 -printf '%f\n' 2> /dev/null | head -n 1 || true)"
+      running_kernel="$(uname -r)"
+
+      fetch_json https://www.kernel.org/releases.json "$work_dir/kernel-releases.json"
+      fetch_json https://releases.electronjs.org/releases.json "$work_dir/electron-releases.json"
+      fetch_json 'https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions?pageSize=1' "$work_dir/chrome-versions.json"
+      fetch_json 'https://api.github.com/repos/brave/brave-browser/releases?per_page=40' "$work_dir/brave-releases.json"
+
+      awk '/-electron-[0-9]+\.[0-9]+\.[0-9]+/ && !/-(unwrapped|fish-completions)$/' "$work_dir/closure.txt" \
+        | while IFS= read -r electron_path; do
+            electron_name="''${electron_path#/nix/store/*-}"
+            nix-store --query --referrers "$electron_path" \
+              | awk 'NR == FNR { closure[$0] = 1; next } ($0 in closure)' "$work_dir/closure.txt" - \
+              | sed -E 's#^/nix/store/[a-z0-9]{32}-##' \
+              | awk '!/^electron|fish-completions|-unwrapped/' \
+              | jq -R . \
+              | jq -s --arg name "$electron_name" \
+                '{name: $name, version: ($name | capture("^electron-(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)").version), apps: unique}'
+          done \
+        | jq -s . > "$work_dir/electrons.json"
+
+      sed -E 's#^/nix/store/[a-z0-9]{32}-##' "$work_dir/closure.txt" \
+        | awk '/^(brave|google-chrome|chromium)-[0-9][0-9.]*$/' \
+        | sort -u \
+        | jq -R 'capture("^(?<name>.+)-(?<version>[0-9][0-9.]*)$")' \
+        | jq -s . > "$work_dir/browsers.json"
+
+      jq -n \
+        --arg nixosVersion "$nixos_version" \
+        --arg runningKernel "$running_kernel" \
+        --arg systemKernel "$system_kernel" \
+        --argjson nowEpoch "$started_epoch" \
+        --argjson warnDays ${builtins.toString vulnStatusLagWarnDays} \
+        --argjson alertDays ${builtins.toString vulnStatusLagAlertDays} \
+        --slurpfile kernelReleases "$work_dir/kernel-releases.json" \
+        --slurpfile electronReleases "$work_dir/electron-releases.json" \
+        --slurpfile chromeVersions "$work_dir/chrome-versions.json" \
+        --slurpfile braveReleases "$work_dir/brave-releases.json" \
+        --slurpfile electrons "$work_dir/electrons.json" \
+        --slurpfile browsers "$work_dir/browsers.json" \
+        --rawfile unreachable "$work_dir/fetch-failed.txt" \
         '
-          . as $packages
-          | ($packages | map(.summary.findingCount // 0) | add // 0) as $findingCount
-          | ($packages | map(.summary.cpeFindingCount // 0) | add // 0) as $cpeFindingCount
-          | ($packages | map(.summary.highOrCriticalCount // 0) | add // 0) as $highOrCriticalCount
-          | ($packages | map(.summary.errorCount // 0) | add // 0) as $errorCount
-          | ($packages | map(.summary.sbomComponentCount // 0) | add // 0) as $sbomComponentCount
+          def vkey: [scan("[0-9]+") | tonumber];
+          ($nixosVersion | capture("\\.(?<date>[0-9]{8})\\.(?<rev>[0-9a-f]+)$") // null) as $nixpkgs
+          | (if $nixpkgs == null then null
+             else (($nowEpoch - ($nixpkgs.date | strptime("%Y%m%d") | mktime)) / 86400 | floor)
+             end) as $ageDays
+          | (($runningKernel | capture("^(?<series>[0-9]+\\.[0-9]+)") | .series) // null) as $series
+          | (if $kernelReleases[0] == null then null
+             else [$kernelReleases[0].releases[] | select(.moniker != "linux-next")]
+             end) as $kernels
+          | (if $kernels == null or $series == null then null
+             else ([$kernels[] | select(.version | startswith($series + "."))] | first)
+             end) as $seriesRelease
+          | (if $kernels == null or $series == null then null
+             elif $seriesRelease == null then true
+             else $seriesRelease.iseol == true
+             end) as $kernelEol
+          | (if $kernels == null then null
+             else ([$kernels[] | select(.moniker == "stable" and (.iseol | not))] | first | .version)
+             end) as $latestStable
+          | (if $kernels == null then []
+             else [$kernels[] | select(.moniker == "longterm") | .version]
+             end) as $longterm
+          | (if $electronReleases[0] == null then null
+             else ([$electronReleases[0][] | .version | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | split(".")[0] | tonumber] | max)
+             end) as $electronLatest
+          | [ $electrons[0][]
+              | (.version | split(".")[0] | tonumber) as $major
+              | . + {major: $major, eol: (if $electronLatest == null then null else $major < $electronLatest - 2 end)}
+            ] as $runtimes
+          | (($chromeVersions[0] | .versions[0].version?) // null) as $chromeLatest
+          | (if $braveReleases[0] == null then null
+             else ([$braveReleases[0][]
+                     | select((.draft | not) and (.prerelease | not) and ((.name // "") | startswith("Release v")))]
+                   | first | .tag_name // null | if . == null then null else ltrimstr("v") end)
+             end) as $braveLatest
+          | [ $browsers[0][]
+              | (if .name == "brave" then $braveLatest else $chromeLatest end) as $latest
+              | . + {latest: $latest, behind: (if $latest == null then null else (.version | vkey) < ($latest | vkey) end)}
+            ] as $browserRows
+          | ([$runtimes[] | select(.eol == true)] | length) as $electronEol
+          | ([$browserRows[] | select(.behind == true)] | length) as $browsersBehind
+          | ($systemKernel != "" and $systemKernel != $runningKernel) as $rebootPending
           | {
-              generatedAt: $generatedAt,
-              generatedAtEpoch: $generatedAtEpoch,
-              scanner: {
-                sbomnix: $sbomnixVersion,
-                grype: $grypeVersion,
-                osvScanner: $osvScannerVersion
-              },
               status: (
-                if $errorCount > 0 then "error"
-                elif $findingCount > 0 then "finding"
-                elif $cpeFindingCount > 0 then "cpe"
-                else "clean"
+                if ($ageDays != null and $ageDays >= $alertDays) or $kernelEol == true or $electronEol > 0 then "alert"
+                elif ($ageDays != null and $ageDays >= $warnDays) or $browsersBehind > 0 or $rebootPending then "warn"
+                elif $ageDays == null then "unknown"
+                else "ok"
                 end
               ),
-              summary: {
-                scanTargetCount: ($packages | length),
-                packageCount: $sbomComponentCount,
-                findingCount: $findingCount,
-                cpeFindingCount: $cpeFindingCount,
-                highOrCriticalCount: $highOrCriticalCount,
-                errorCount: $errorCount,
-                sbomComponentCount: $sbomComponentCount
+              nixpkgs: {version: $nixosVersion, date: $nixpkgs.date, rev: $nixpkgs.rev, ageDays: $ageDays},
+              kernel: {
+                running: $runningKernel,
+                system: (if $systemKernel == "" then null else $systemKernel end),
+                series: $series,
+                eol: $kernelEol,
+                rebootPending: $rebootPending,
+                latestStable: $latestStable,
+                longterm: $longterm
               },
-              packages: $packages
+              electron: {latestMajor: $electronLatest, eolCount: $electronEol, runtimes: $runtimes},
+              browsers: $browserRows,
+              unreachable: ($unreachable | split("\n") | map(select(length > 0)))
             }
-        ' "''${package_files[@]}" > "$work_dir/status.json"
+        ' > "$work_dir/lag.json"
 
+      finished_epoch="$(date -u +%s)"
+      jq -n \
+        --arg generatedAt "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        --argjson generatedAtEpoch "$finished_epoch" \
+        --argjson durationSeconds "$((finished_epoch - started_epoch))" \
+        --arg targetPath "$target_path" \
+        --arg storePath "$target_store_path" \
+        --arg name "$target_name" \
+        --arg grype "${pkgs.grype.version}" \
+        --arg govulncheck "${pkgs.govulncheck.version}" \
+        --arg sbomnix "${pkgs.sbomnix.version}" \
+        --slurpfile cve "$work_dir/cve.json" \
+        --slurpfile go "$work_dir/go.json" \
+        --slurpfile lag "$work_dir/lag.json" \
+        '
+          def rank:
+            if . == "error" then 4
+            elif . == "alert" then 3
+            elif . == "warn" or . == "missing" then 2
+            elif . == "ok" then 0
+            else 1
+            end;
+          {
+            schema: 2,
+            generatedAt: $generatedAt,
+            generatedAtEpoch: $generatedAtEpoch,
+            durationSeconds: $durationSeconds,
+            target: {path: $targetPath, storePath: $storePath, name: $name},
+            tools: {grype: $grype, govulncheck: $govulncheck, sbomnix: $sbomnix},
+            checks: {cve: $cve[0], go: $go[0], lag: $lag[0]},
+            status: ([$cve[0].status, $go[0].status, $lag[0].status] | max_by(rank))
+          }
+        ' > "$work_dir/status.json"
       mv "$work_dir/status.json" "$status_file"
+      status_written=1
 
-      error_count="$(jq '.summary.errorCount // 0' "$status_file")"
-      if [ "$error_count" -gt 0 ]; then
+      if jq -e '[.checks[].status] | index("error") != null' "$status_file" > /dev/null; then
         exit 1
       fi
     '';
@@ -741,64 +1036,59 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.jq
+      pkgs.systemd
     ];
     text = ''
       set -euo pipefail
 
       cache_file="''${XDG_CACHE_HOME:-$HOME/.cache}/nix-vuln-status/status.json"
+      state="$(systemctl --user show --property ActiveState --value nix-vuln-status.service 2> /dev/null || true)"
 
-      if [ ! -s "$cache_file" ]; then
-        printf '<span foreground="#eed49f">VULN --</span>\n'
+      running=""
+      if [ "$state" = "activating" ]; then
+        running=' <span foreground="#8aadf4">󰑓</span>'
+      fi
+
+      if [ ! -s "$cache_file" ] || ! jq -e '.schema == 2' "$cache_file" > /dev/null 2>&1; then
+        printf '<span foreground="#a5adcb">VULN --</span>%s\n' "$running"
         exit 0
       fi
 
-      if ! jq -e . "$cache_file" >/dev/null 2>&1; then
-        printf '<span foreground="#ed8796">VULN ERR</span>\n'
-        exit 0
-      fi
-
-      now_epoch="$(date -u +%s)"
-      generated_epoch="$(jq -r '.generatedAtEpoch // 0' "$cache_file")"
-
-      case "$generated_epoch" in
-        ""|*[!0-9]*)
-          printf '<span foreground="#ed8796">VULN ERR</span>\n'
-          exit 0
-          ;;
-      esac
-
-      age_seconds=$((now_epoch - generated_epoch))
-      if [ "$age_seconds" -gt "${builtins.toString vulnStatusStaleSeconds}" ]; then
-        printf '<span foreground="#eed49f">VULN OLD</span>\n'
-        exit 0
-      fi
-
-      status="$(jq -r '.status // "error"' "$cache_file")"
-      finding_count="$(jq -r '.summary.findingCount // 0' "$cache_file")"
-      cpe_finding_count="$(jq -r '.summary.cpeFindingCount // 0' "$cache_file")"
-      high_or_critical_count="$(jq -r '.summary.highOrCriticalCount // 0' "$cache_file")"
-
-      case "$status" in
-        clean)
-          printf '<span foreground="#a6da95">VULN 0</span>\n'
-          ;;
-        finding)
-          if [ "$high_or_critical_count" -gt 0 ]; then
-            printf '<span foreground="#ed8796">VULN %s</span>\n' "$finding_count"
-          else
-            printf '<span foreground="#eed49f">VULN %s</span>\n' "$finding_count"
-          fi
-          ;;
-        cpe)
-          printf '<span foreground="#eed49f">VULN CPE%s</span>\n' "$cpe_finding_count"
-          ;;
-        error)
-          printf '<span foreground="#ed8796">VULN ERR</span>\n'
-          ;;
-        *)
-          printf '<span foreground="#eed49f">VULN ?</span>\n'
-          ;;
-      esac
+      jq -r \
+        --argjson nowEpoch "$(date -u +%s)" \
+        --argjson staleSeconds ${builtins.toString vulnStatusStaleSeconds} \
+        --arg running "$running" \
+        '
+          ${vulnStatusStatusColor}
+          def segment($label; $check; $value):
+            "<span foreground=\"" + (($check.status // "unknown") | color) + "\">" + $label + " " + $value + "</span>";
+          (.checks.cve // {}) as $cve
+          | (.checks.go // {}) as $go
+          | (.checks.lag // {}) as $lag
+          | (.generatedAtEpoch // 0) as $generatedEpoch
+          | if (.checks | length) == 0 then
+              "<span foreground=\"#ed8796\">VULN ERR</span>" + $running
+            else
+              [
+                segment("CVE"; $cve;
+                  if $cve.status == "missing" then "?"
+                  elif $cve.status == "error" then "!"
+                  else ($cve.count // 0 | tostring)
+                  end),
+                segment("GO"; $go;
+                  if $go.status == "error" then "!"
+                  else ($go.count // 0 | tostring)
+                  end),
+                segment("NIX"; $lag;
+                  if $lag.nixpkgs.ageDays == null then "?"
+                  else "\($lag.nixpkgs.ageDays)d"
+                  end)
+              ]
+              | join("<span foreground=\"#6e738d\"> · </span>")
+              | . + (if ($nowEpoch - $generatedEpoch) > $staleSeconds then " <span foreground=\"#eed49f\">OLD</span>" else "" end)
+              | . + $running
+            end
+        ' "$cache_file"
     '';
   });
   nixVulnStatusDetailsScript = lib.getExe (pkgs.writeShellApplication {
@@ -806,123 +1096,111 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.jq
+      pkgs.systemd
     ];
     text = ''
       set -euo pipefail
 
       cache_file="''${XDG_CACHE_HOME:-$HOME/.cache}/nix-vuln-status/status.json"
+      state="$(systemctl --user show --property ActiveState --value nix-vuln-status.service 2> /dev/null || true)"
 
-      if [ ! -s "$cache_file" ]; then
-        printf 'No scan cache\n'
+      if [ ! -s "$cache_file" ] || ! jq -e '.schema == 2' "$cache_file" > /dev/null 2>&1; then
+        if [ "$state" = "activating" ]; then
+          printf 'Scanning now. The first run takes a few minutes.\n'
+        else
+          printf 'No results yet. Press Rescan to run the checks.\n'
+        fi
         exit 0
       fi
 
-      if ! jq -e . "$cache_file" >/dev/null 2>&1; then
-        printf 'Invalid scan cache\n'
-        exit 0
-      fi
-
-      now_epoch="$(date -u +%s)"
       jq -r \
-        --argjson nowEpoch "$now_epoch" \
-        --argjson staleSeconds "${builtins.toString vulnStatusStaleSeconds}" \
+        --argjson nowEpoch "$(date -u +%s)" \
+        --argjson staleSeconds ${builtins.toString vulnStatusStaleSeconds} \
+        --argjson limit ${builtins.toString vulnStatusDisplayLimit} \
+        --arg state "$state" \
         '
-          def age_label:
-            (($nowEpoch - (.generatedAtEpoch // 0)) | if . < 0 then 0 else . end) as $age
+          ${vulnStatusStatusColor}
+          def esc: tostring | @html;
+          def pad($width): tostring | if length >= $width then . else . + (" " * ($width - length)) end;
+          def tag($status; $text): "<span foreground=\"" + ($status | color) + "\">" + $text + "</span>";
+          def ago($epoch):
+            (($nowEpoch - $epoch) | if . < 0 then 0 else . end) as $age
             | if $age >= 86400 then "\(($age / 86400) | floor)d"
               elif $age >= 3600 then "\(($age / 3600) | floor)h"
               elif $age >= 60 then "\(($age / 60) | floor)m"
               else "\($age)s"
               end;
-          def stale_label:
-            if (($nowEpoch - (.generatedAtEpoch // 0)) > $staleSeconds) then " stale" else "" end;
-          def trunc($max):
-            tostring | if length > $max then .[0:($max - 3)] + "..." else . end;
-          def fix_label:
-            if ((.fixVersions // []) | length) > 0 then
-              " fix=" + (((.fixVersions // []) | join(",")) | trunc(24))
-            elif ((.fixState // "") != "") then
-              " fix=" + (.fixState // "")
+          def when($epoch): ($epoch | strflocaltime("%Y-%m-%d %H:%M")) + " (" + ago($epoch) + " ago)";
+          def duration($seconds):
+            if $seconds >= 60 then "\(($seconds / 60) | floor)m\($seconds % 60)s" else "\($seconds)s" end;
+          def date8: if . == null then "unknown" else .[0:4] + "-" + .[4:6] + "-" + .[6:8] end;
+          (.checks.cve // {}) as $cve
+          | (.checks.go // {}) as $go
+          | (.checks.lag // {}) as $lag
+          | if (.checks | length) == 0 then
+              tag("error"; "Scan failed") + "  " + ((.error // "unknown error") | esc),
+              "Checked  " + when(.generatedAtEpoch // 0)
             else
-              ""
-            end;
-          def grype_line($prefix):
-            (
-              $prefix + " "
-              + ((.severity // "unknown") | ascii_upcase) + " "
-              + (.id // "unknown") + " "
-              + (.package // "unknown") + "@"
-              + (.version // "unknown")
-              + fix_label
-            ) | trunc(88);
-          def osv_line:
-            (
-              "OSV "
-              + ((.severity // "unknown") | ascii_upcase) + " "
-              + (.id // "unknown") + " "
-              + (.package // "unknown") + "@"
-              + (.version // "unknown")
-            ) | trunc(88);
-          [ .packages[]?.findings.grype[]? ] as $grype
-          | [ .packages[]?.findings.grypeCpe[]? ] as $grypeCpe
-          | [ .packages[]?.findings.osv[]? ] as $osv
-          | [ .errors[]?, .packages[]?.errors[]? ] as $errors
-          | ([ .packages[]?.summary.grypeCount // 0 ] | add // 0) as $grypeTotal
-          | ([ .packages[]?.summary.grypeCpeCount // 0 ] | add // 0) as $grypeCpeTotal
-          | ([ .packages[]?.summary.osvCount // 0 ] | add // 0) as $osvTotal
-          | "Checked: \(.generatedAt // "unknown") (" + (age_label) + " ago" + (stale_label) + ")",
-            "Summary: \(.status // "unknown"), findings=\(.summary.findingCount // 0), grype=\($grypeTotal), cpe=\(.summary.cpeFindingCount // 0), osv=\($osvTotal), errors=\(.summary.errorCount // 0)",
-            "Scope: \(.summary.packageCount // .summary.sbomComponentCount // 0) SBOM components from \(.summary.scanTargetCount // 0) active Nix target(s)",
-            "",
-            (
-              .packages[]?
-              | "\(.pname): \(.status) components=\(.summary.sbomComponentCount // 0) grype=\(.summary.grypeCount // 0) cpe=\(.summary.grypeCpeCount // 0) osv=\(.summary.osvCount // 0)"
-            ),
-            (
-              if ($errors | length) > 0 then
-                "",
-                "Errors",
-                ($errors[] | ("ERR " + .) | trunc(88))
-              else
-                empty
-              end
-            ),
-            (
-              if ($grype | length) > 0 then
-                "",
-                "Grype findings (top \($grype | length)/\($grypeTotal))",
-                ($grype[] | grype_line("GRP"))
-              elif $grypeTotal > 0 then
-                "",
-                "Grype findings: details not cached; refresh scan"
-              else
-                empty
-              end
-            ),
-            (
-              if ($grypeCpe | length) > 0 then
-                "",
-                "Grype CPE-only (top \($grypeCpe | length)/\($grypeCpeTotal))",
-                ($grypeCpe[] | grype_line("CPE"))
-              elif $grypeCpeTotal > 0 then
-                "",
-                "Grype CPE-only: details not cached; refresh scan"
-              else
-                empty
-              end
-            ),
-            (
-              if ($osv | length) > 0 then
-                "",
-                "OSV findings (top \($osv | length)/\($osvTotal))",
-                ($osv[] | osv_line)
-              elif $osvTotal > 0 then
-                "",
-                "OSV findings: details not cached; refresh scan"
-              else
-                empty
-              end
-            )
+              "Checked  " + when(.generatedAtEpoch // 0) + ", took " + duration(.durationSeconds // 0)
+                + (if ($nowEpoch - (.generatedAtEpoch // 0)) > $staleSeconds then "  " + tag("warn"; "stale") else "" end),
+              (if $state == "activating" then "Status   " + tag("unknown"; "scanning now") else empty end),
+              "System   " + ((.target.name // "unknown") | esc),
+              "",
+              tag($cve.status // "unknown"; "CVE") + "  sbomnix + grype   "
+                + (if $cve.status == "missing" then tag("missing"; "no SBOM")
+                   elif $cve.status == "error" then tag("error"; "failed")
+                   else tag($cve.status; "\($cve.count) found")
+                     + " in \($cve.matches // $cve.count) package matches (critical \($cve.bySeverity.Critical // 0), high \($cve.bySeverity.High // 0))"
+                   end),
+              (if $cve.status == "missing" or $cve.status == "error" then
+                 "     " + (($cve.message // "") | esc)
+               else
+                 "     scope    \($cve.coverage.withCpe) of \($cve.coverage.components) packages have an exact CPE",
+                 "     SBOM     " + (if $cve.sbom.generatedAtEpoch == null then "unknown" else when($cve.sbom.generatedAtEpoch) end),
+                 "     skipped  \($cve.excluded.noVersionRange) without a version range, \($cve.excluded.patched) patched, \($cve.excluded.reviewed // 0) reviewed",
+                 ($cve.packages[:$limit][] | "     " + ("\(.package) \(.version)" | esc | pad(32)) + " \(.count)")
+               end),
+              "",
+              tag($go.status // "unknown"; "GO ") + "  govulncheck       "
+                + (if $go.status == "error" then tag("error"; "failed")
+                   else tag($go.status; "\($go.count) found") + " in \($go.affectedBinaries) of \($go.binaries) Go binaries"
+                   end),
+              (if $go.status == "error" then
+                 "     " + (($go.message // "") | esc)
+               else
+                 "     scope    stdlib \($go.stdlib), modules \($go.modules)"
+                   + (if ($go.failed // 0) > 0 then ", \($go.failed) binaries could not be read" else "" end),
+                 ($go.binariesTop[:$limit][] | "     " + (.name | esc | pad(32)) + " \(.count)")
+               end),
+              "",
+              tag($lag.status // "unknown"; "NIX") + "  update lag        "
+                + (if $lag.nixpkgs.ageDays == null then tag("unknown"; "nixpkgs date unknown")
+                   else tag($lag.status; "nixpkgs \($lag.nixpkgs.date | date8), \($lag.nixpkgs.ageDays) days old")
+                   end),
+              "     kernel   " + ($lag.kernel.running | esc) + "  "
+                + (if $lag.kernel.eol == true then tag("alert"; "end of life")
+                   elif $lag.kernel.eol == false then tag("ok"; "maintained")
+                   else tag("unknown"; "unknown")
+                   end)
+                + (if $lag.kernel.latestStable != null then "  (stable \($lag.kernel.latestStable))" else "" end)
+                + (if $lag.kernel.rebootPending == true then "  " + tag("warn"; "reboot pending") else "" end),
+              ($lag.electron.runtimes // [] | .[]
+                | "     electron " + (.version | pad(9)) + " "
+                  + (if .eol == true then tag("alert"; "end of life") elif .eol == false then tag("ok"; "supported  ") else "unknown    " end)
+                  + "  " + (.apps | join(", ") | esc)),
+              ($lag.browsers // [] | .[]
+                | "     " + (.name | pad(14)) + (.version | esc)
+                  + (if .behind == true then " -> " + tag("warn"; .latest | esc)
+                     elif .behind == false then "  " + tag("ok"; "latest")
+                     else ""
+                     end)),
+              (if ($lag.unreachable // [] | length) > 0 then
+                 "     " + tag("unknown"; "unreachable: " + ($lag.unreachable | map(sub("^https://"; "") | split("/")[0]) | unique | join(", ")))
+               else empty
+               end),
+              "",
+              "Not checked: ~/.nix-profile, ~/.local/bin, Docker images"
+            end
         ' "$cache_file"
     '';
   });
@@ -934,7 +1212,7 @@ let
     text = ''
       set -euo pipefail
 
-      systemctl --user start nix-vuln-status.service
+      systemctl --user start --no-block nix-vuln-status.service
     '';
   });
   keepAwakeControl = pkgs.writeShellApplication {
@@ -1242,12 +1520,12 @@ let
     type = "custom";
     name = "vuln-status";
     class = "vuln-status";
-    tooltip = "Known vulnerability scan summary";
+    tooltip = "CVE: sbomnix + grype, GO: govulncheck, NIX: days since the nixpkgs revision. Click for details, right-click to rescan.";
     bar = [
       {
         type = "button";
         name = "vuln-status-trigger";
-        label = "{{30000:${nixVulnStatusLabelScript}}}";
+        label = "{{10000:${nixVulnStatusLabelScript}}}";
         on_click = "popup:toggle";
         on_click_right = "!${nixVulnStatusTriggerScript}";
       }
@@ -1261,7 +1539,7 @@ let
           {
             type = "label";
             name = "vuln-status-heading";
-            label = "Vulnerability Scan";
+            label = "Vulnerability Checks";
           }
           {
             type = "label";
@@ -1271,7 +1549,7 @@ let
           {
             type = "button";
             name = "vuln-status-refresh";
-            label = "Refresh";
+            label = "Rescan";
             on_click = "!${nixVulnStatusTriggerScript}";
           }
         ];
@@ -1819,6 +2097,8 @@ in
     pkgs.ironbar
     keepAwakeControl
     nixVulnStatusRefresh
+    # switch-hq runs this from the system it is deploying.
+    nixVulnStatusSbom
     (pkgs.writeShellApplication {
       name = "ironbar-toggle-power-menu";
       runtimeInputs = [
@@ -2684,6 +2964,7 @@ in
       ExecStart = lib.getExe nixVulnStatusRefresh;
       Nice = 10;
       IOSchedulingClass = "idle";
+      TimeoutStartSec = "30min";
     };
   };
 
