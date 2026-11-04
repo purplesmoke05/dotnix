@@ -10,7 +10,7 @@
 }:
 
 let
-  version = "2.1.291";
+  version = "2.1.317";
   releaseBase = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/${version}";
 
   platform =
@@ -36,12 +36,12 @@ let
     "${os}-${arch}${muslSuffix}";
 
   hashes = {
-    darwin-arm64 = "sha256-mh0u1rtEIej8gMiSwEE/KTvj7lCuPX3aGnYiGXoFZpA=";
-    darwin-x64 = "sha256-Ijv03g6POMslT8OPgv2gn5/P1OKqxitZ735/GWCkXd0=";
-    linux-arm64 = "sha256-wYRzoEzE8HdDXV2QgfCevqRuaZ6yglzqZHQcS8y4dkc=";
-    linux-arm64-musl = "sha256-WCgRACqUAz+yfxoweriToy66yCe06hsg9y63eMz4NKs=";
-    linux-x64 = "sha256-B4+tKNApfJol0wa2NbLYgWxoOTR1IPKetU/+pdVhQvs=";
-    linux-x64-musl = "sha256-5LH7ObVqZ5gGP6BJEug4wB3Vjf/rI41tzTGtLRcugsU=";
+    darwin-arm64 = "sha256-CfFTtGtd+eizRUcW1oKpGQHeAgy8pjD2HewaAVsytek=";
+    darwin-x64 = "sha256-AccUvH/r2wCPKOP2+ssdw35GpNj6jbWN8uKB7lHLMzw=";
+    linux-arm64 = "sha256-VjoNYK0MIj2UFXaCEJl6yw9xNOpR3Dwjjoi8Lhjd7vo=";
+    linux-arm64-musl = "sha256-3IxZz5N+YOnMk6/iJu9DdHTe1WuoE3Q9CRBtJKCMg70=";
+    linux-x64 = "sha256-6yJEGeNEV1+qSh85spC2SUJaEM1e4u8dADSAzZrlfrA=";
+    linux-x64-musl = "sha256-vMK+kQWHXcMaRIJe3pLkbE+YIl7rOtYXNA2qIXEAM5s=";
   };
 
   wrapperPath = lib.makeBinPath (
@@ -70,9 +70,9 @@ stdenv.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 "$src" "$out/bin/.claude-real"
+    install -Dm755 "$src" "$out/libexec/claude-code/claude"
 
-    makeWrapper "$out/bin/.claude-real" "$out/bin/claude" \
+    makeWrapper "$out/libexec/claude-code/claude" "$out/bin/claude" \
       --set DISABLE_AUTOUPDATER 1 \
       --set DISABLE_INSTALLATION_CHECKS 1 \
       --unset DEV \
