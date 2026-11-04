@@ -34,9 +34,9 @@
       # atuin initialization / atuin 初期化
       ''
         atuin init fish --disable-ctrl-r --disable-up-arrow | source
-        # Bind Ctrl+J manually / Ctrl+J を手動割当
+        # Keep LF as execute: Herdr types restored commands before fish enters raw mode, so their Enter arrives as Ctrl+J. / LF は実行のままにする。Herdr は fish の raw モード前に復元コマンドを入力するため、その Enter が Ctrl+J として届く。
         bind --erase \cj
-        bind \cj _atuin_search
+        bind \co _atuin_search
 
         if type -q wtp
           wtp shell-init fish | source
