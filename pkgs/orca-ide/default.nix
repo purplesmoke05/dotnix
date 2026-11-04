@@ -66,7 +66,7 @@
 }:
 
 let
-  version = "1.4.221";
+  version = "1.4.247";
 
   # Python with PyGObject plus the GTK stack whose typelibs runtime.py imports. / runtime.py が import する typelib 群を持つ PyGObject 入り Python。
   computerUsePython = python3.withPackages (ps: [ ps.pygobject3 ]);
@@ -86,8 +86,8 @@ let
     or (throw "orca-ide: unsupported system ${stdenvNoCC.hostPlatform.system}");
 
   hashes = {
-    amd64 = "sha256-QkRerOzPcFuOaxq+hDzKkOht/rjb+7Qu1H7Rr5PFV2s=";
-    arm64 = "sha256-uQmv8tiU/caymKyPsUykFkPpp6KLp7LZTHyDGo3wJqg=";
+    amd64 = "sha256-fiwMh5vq3SJcSLjVV3TO9Itl+bKepGyQZtuNIE6T59E=";
+    arm64 = "sha256-J454tvD4KGujpqeRmiXV9Lo4UX1NrYbD3/Vlot+LV3Y=";
   };
 
   src = fetchurl {
