@@ -23,11 +23,13 @@ let
 in
 {
   # System Boot Configuration / システム起動構成
-  # Boot via systemd-boot with xanmod for low-latency desktops. / systemd-boot と xanmod カーネルで低遅延デスクトップ向けに起動を構成。
+  # Boot via systemd-boot with the latest maintained mainline kernel. / systemd-boot と保守中の最新メインラインカーネルで起動を構成。
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 1;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
+  # xanmod in nixpkgs was still on the end-of-life 7.2 series in 2026-11. / 2026-11 時点で nixpkgs の xanmod は保守終了した 7.2 系だった。
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_latest;
   # boot.kernelPackages = pkgs.linuxKernel.packages.linux_xanmod_stable;
   # boot.kernelPackages = pkgs.linuxPackages_6_11;
   boot.kernelPatches = [ ];
