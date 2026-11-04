@@ -3,6 +3,7 @@ let
   displayLayout = import ./display-layout.nix;
   quickTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
   devTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.right}" else "DP-2";
+  isuconLayoutMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
   hyprlandPackage = inputs.hyprland.packages.${pkgs.system}.hyprland;
   hyprlandPipDrag = pkgs.callPackage ../../../pkgs/hyprland-pip-drag {
     hyprland = hyprlandPackage;
@@ -716,6 +717,180 @@ in
       '';
     })
 
+    # Arrange Linear | Ghostty | Discord on workspace 3 for ISUCON. / ISUCON 用に ws 3 へ Linear | Ghostty | Discord を並べる。
+    (pkgs.writeShellApplication {
+      name = "isucon-layout";
+      runtimeInputs = with pkgs; [
+        coreutils
+        jq
+        libnotify
+        util-linux
+      ];
+      bashOptions = [ "errexit" "nounset" "pipefail" ];
+      text = ''
+        preferred_monitor=${lib.escapeShellArg isuconLayoutMonitor}
+        workspace_number="3"
+        stage_workspace="special:isucon-layout"
+        # Linear PWA installed in Brave. / Brave に入れた Linear の PWA。
+        linear_app_id="bgdbmehlmdmddlgneophbcddadgknlpm"
+        linear_class="brave-''${linear_app_id}-Default"
+        term_class="com.mitchellh.ghostty"
+        discord_class="vesktop"
+        linear_command="${pkgs.brave}/bin/brave --profile-directory=Default --app-id=''${linear_app_id}"
+        term_command="term-main"
+        discord_command="${pkgs.vesktop}/bin/vesktop"
+        # Dwindle gives the first child ratio / 2: Linear 25%, Ghostty 45%, Discord 30%. / dwindle は先頭の子に ratio / 2 を割り当てる。
+        # Keep Discord at 30% or more because Vesktop's minimum width is 940px. / Vesktop の最小幅が 940px なので Discord は 30% 以上にする。
+        root_ratio="0.5"
+        right_ratio="1.2"
+
+        # Single-instance guard / 二重実行を防ぐ
+        exec 9>"''${XDG_RUNTIME_DIR:-/tmp}/isucon-layout-$UID.lock"
+        flock -n 9 || exit 0
+
+        notify() {
+          notify-send -a isucon-layout "ISUCON layout" "$1" >/dev/null 2>&1 || true
+        }
+
+        fail() {
+          notify "$1"
+          printf '%s\n' "$1" >&2
+          exit 1
+        }
+
+        get_target_monitor() {
+          hyprctl monitors -j | jq -r --arg monitor "$preferred_monitor" '
+            first(.[] | select(.name == $monitor or ("desc:" + .description) == $monitor) | .name)
+              // first(.[] | select(.focused == true) | .name) // empty
+          '
+        }
+
+        get_monitor_active_workspace() {
+          hyprctl monitors -j | jq -r --arg monitor "$1" '
+            first(.[] | select(.name == $monitor) | .activeWorkspace.id) // empty
+          '
+        }
+
+        get_addresses_by_class() {
+          hyprctl clients -j | jq -r --arg class "$1" '.[] | select(.class == $class) | .address'
+        }
+
+        get_first_address_by_class() {
+          hyprctl clients -j | jq -r --arg class "$1" 'first(.[] | select(.class == $class) | .address) // empty'
+        }
+
+        get_term_on_workspace() {
+          hyprctl clients -j | jq -r --arg class "$term_class" --argjson workspace "$1" '
+            [.[] | select(.class == $class and .workspace.id == $workspace and .floating == false)]
+            | sort_by(.focusHistoryID) | first | .address // empty
+          '
+        }
+
+        wait_for_new_window() {
+          _class="$1"
+          _known="$2"
+          _attempt=0
+
+          while [ "$_attempt" -lt 150 ]; do
+            _address="$(
+              hyprctl clients -j | jq -r --arg class "$_class" --arg known "$_known" '
+                ($known | split("\n")) as $known_addresses
+                | first(.[] | select(.class == $class and (.address | IN($known_addresses[]) | not)) | .address) // empty
+              '
+            )"
+
+            if [ -n "$_address" ]; then
+              printf '%s\n' "$_address"
+              return 0
+            fi
+
+            sleep 0.1
+            _attempt=$((_attempt + 1))
+          done
+
+          return 1
+        }
+
+        ensure_window() {
+          _class="$1"
+          _command="$2"
+          _address="$(get_first_address_by_class "$_class")"
+
+          if [ -n "$_address" ]; then
+            printf '%s\n' "$_address"
+            return 0
+          fi
+
+          hyprctl dispatch exec "$_command" >/dev/null
+          wait_for_new_window "$_class" ""
+        }
+
+        monitor="$(get_target_monitor)"
+        [ -n "$monitor" ] || fail "monitor not found"
+
+        hyprctl --batch "dispatch focusmonitor $monitor ; dispatch split:workspace $workspace_number" >/dev/null
+        workspace_id="$(get_monitor_active_workspace "$monitor")"
+        [ -n "$workspace_id" ] || fail "workspace not found on $monitor"
+
+        linear_address="$(ensure_window "$linear_class" "$linear_command")" || fail "Linear window did not appear"
+        discord_address="$(ensure_window "$discord_class" "$discord_command")" || fail "Discord window did not appear"
+
+        # Reuse a terminal already on the workspace. / ws にある端末を使い回す。
+        term_address="$(get_term_on_workspace "$workspace_id")"
+        if [ -z "$term_address" ]; then
+          known_terms="$(get_addresses_by_class "$term_class")"
+          hyprctl dispatch exec "$term_command" >/dev/null
+          term_address="$(wait_for_new_window "$term_class" "$known_terms")" || fail "Ghostty window did not appear"
+        fi
+
+        # Move other tiled windows to the next workspace. / 他のタイル窓は隣の ws へ移す。
+        extra_addresses="$(
+          hyprctl clients -j | jq -r --argjson workspace "$workspace_id" \
+            --arg linear "$linear_address" --arg term "$term_address" --arg discord "$discord_address" '
+            .[] | select(.workspace.id == $workspace and .floating == false
+              and .address != $linear and .address != $term and .address != $discord) | .address
+          '
+        )"
+        extra_workspace=$((workspace_id + 1))
+
+        batch=""
+        append() {
+          batch="''${batch:+$batch ; }$1"
+        }
+
+        for address in "$linear_address" "$term_address" "$discord_address"; do
+          append "dispatch settiled address:$address"
+          append "dispatch movetoworkspacesilent $stage_workspace,address:$address"
+        done
+
+        extra_count=0
+        while IFS= read -r address; do
+          [ -n "$address" ] || continue
+          append "dispatch movetoworkspacesilent $extra_workspace,address:$address"
+          extra_count=$((extra_count + 1))
+        done <<< "$extra_addresses"
+
+        # Insert from left to right; preselect opens each window right of the focused one. / 左から順に入れ、preselect でフォーカス窓の右に開く。
+        append "dispatch movetoworkspacesilent $workspace_id,address:$linear_address"
+        append "dispatch focuswindow address:$linear_address"
+        append "dispatch layoutmsg preselect r"
+        append "dispatch movetoworkspacesilent $workspace_id,address:$term_address"
+        append "dispatch focuswindow address:$term_address"
+        append "dispatch layoutmsg preselect r"
+        append "dispatch movetoworkspacesilent $workspace_id,address:$discord_address"
+        append "dispatch focuswindow address:$linear_address"
+        append "dispatch splitratio exact $root_ratio"
+        append "dispatch focuswindow address:$term_address"
+        append "dispatch splitratio exact $right_ratio"
+
+        hyprctl --batch "$batch" >/dev/null
+
+        if [ "$extra_count" -gt 0 ]; then
+          notify "Moved $extra_count other window(s) to workspace $extra_workspace"
+        fi
+      '';
+    })
+
     (pkgs.writeShellApplication {
       name = "hints-once";
       runtimeInputs = with pkgs; [ util-linux ];
@@ -893,6 +1068,7 @@ in
 
         # Window layout / ウィンドウレイアウト
         "$mainMod CTRL, k, layoutmsg, preselect d"
+        "$mainMod SHIFT, I, exec, isucon-layout"
 
         # Screenshot controls / スクリーンショット操作
         '', Print, exec, grimblast save output - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png $HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png''
