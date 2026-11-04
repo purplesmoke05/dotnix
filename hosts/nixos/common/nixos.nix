@@ -464,13 +464,13 @@ in
       xorg.libXext
       xorg.libXfixes
       xorg.libXrandr
-      xorg.libxcb
+      libxcb
       mesa
       libxkbcommon
       pango
       cairo
       nspr
-      xorg.libXcursor
+      libxcursor
       xorg.libXi
       gtk3
       gdk-pixbuf
@@ -492,9 +492,6 @@ in
       # SDL_mixer (enable on demand) / SDL_mixer（必要に応じて有効化）
       # SDL2_ttf (enable on demand) / SDL2_ttf（必要に応じて有効化）
       # SDL2_mixer (enable on demand) / SDL2_mixer（必要に応じて有効化）
-      libappindicator-gtk2
-      libdbusmenu-gtk2
-      libindicator-gtk2
       libcanberra
       libgcrypt
       libvpx

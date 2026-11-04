@@ -7,6 +7,9 @@
     enable = true;
     viAlias = true;
     vimAlias = true;
+    # The configured plugins are Lua-only and need no remote plugin providers.
+    withRuby = false;
+    withPython3 = false;
 
     # Plugin configuration
     # - Treesitter for syntax highlighting and parsing

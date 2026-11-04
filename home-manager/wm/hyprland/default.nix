@@ -755,6 +755,8 @@ in
 
   wayland.windowManager.hyprland = {
     enable = true;
+    # Hyprland is pinned to v0.52.1, which reads hyprlang; home-manager now defaults to Lua. / Hyprland は hyprlang を読む v0.52.1 に固定しており、home-manager の既定は Lua に変わった。
+    configType = "hyprlang";
 
     package = null;
 
@@ -975,7 +977,14 @@ in
 
     # Hyprland plugins / Hyprland プラグイン
     plugins = [
-      hyprsplit.packages.${pkgs.system}.hyprsplit # Per-monitor workspaces / モニター別ワークスペース
+      # Per-monitor workspaces. Its meson.build globs every .cpp under the source root, which now includes meson's generated sanity check in ./build. / モニター別ワークスペース。meson.build がソース直下の .cpp をすべて拾い、./build 内の meson の生成ファイルまで含めてしまうため除外する。
+      (hyprsplit.packages.${pkgs.system}.hyprsplit.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace meson.build \
+            --replace-fail "run_command('find', '.', '-name', '*.cpp', check: true)" \
+                           "run_command('find', '.', '-path', './build', '-prune', '-o', '-name', '*.cpp', '-print', check: true)"
+        '';
+      }))
       hyprlandPipDrag # Move and aspect-ratio resize browser PiP. / ブラウザPiPを移動し、比率を保ってリサイズ。
     ];
   };

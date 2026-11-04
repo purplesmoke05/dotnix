@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ config, pkgs, ... }: {
   # GTK theme and configuration
   gtk = {
     enable = true;
@@ -21,6 +21,8 @@
     };
 
     # GTK4 specific settings
+    # home-manager no longer applies the GTK theme to GTK4 by default.
+    gtk4.theme = config.gtk.theme;
     gtk4.extraConfig = {
       gtk-im-module = "fcitx"; # Input method module for GTK4 applications
     };

@@ -175,7 +175,8 @@ in
   qt = {
     enable = true;
     platformTheme = {
-      name = "gtk";
+      # "gtk" now means the GTK2-based qtstyleplugins; gtk3 is Qt's native GTK3 theme. / "gtk" は GTK2 ベースの qtstyleplugins を指すようになったため、Qt 標準の GTK3 テーマを使う。
+      name = "gtk3";
     };
     style = {
       name = "adwaita-dark";

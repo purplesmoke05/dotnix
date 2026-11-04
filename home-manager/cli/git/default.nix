@@ -4,21 +4,24 @@
   # - Global Git configuration
   programs.git = {
     enable = true;
-    userName = "purplesmoke05";
-    userEmail = "yosuke.otosu@gmail.com";
-    aliases = {
-      st = "status";
-      co = "checkout";
-      gr = "grep";
-      df = "diff";
-      cm = "commit";
-      b = "branch";
-      rs = "reset";
-      rsh = "reset --hard HEAD";
-      ph = "push";
-      pl = "pull";
-    };
-    extraConfig = {
+    settings = {
+      user = {
+        name = "purplesmoke05";
+        email = "yosuke.otosu@gmail.com";
+      };
+      alias = {
+        st = "status";
+        co = "checkout";
+        gr = "grep";
+        df = "diff";
+        cm = "commit";
+        b = "branch";
+        rs = "reset";
+        rsh = "reset --hard HEAD";
+        ph = "push";
+        pl = "pull";
+      };
+
       ghq = {
         root = [
           "~/Projects"

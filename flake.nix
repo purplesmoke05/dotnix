@@ -23,11 +23,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    claude-desktop = {
-      url = "github:k3d3/claude-desktop-linux-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
     hyprpanel = {
       url = "github:Jas-SinghFSU/HyprPanel";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -38,10 +33,6 @@
     };
     hyprland = {
       url = "github:hyprwm/Hyprland/v0.52.1";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    zen-browser-flake = {
-      url = "github:MarceColl/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-darwin = {
@@ -66,7 +57,7 @@
 
   # Outputs / 出力定義
   # Collect systems, overlays, and Home Manager setups. / システム構成・オーバーレイ・Home Manager を束ねる。
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, claude-desktop, hyprland, hyprsplit, hyprpanel, zen-browser-flake, nix-darwin, brew-nix, sops-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, hyprland, hyprsplit, hyprpanel, nix-darwin, brew-nix, sops-nix, ... }@inputs:
     let
       # Python builders / Python ビルダー
       mkPythonBuilders = pkgs: {
@@ -179,76 +170,16 @@
               doCheck = !prev.stdenv.hostPlatform.isDarwin;
             });
 
-            # Security-patched scanner-visible runtime libraries. / スキャナで見えるランタイムライブラリのセキュリティ修正版。
-            openssl_3_6_patched = prev.openssl_3_6.overrideAttrs (_finalAttrs: _oldAttrs: {
-              version = "3.6.3";
-              src = builtins.fetchurl {
-                url = "https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz";
-                sha256 = "sha256-JDqGZJz28j7rai/yRW4J5dd92QGKVNPZawxr3Wumx/E=";
-              };
-            });
-
-            sqlite_3_53 = prev.sqlite.overrideAttrs (_finalAttrs: oldAttrs: {
-              version = "3.53.2";
-              src = prev.fetchurl {
-                url = "https://sqlite.org/2026/sqlite-src-3530200.zip";
-                hash = "sha256-yv/3ZMA/bXIJaPdG4vR6mGu/Er9MGJBPHrExwLC1ktM=";
-              };
-              docsrc = prev.fetchurl {
-                url = "https://sqlite.org/2026/sqlite-doc-3530200.zip";
-                hash = "sha256-MMVIiSbnKguVjWQ3fJHJdaNajxbShcu4PPrTH0r3HG0=";
-              };
-              postInstall = ''
-                mkdir -p $doc/share/doc
-                unzip $docsrc
-                mv sqlite-doc-3530200 $doc/share/doc/sqlite
-              '';
-              meta = oldAttrs.meta // {
-                changelog = "https://www.sqlite.org/releaselog/3_53_2.html";
-                identifiers.cpeParts = final.lib.meta.cpeFullVersionWithVendor "sqlite" "3.53.2";
-              };
-            });
-
-            libcap_2_78 = prev.libcap.overrideAttrs (_finalAttrs: _oldAttrs: {
-              version = "2.78";
-              src = prev.fetchurl {
-                url = "mirror://kernel/linux/libs/security/linux-privs/libcap2/libcap-2.78.tar.xz";
-                hash = "sha256-DWIeVi/ZMsz2e5Zg+wGORopoPXuCdUHfJ4EyKMmWuxE=";
-              };
-              patches = [ ];
-            });
-
-            ngtcp2_openssl_patched = prev.ngtcp2.override {
-              openssl = final.openssl_3_6_patched;
-            };
-
-            nghttp2_minimal = prev.nghttp2.override {
-              enableApp = false;
-              enableTests = false;
-              openssl = final.openssl_3_6_patched;
-            };
-
-            curl_openssl_patched = prev.curl.override {
+            # curl and git without the features nothing here uses, to keep runtime closures small. / ランタイム依存を小さくするため、使わない機能を外した curl と git。
+            curl_reduced = prev.curl.override {
               gssSupport = false;
               http3Support = false;
-              openssl = final.openssl_3_6_patched;
               scpSupport = false;
             };
 
-            gitMinimal_openssl_patched = prev.gitMinimal.override {
-              curl = final.curl_openssl_patched;
-              openssl = final.openssl_3_6_patched;
+            gitMinimal_curl_reduced = prev.gitMinimal.override {
+              curl = final.curl_reduced;
             };
-
-            openexr_3_4_12 = prev.openexr.overrideAttrs (_finalAttrs: _oldAttrs: {
-              version = "3.4.12";
-              src = prev.fetchFromGitHub {
-                owner = "AcademySoftwareFoundation";
-                repo = "openexr";
-                rev = "v3.4.12";
-                hash = "sha256-pFV3nDifZcZCINRbY+rSkACB5fYzfN+TQxyxAyw+JoY=";
-              };
-            });
 
             # OpenSSH patch applied across platforms. / OpenSSH に独自パッチを適用。
             openssh = prev.openssh.overrideAttrs (old: {
@@ -297,21 +228,14 @@
             gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
 
             # claude-code package / claude-code パッケージ
-            claude-code = final.callPackage ./pkgs/claude-code {
-              bubblewrap = prev.bubblewrap.override {
-                libcap = final.libcap_2_78;
-              };
-              socat = prev.socat.override {
-                openssl = final.openssl_3_6_patched;
-              };
-            };
+            claude-code = final.callPackage ./pkgs/claude-code { };
 
             # opencode package (pinned; built with nixpkgs-opencode for newer build deps) / opencode パッケージ
             opencode = (import inputs.nixpkgs-opencode { system = final.stdenv.hostPlatform.system; }).callPackage ./pkgs/opencode { };
 
             # rtk package / rtk パッケージ
             rtk = final.callPackage ./pkgs/rtk {
-              gitMinimal = final.gitMinimal_openssl_patched;
+              gitMinimal = final.gitMinimal_curl_reduced;
             };
 
             # Headroom launcher package / Headroom ランチャーパッケージ
@@ -405,7 +329,7 @@
             };
             ironbarGlibNetworking = prev.glib-networking.override {
               libproxy = prev.libproxy.override {
-                curl = final.curl_openssl_patched;
+                curl = final.curl_reduced;
               };
             };
             ironbarGtk4 = (prev.gtk4.override {
@@ -503,9 +427,9 @@
                 librsvg = ironbarLibrsvg;
               };
             }).overrideAttrs (oldAttrs: {
+              # The dropdown selection guard is upstream since 0.19.1 (IgnoreGuard). / ドロップダウン選択の保護は 0.19.1 で上流に入った（IgnoreGuard）。
               patches = (oldAttrs.patches or [ ]) ++ [
                 ./pkgs/ironbar/volume-default-sink-wrapper.patch
-                ./pkgs/ironbar/volume-dropdown-selection-guard.patch
               ];
               propagatedBuildInputs = [ ];
             });
@@ -520,18 +444,14 @@
 
 
             # Codex CLI (prebuilt) / Codex CLI（バイナリ）
-            codex = final.callPackage ./pkgs/codex {
-              libcap = final.libcap_2_78;
-              openssl = final.openssl_3_6_patched;
-            };
+            codex = final.callPackage ./pkgs/codex { };
 
             # Hazkey package / Hazkey パッケージ
             fcitx5-hazkey = final.callPackage ./pkgs/fcitx5-hazkey { };
 
-            # fcitx5-mozc with the paging-refresh fix from fcitx/mozc PR #74. / fcitx5-mozc のページ更新バグ修正（PR #74）。
+            # fcitx5-mozc that hides the candidate window when there are no candidates (the PR #74 paging fix is upstream now). / 候補がないときに候補ウィンドウを隠す fcitx5-mozc（PR #74 のページ更新修正は取り込み済み）。
             fcitx5-mozc = prev.fcitx5-mozc.overrideAttrs (old: {
               patches = (old.patches or [ ]) ++ [
-                ./pkgs/fcitx5-mozc/pr74-paging-refresh.patch
                 ./pkgs/fcitx5-mozc/hide-candidates-when-absent.patch
               ];
             });
@@ -547,6 +467,22 @@
             hints = final.callPackage ./pkgs/hints {
               python3Packages = final.python312Packages;
             };
+
+            # nixpkgs ships typepy 2.0 while these typepy users still require typepy<2, which breaks sbomnix (via df-diskcache and SimpleSQLite) for the vulnerability check. / nixpkgs の typepy 2.0 とこれらの typepy<2 指定が衝突し、脆弱性チェックの sbomnix（df-diskcache・SimpleSQLite 経由）がビルドできないため緩める。
+            pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+              (_pyFinal: pyPrev:
+                let
+                  relaxTypepy = pkg: pkg.overridePythonAttrs (old: {
+                    pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "typepy" ];
+                  });
+                in
+                {
+                  dataproperty = relaxTypepy pyPrev.dataproperty;
+                  simplesqlite = relaxTypepy pyPrev.simplesqlite;
+                  sqliteschema = relaxTypepy pyPrev.sqliteschema;
+                  tabledata = relaxTypepy pyPrev.tabledata;
+                })
+            ];
 
             python312Packages = prev.python312Packages.overrideScope (pyFinal: pyPrev: {
               mss = pyPrev.mss.overridePythonAttrs (_: {

@@ -136,7 +136,7 @@ let
     {
       name = "mate-backgrounds";
       prefix = "mate";
-      roots = [ "${pkgs.mate.mate-backgrounds}/share/backgrounds" ];
+      roots = [ "${pkgs.mate-backgrounds}/share/backgrounds" ];
     }
     {
       name = "fedora-f32";
