@@ -7,25 +7,25 @@
 }:
 
 let
-  version = "0.23.0";
+  version = "0.24.1";
 
   # Map Nix systems to Hunk release assets. / Nix system を Hunk の release asset に対応付ける。
   sources = {
     x86_64-linux = {
       asset = "hunkdiff-linux-x64.tar.gz";
-      hash = "sha256-eatkBsuyuADnPG+8JUavuX7U+8O1Cq0HLrmtEhUVgeY=";
+      hash = "sha256-S4yY+Nl3RUmZFsweHS8n/9JYxtY1jdRTL2HkHF6xlpI=";
     };
     aarch64-linux = {
       asset = "hunkdiff-linux-arm64.tar.gz";
-      hash = "sha256-W4korh6YeysXddH+Yu66vMCLn8mUAVTgzvJ9JJQct+Q=";
+      hash = "sha256-q0nIq6gsPJhy8cXu/ZbRxMJJHluAZH+XsugfxsRnbes=";
     };
     x86_64-darwin = {
       asset = "hunkdiff-darwin-x64.tar.gz";
-      hash = "sha256-FMUwJct7s6/WJztlgXq3oQArH46Usk46BU6VJk4WgOA=";
+      hash = "sha256-gBSz63OJx4dn3A9R6gf/JMdz+nzV1DKBHogbM1nZlIk=";
     };
     aarch64-darwin = {
       asset = "hunkdiff-darwin-arm64.tar.gz";
-      hash = "sha256-rkLP5SeYpPUdJfY864aFyipsswOaEk1qb8FyoRL41rg=";
+      hash = "sha256-X5r9Qdgl4vh5WLBwLneeUtOCB8C0LVMW7+VCGPNbTX0=";
     };
   };
 
