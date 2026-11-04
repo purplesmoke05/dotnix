@@ -6,13 +6,21 @@ let
     ''
       onboarding = false
 
+      # Create tabs unnamed so Auto Title can name them. / タブを無名で作成し、Auto Title に名前を付けさせる。
+      [ui]
+      prompt_new_tab_name = false
+
       [ui.sound]
       enabled = ${lib.boolToString soundEnabled}
+
+      # Ask the outer terminal to show done and needs-input notifications. / 完了・入力待ちの通知を外側の端末に表示させる。
+      [ui.toast]
+      delivery = "terminal"
 
       [advanced]
       scrollback_limit_bytes = 100000000
 
-      [experimental]
+      [terminal]
       kitty_graphics = true
 
       [ui.sidebar.agents]
@@ -51,10 +59,41 @@ let
       description = "reviewr: toggle pane"
 
       [[keys.command]]
-      key = "prefix+shift+b"
-      type = "shell"
-      command = "${pkgs.herdr}/bin/herdr plugin pane open --plugin official.browser --entrypoint browser --placement overlay --focus"
-      description = "browser: open overlay"
+      key = "prefix+a"
+      type = "plugin_action"
+      command = "annotate.capture"
+      description = "annotate: comment on selection"
+
+      [[keys.command]]
+      key = "prefix+shift+a"
+      type = "plugin_action"
+      command = "annotate.copy-context"
+      description = "annotate: copy annotations as context"
+
+      [[keys.command]]
+      key = "prefix+ctrl+s"
+      type = "plugin_action"
+      command = "annotate.send-archive"
+      description = "annotate: send annotations to agent"
+
+      # Keep prefix+m for memex. / prefix+m は memex 用に残す。
+      [[keys.command]]
+      key = "prefix+shift+m"
+      type = "plugin_action"
+      command = "annotate.manage"
+      description = "annotate: manage annotations"
+
+      [[keys.command]]
+      key = "prefix+d"
+      type = "plugin_action"
+      command = "annotate.open"
+      description = "annotate: review documents in this folder"
+
+      [[keys.command]]
+      key = "prefix+shift+o"
+      type = "plugin_action"
+      command = "annotate.last"
+      description = "annotate: review agent's last reply"
 
       [[keys.command]]
       key = "prefix+up"
@@ -85,24 +124,6 @@ let
       type = "plugin_action"
       command = "usagebar.refresh"
       description = "agent usage: refresh meters"
-
-      [[keys.command]]
-      key = "prefix+shift+g"
-      type = "plugin_action"
-      command = "worktrunk.open"
-      description = "worktrunk: switch or create from default branch"
-
-      [[keys.command]]
-      key = "prefix+shift+c"
-      type = "plugin_action"
-      command = "worktrunk.open-current"
-      description = "worktrunk: switch or create from current branch"
-
-      [[keys.command]]
-      key = "prefix+shift+d"
-      type = "plugin_action"
-      command = "worktrunk.remove"
-      description = "worktrunk: remove worktree"
     '';
   herdrProfiles = {
     default = herdrConfig { soundEnabled = true; };
@@ -113,13 +134,17 @@ let
   herdrActiveConfig = "${herdrStateDirectory}/config.toml";
   herdrPlugins = [
     pkgs.herdr-reviewr-plugin
-    pkgs.herdr-browser-plugin
+    pkgs.herdr-annotate-plugin
+    pkgs.herdr-auto-title-plugin
     pkgs.herdr-plus-plugin
     pkgs.herdr-memex-plugin
     pkgs.herdr-navigator-plugin
     pkgs.herdr-agent-usage-plugin
-    pkgs.herdr-worktrunk-plugin
   ];
+  # Generate the agent skill from the pinned Herdr so its commands match the CLI. / 固定した Herdr から agent skill を生成し、コマンドを CLI と揃える。
+  herdrSkill = pkgs.runCommand "herdr-skill.md" { } ''
+    HOME="$TMPDIR" ${pkgs.herdr}/bin/herdr --skill > "$out"
+  '';
   herdrSound = pkgs.writeShellApplication {
     name = "herdr-sound";
     runtimeInputs = [
@@ -240,10 +265,16 @@ in
       bladebro
     ];
 
-  # Load Bladebro through Pi's local stdio extension. / Pi のローカル stdio 拡張として Bladebro を読み込む。
-  home.file = lib.mkIf bladebroSupported {
-    ".pi/agent/extensions/bladebro.ts".source = "${pkgs.bladebro}/share/pi/extensions/bladebro.ts";
-  };
+  home.file = lib.mkMerge [
+    # Load Bladebro through Pi's local stdio extension. / Pi のローカル stdio 拡張として Bladebro を読み込む。
+    (lib.mkIf bladebroSupported {
+      ".pi/agent/extensions/bladebro.ts".source = "${pkgs.bladebro}/share/pi/extensions/bladebro.ts";
+    })
+    {
+      # Let Claude Code control Herdr when the user asks for it. / 頼まれたときに Claude Code が Herdr を操作できるようにする。
+      ".claude/skills/herdr/SKILL.md".source = herdrSkill;
+    }
+  ];
 
   # Protect persistent browser sessions, cookies, and artifacts. / 永続ブラウザセッション・Cookie・成果物を保護する。
   home.activation.ensureBladebroStateDirectory = lib.mkIf bladebroSupported (
@@ -293,11 +324,6 @@ in
         [notify]
         enabled = false
         remaining_thresholds = [50, 20, 10, 5]
-      '';
-      # Open Worktrunk checkouts as native Herdr worktree workspaces. / Worktrunk の checkout を Herdr ネイティブの worktree workspace として開く。
-      "herdr/plugins/config/worktrunk/config.toml".text = ''
-        open_mode = "workspace"
-        show_remote_branches = false
       '';
     };
 }
