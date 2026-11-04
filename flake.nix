@@ -290,7 +290,10 @@
             # excel-cli package / excel-cli パッケージ
             excel-cli = final.callPackage ./pkgs/excel-cli { };
             # Pinned OfficeCLI with local preview assets. / 描画資産も固定した OfficeCLI。
-            officecli = (import inputs.nixpkgs-officecli { system = final.stdenv.hostPlatform.system; }).callPackage ./pkgs/officecli { };
+            # Previews use the system Brave rather than an older one from the pinned officecli nixpkgs. / プレビューには、固定した officecli 用 nixpkgs の古い版ではなくシステムの Brave を使う。
+            officecli = (import inputs.nixpkgs-officecli { system = final.stdenv.hostPlatform.system; }).callPackage ./pkgs/officecli {
+              inherit (final) brave;
+            };
             # m365 package / m365 パッケージ
             m365 = final.callPackage ./pkgs/m365 { };
             # workiq package / workiq パッケージ
@@ -316,7 +319,7 @@
             # Apps whose file dialogs the portal denies until they stop inheriting the session
             # capabilities; see capDrop above. / セッション継承の権限を落とすまで、ポータルに
             # ファイルダイアログを拒否されるアプリ。詳細は上の capDrop を参照。
-            brave = capDrop [ "brave" ] prev.brave;
+            brave = capDrop [ "brave" ] (final.callPackage ./pkgs/brave { });
             vesktop = capDrop [ "vesktop" ] prev.vesktop;
             vscode = capDrop [ "code" ] prev.vscode;
             loupe = capDrop [ "loupe" ] prev.loupe;
@@ -790,6 +793,8 @@
           herdr-worktrunk-plugin = pkgs.herdr-worktrunk-plugin;
         } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.bladebro) {
           bladebro = pkgs.bladebro;
+        } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.brave) {
+          brave = pkgs.brave;
         } // pkgs.lib.optionalAttrs (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.orca-ide) {
           orca-ide = pkgs.orca-ide;
         };

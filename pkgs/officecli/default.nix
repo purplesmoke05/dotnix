@@ -6,18 +6,19 @@
 , buildNpmPackage
 , esbuild
 , python3
-, chromium
+, brave
 , writeShellScript
 , coreutils
 , darwinBrowser ? "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
 }:
 
 let
-  browser = writeShellScript "officecli-chromium" ''
+  # Brave on every platform, so no separate Chromium is installed for previews.
+  browser = writeShellScript "officecli-browser" ''
     set -euo pipefail
     officecli_browser_profile=$(${lib.getExe' coreutils "mktemp"} -d "''${TMPDIR:-/tmp}/officecli-browser.XXXXXX")
     trap '${lib.getExe' coreutils "rm"} -rf -- "$officecli_browser_profile"' EXIT
-    ${if stdenv.hostPlatform.isDarwin then lib.escapeShellArg darwinBrowser else lib.getExe chromium} \
+    ${if stdenv.hostPlatform.isDarwin then lib.escapeShellArg darwinBrowser else lib.getExe brave} \
       --user-data-dir="$officecli_browser_profile" \
       --no-first-run --no-default-browser-check --disable-background-networking "$@"
   '';
