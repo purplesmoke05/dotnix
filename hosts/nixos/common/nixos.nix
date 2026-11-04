@@ -331,11 +331,8 @@ in
   # Keep speech synthesis disabled unless a screen reader stack is configured. / スクリーンリーダースタック未構成時は音声合成を無効化。
   services.speechd.enable = false;
 
-  # Shell & audio tools / シェルとオーディオ支援ツール
-  programs = {
-    noisetorch.enable = true;
-    fish.enable = true;
-  };
+  # Shell / シェル
+  programs.fish.enable = true;
 
   # Virtualization & Containers / 仮想化とコンテナ
   # Podman for OCI services, rootless Docker for CLI use, Flatpak for GUI apps.
@@ -367,10 +364,6 @@ in
   environment.systemPackages = with pkgs; [
     git
     mosh
-    alacritty
-    waybar
-    wofi
-    swww
     grim
     slurp
     wl-clipboard
@@ -415,7 +408,6 @@ in
     zlib.dev
     direnv
     tailscale
-    sui
     dnsmasq
     # Gaming diagnostics / ゲーム用診断ツール
     evtest

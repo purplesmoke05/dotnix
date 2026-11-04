@@ -10,15 +10,12 @@
     ./editor/vscode/default.nix
     ./chat/discord.nix
     ./game/steam.nix
-    ./music
     ./streamcontroller.nix
   ];
 
   # Additional GUI applications. / 追加の GUI アプリケーション。
   home.packages = with pkgs; [
     loupe
-    onlyoffice-desktopeditors
-    orca-ide
     streamcontroller
     streamcontroller-hypr
   ];

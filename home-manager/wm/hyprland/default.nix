@@ -45,8 +45,6 @@ in
     wireplumber
 
     # System helpers / システム補助
-    swww
-    wayvnc
     wev
     polkit
     hyprpolkitagent

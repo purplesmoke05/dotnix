@@ -288,9 +288,6 @@
             # Keep Slither on Python 3.13 because py-evm does not support Python 3.14. / py-evm が Python 3.14 非対応のため Slither は Python 3.13 を使用。
             slither-analyzer = final.python313Packages.slither-analyzer;
 
-            # sui package / sui パッケージ
-            sui = final.callPackage ./pkgs/sui { };
-
             # StreamController package override with local patches. / ローカルパッチ適用版 StreamController。
             streamcontroller = capDrop [ "streamcontroller" ] (prev.streamcontroller.overrideAttrs (old: {
               nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.perl ];

@@ -23,8 +23,8 @@
     nodejs_24
     zig
     uv
+    python3
     sqlite
-    volta
     codex
     opencode
     confluence-cli
@@ -32,7 +32,6 @@
     claude-code
     rtk
     devbox
-    ctop
     iftop
     btop
     radeontop
@@ -41,17 +40,12 @@
     wl-clipboard
     killall
     ripgrep
-    foundry
-    solc
-    slither-analyzer
     libpq
     libpq.pg_config
     pkg-config
   ];
 
-  # Environment variables for Volta
   home.sessionVariables = {
-    VOLTA_HOME = "$HOME/.volta";
     PG_CONFIG = "${pkgs.libpq}/bin/pg_config";
     LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libpq ]}:$LD_LIBRARY_PATH";
     # Enable opencode experimental background subagents (Task tool background mode).

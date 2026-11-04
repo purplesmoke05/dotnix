@@ -15,7 +15,6 @@
       eza
       fd
       fzf
-      glow
       ouch
       rich-cli
       ripgrep
@@ -58,25 +57,5 @@
         { mime = "application/{*zip,tar,bzip2,7z*,rar,xz,zstd,java-archive}"; run = "ouch --show-file-icons"; }
       ];
     };
-  };
-
-  programs.superfile = {
-    enable = true;
-    firstUseCheck = false;
-    settings = {
-      metadata = true;
-      zoxide_support = true;
-      show_image_preview = true;
-    };
-    pinnedFolders = [
-      {
-        name = "Nix config";
-        location = "/home/purplehaze/.nix";
-      }
-      {
-        name = "Home";
-        location = "/home/purplehaze";
-      }
-    ];
   };
 }

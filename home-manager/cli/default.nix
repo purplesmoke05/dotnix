@@ -5,13 +5,11 @@
   # - Starship shell prompt
   imports = [
     ./git/default.nix
-    ./terminal/alacritty.nix
     ./terminal/starship.nix
     ./terminal/ghostty.nix
     ./terminal/launcher.nix
     ./terminal/fish.nix
     ./terminal/carapace.nix
-    ./terminal/nushell.nix
     ./file-manager.nix
     ./alternative.nix
   ];
