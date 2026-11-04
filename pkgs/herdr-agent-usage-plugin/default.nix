@@ -10,25 +10,25 @@
 }:
 
 let
-  version = "0.5.8";
+  version = "0.5.23";
 
   # Map Nix systems to Agent Usage release assets. / Nix system を Agent Usage の release asset に対応付ける。
   sources = {
     x86_64-linux = {
       asset = "usagebar-linux-amd64";
-      hash = "sha256-GZUb2qCs0Fhy8jurSSafJ4WnQoIVeL51LP3F9NL7Z/E=";
+      hash = "sha256-kED+ILKDDCBtR+gHSvmzHNGZiDQQKrALpVeyM4PN/jU=";
     };
     aarch64-linux = {
       asset = "usagebar-linux-arm64";
-      hash = "sha256-eqq1DDo9HHrwQkwAWkVY0CXD5Rtb+lS3yEQXi5GKt5w=";
+      hash = "sha256-fKMnsZxDmUNGdi53kEh8PoPrYpjtZQkHYi8cTlr/rTo=";
     };
     x86_64-darwin = {
       asset = "usagebar-darwin-amd64";
-      hash = "sha256-dELxO7CR3gBZggEmrgX4iUDqqSIfHBTRGe7pOlJkr4Y=";
+      hash = "sha256-U/1x8Yu+uHJsWAeN1kIYM0yzhQ5YiRGdLa23pkGX2uo=";
     };
     aarch64-darwin = {
       asset = "usagebar-darwin-arm64";
-      hash = "sha256-l7wAqRWtkOGEIi87JhPCw+pHeslFmLa9jEgNb3Ayj0Y=";
+      hash = "sha256-45pwlwBY3DOmS70bTkJSo1Uln+s+qrnLIOfZMYaGQ/Q=";
     };
   };
 
@@ -48,7 +48,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     owner = "senna-lang";
     repo = "herdr-agent-usage";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-OnjfsMsReW4g0jiY00WVrYiKXCJfRBrsQxLgpL9bV54=";
+    hash = "sha256-q3KuB11K/8xwcUIcvhX/bhlbdt3invPqHERBLcEjJhk=";
   };
 
   usagebarBinary = fetchurl {
