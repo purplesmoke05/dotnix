@@ -37,7 +37,6 @@ in
     # Input & clipboard / 入力とクリップボード
     bemoji
     wl-clipboard
-    cliphist
 
     # Audio & media / オーディオとメディア
     pamixer

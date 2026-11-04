@@ -75,15 +75,9 @@
 
   # GitHub CLI configuration
   # - Command-line interface for GitHub
-  # - Markdown preview extension for documentation
   # - Using Neovim as default editor
   programs.gh = {
     enable = true;
-    extensions = with pkgs; [
-      gh-markdown-preview
-      gh-iteration
-      gh-stack
-    ];
     settings = {
       editor = "nvim";
     };

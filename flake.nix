@@ -224,8 +224,21 @@
               fcitx5-with-addons = final.qt6Packages.fcitx5-with-addons;
             };
 
-            # gh-iteration package / gh-iteration パッケージ
-            gh-iteration = final.callPackage ./pkgs/gh-iteration { inherit (final) testers; };
+            # ghq 1.12.0 has the x/net fixes. Follows nixpkgs once it catches up. / x/net の修正は 1.12.0 から。nixpkgs が追いつけばそちらを使う。
+            ghq =
+              if final.lib.versionAtLeast prev.ghq.version "1.12.0" then
+                prev.ghq
+              else
+                prev.ghq.overrideAttrs (_: {
+                  version = "1.12.0";
+                  src = final.fetchFromGitHub {
+                    owner = "x-motemen";
+                    repo = "ghq";
+                    tag = "v1.12.0";
+                    hash = "sha256-UrxfWZw9TBQUuTfhp2IVfVxnFvGF1GIRfP87mkND/1Q=";
+                  };
+                  vendorHash = "sha256-FvMqeUfX4c2Vm+L2GIDGoxN3w+7UyNI0VRada0zSvcc=";
+                });
 
             # claude-code package / claude-code パッケージ
             claude-code = final.callPackage ./pkgs/claude-code { };
