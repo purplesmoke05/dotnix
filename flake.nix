@@ -476,6 +476,13 @@
               ];
             });
 
+            # Ghostty that keeps drawing when Hyprland before 0.55 leaves a visible window suspended. / Hyprland 0.55 未満が表示中のウィンドウを suspended のまま残しても描画を止めない Ghostty。
+            ghostty = prev.ghostty.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                ./pkgs/ghostty/ignore-suspended.patch
+              ];
+            });
+
             # hints package (NixOS only) / hints パッケージ（NixOS 限定）
             hints = final.callPackage ./pkgs/hints {
               python3Packages = final.python312Packages;
