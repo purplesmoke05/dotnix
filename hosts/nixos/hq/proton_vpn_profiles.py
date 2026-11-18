@@ -149,7 +149,7 @@ def _parse_endpoint(value: str, profile_name: str) -> tuple[str, int]:
     return str(address), port
 
 
-def _parse_config(text: str, profile_name: str) -> tuple[str, int]:
+def _parse_sections(text: str, profile_name: str) -> tuple[dict[str, str], dict[str, str]]:
     sections: dict[str, dict[str, str]] = {}
     current: str | None = None
     for raw_line in text.splitlines():
@@ -183,9 +183,11 @@ def _parse_config(text: str, profile_name: str) -> tuple[str, int]:
 
     if set(sections) != {"Interface", "Peer"}:
         raise _invalid(profile_name, "exactly one Interface and Peer are required") from None
+    return sections["Interface"], sections["Peer"]
 
-    interface = sections["Interface"]
-    peer = sections["Peer"]
+
+def _parse_config(text: str, profile_name: str) -> tuple[str, int]:
+    interface, peer = _parse_sections(text, profile_name)
     for key in ("privatekey", "address"):
         if key not in interface:
             raise _invalid(profile_name, f"missing {_INTERFACE_KEYS[key]}") from None
@@ -256,6 +258,27 @@ def read_profile(path: Path, name: str) -> Profile:
     text = _read_profile(source, name)
     endpoint_host, endpoint_port = _parse_config(text, name)
     return Profile(name, source, endpoint_host, endpoint_port, text)
+
+
+_FWMARK = re.compile(r"0x[0-9a-fA-F]{1,8}|[0-9]{1,10}")
+
+
+@dataclass(frozen=True)
+class ProbeTunnel:
+    addresses: tuple[str, ...]
+    setconf: str = field(repr=False)
+
+
+def probe_tunnel(profile: Profile, fwmark: str) -> ProbeTunnel:
+    """Build `wg setconf` input and addresses for a short-lived tunnel to one profile's server."""
+
+    if not _FWMARK.fullmatch(fwmark):
+        raise ConfigError("probe tunnel needs a numeric fwmark")
+    _parse_config(profile.text, profile.name)
+    interface, peer = _parse_sections(profile.text, profile.name)
+    lines = ["[Interface]", f"PrivateKey = {interface['privatekey']}", f"FwMark = {fwmark}", "", "[Peer]"]
+    lines += [f"{label} = {peer[key]}" for key, label in _PEER_KEYS.items() if key in peer]
+    return ProbeTunnel(tuple(_split_values(interface["address"])), "\n".join(lines) + "\n")
 
 
 class ProfileStore:
@@ -439,21 +462,34 @@ def _load_runtime_profile(runtime_config: Path) -> Profile:
 def apply_endpoint_sets(
     runtime_config: Path,
     *,
+    extra: Sequence[Profile] = (),
     run: Callable[..., object] = subprocess.run,
 ) -> None:
     """Update both killswitch endpoint sets in one nft transaction."""
 
-    profile = _load_runtime_profile(Path(runtime_config))
-    address = ipaddress.ip_address(profile.endpoint_host)
-    family = "proton_vpn4_endpoints" if address.version == 4 else "proton_vpn6_endpoints"
-    payload = "\n".join(
-        (
-            "flush set inet proton-killswitch proton_vpn4_endpoints",
-            "flush set inet proton-killswitch proton_vpn6_endpoints",
-            f"add element inet proton-killswitch {family} {{ {address} . {profile.endpoint_port} }}",
-        )
-    ) + "\n"
-    run(["nft", "-f", "-"], input=payload, text=True, check=True)
+    elements: dict[str, list[str]] = {"proton_vpn4_endpoints": [], "proton_vpn6_endpoints": []}
+    for profile in (_load_runtime_profile(Path(runtime_config)), *extra):
+        address = ipaddress.ip_address(profile.endpoint_host)
+        family = "proton_vpn4_endpoints" if address.version == 4 else "proton_vpn6_endpoints"
+        element = f"{address} . {profile.endpoint_port}"
+        if element not in elements[family]:
+            elements[family].append(element)
+    lines = [f"flush set inet proton-killswitch {family}" for family in elements]
+    lines += [
+        f"add element inet proton-killswitch {family} {{ {', '.join(items)} }}"
+        for family, items in elements.items()
+        if items
+    ]
+    run(["nft", "-f", "-"], input="\n".join(lines) + "\n", text=True, check=True)
+
+
+def _probe_endpoints(state_dir: Path) -> tuple[Profile, ...]:
+    # While a backup is active, the health check reaches the primary server directly. / バックアップ使用中は、ヘルスチェックが primary のサーバーへ直接つないで確かめる。
+    try:
+        return (read_profile(Path(state_dir) / PRIMARY_CONFIG_NAME, "primary"),)
+    except ConfigError as error:
+        print(f"warning: the primary endpoint stays closed to probes: {error}", file=sys.stderr)
+        return ()
 
 
 def _endpoint_text(profile: Profile) -> str:
@@ -493,7 +529,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             prepare(ProfileStore(arguments.state_dir), arguments.runtime_config)
             return 0
         if arguments.command == "endpoints":
-            apply_endpoint_sets(arguments.runtime_config)
+            apply_endpoint_sets(arguments.runtime_config, extra=_probe_endpoints(arguments.state_dir))
             return 0
     except ConfigError as error:
         print(f"error: {error}", file=sys.stderr)

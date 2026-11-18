@@ -267,6 +267,48 @@ class ProfileStoreTests(unittest.TestCase):
         self.assertNotIn("PrivateKey", repr(profile))
         self.assertEqual(profile.text, path.read_text())
 
+    def test_probe_tunnel_keeps_only_wg_settings_and_marks_its_packets(self):
+        profile = profiles.read_profile(self.write("proton0.conf", config("198.51.100.10:51820")), "primary")
+
+        tunnel = profiles.probe_tunnel(profile, "0xca6c")
+
+        self.assertEqual(tunnel.addresses, ("10.2.0.2/32", "2a07:b944::2:2/128"))
+        self.assertEqual(
+            tunnel.setconf,
+            "[Interface]\n"
+            f"PrivateKey = {PRIVATE_KEY}\n"
+            "FwMark = 0xca6c\n"
+            "\n"
+            "[Peer]\n"
+            f"PublicKey = {PUBLIC_KEY}\n"
+            f"PresharedKey = {PRESHARED_KEY}\n"
+            "AllowedIPs = 0.0.0.0/0, ::/0\n"
+            "Endpoint = 198.51.100.10:51820\n"
+            "PersistentKeepalive = 25\n",
+        )
+        self.assertNotIn(PRIVATE_KEY, repr(tunnel))
+
+    def test_probe_tunnel_rejects_a_missing_or_unsafe_fwmark(self):
+        profile = profiles.read_profile(self.write("proton0.conf", config("198.51.100.10:51820")), "primary")
+
+        for fwmark in ("", "off", "0xca6c\nPostUp = id", "-1"):
+            with self.subTest(fwmark=fwmark), self.assertRaisesRegex(profiles.ConfigError, "fwmark"):
+                profiles.probe_tunnel(profile, fwmark)
+
+    def test_endpoint_sets_also_allow_extra_profiles_once(self):
+        runtime = self.write("runtime.conf", config("198.51.100.11:51820", dns=False))
+        primary = profiles.read_profile(self.write("proton0.conf", config("198.51.100.10:51820")), "primary")
+        run = Mock()
+
+        profiles.apply_endpoint_sets(runtime, extra=(primary, profiles.read_profile(runtime, "same")), run=run)
+
+        payload = run.call_args.kwargs["input"]
+        self.assertIn(
+            "add element inet proton-killswitch proton_vpn4_endpoints { 198.51.100.11 . 51820, 198.51.100.10 . 51820 }",
+            payload,
+        )
+        self.assertNotIn("proton_vpn6_endpoints {", payload)
+
 
 class CommandTests(unittest.TestCase):
     def setUp(self):
@@ -298,6 +340,38 @@ class CommandTests(unittest.TestCase):
         self.assertIn("primary 198.51.100.10:51820", output.getvalue())
         self.assertIn("backup 198.51.100.11:51820", output.getvalue())
         self.assertIn("count 2", output.getvalue())
+
+    def write_runtime(self):
+        runtime = self.root / "runtime.conf"
+        runtime.write_text(config("198.51.100.11:51820", dns=False))
+        runtime.chmod(0o600)
+        return runtime
+
+    def test_endpoints_command_also_allows_the_primary_endpoint(self):
+        runtime = self.write_runtime()
+
+        with patch.object(profiles, "apply_endpoint_sets") as apply:
+            status = profiles.main(["--state-dir", str(self.root), "--runtime-config", str(runtime), "endpoints"])
+
+        self.assertEqual(status, 0)
+        self.assertEqual(apply.call_args.args, (runtime,))
+        self.assertEqual(
+            [(profile.name, profile.endpoint_host, profile.endpoint_port) for profile in apply.call_args.kwargs["extra"]],
+            [("primary", "198.51.100.10", 51820)],
+        )
+
+    def test_endpoints_command_keeps_the_runtime_endpoint_when_primary_is_unreadable(self):
+        runtime = self.write_runtime()
+        (self.root / "proton0.conf").chmod(0o644)
+        errors = io.StringIO()
+
+        with patch.object(profiles, "apply_endpoint_sets") as apply, contextlib.redirect_stderr(errors):
+            status = profiles.main(["--state-dir", str(self.root), "--runtime-config", str(runtime), "endpoints"])
+
+        self.assertEqual(status, 0)
+        self.assertEqual(apply.call_args.kwargs["extra"], ())
+        self.assertIn("warning: the primary endpoint stays closed to probes", errors.getvalue())
+        self.assertNotIn(PRIVATE_KEY, errors.getvalue())
 
 
 if __name__ == "__main__":

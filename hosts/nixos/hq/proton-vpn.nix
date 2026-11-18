@@ -342,7 +342,7 @@ in
     };
 
     systemd.services.proton-vpn-healthcheck = lib.mkIf cfg.autoRecover.enable {
-      description = "Check Proton VPN connectivity and rotate saved profiles on failure";
+      description = "Check Proton VPN connectivity, rotate saved profiles on failure, and fail back to the primary";
       after = [ "wg-quick-${protonVpn.interfaceName}.service" ];
       path = [ pkgs.systemd pkgs.wireguard-tools pkgs.iproute2 pkgs.nftables ];
       serviceConfig = {
@@ -351,7 +351,8 @@ in
         RuntimeDirectoryMode = "0700";
         RuntimeDirectoryPreserve = true;
         UMask = "0077";
-        TimeoutStartSec = 120;
+        # The primary probe retries for 30 s and its last attempt may take 60 s, so it can add about 90 s to a run. / primary の確認は 30 秒やり直し、最後の 1 回に最大 60 秒かかるため、1 回の実行が最大 90 秒ほど延びる。
+        TimeoutStartSec = 180;
         ExecStart = "${pkgs.python3}/bin/python3 ${protonScripts}/proton-vpn-healthcheck.py --interface ${protonVpn.interfaceName} --state-file /run/proton-vpn-healthcheck/state.json --profiles-dir ${protonVpn.stateDir}";
       };
     };

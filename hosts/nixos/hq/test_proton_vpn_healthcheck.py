@@ -1,3 +1,4 @@
+import base64
 import contextlib
 from collections import deque
 import errno
@@ -90,7 +91,7 @@ class RecoveryTests(unittest.TestCase):
         # Keep expected failure diagnostics out of the test report.
         self.enterContext(contextlib.redirect_stdout(self.output))
 
-    def tick(self, reachable, now, *, profiles=None, callback=None, status=None):
+    def tick(self, reachable, now, *, profiles=None, callback=None, status=None, primary=False, primary_check=None):
         if status is not None:
             self.runner.queue_status(status)
         callback = callback or Mock(return_value=reachable)
@@ -101,6 +102,7 @@ class RecoveryTests(unittest.TestCase):
             run=self.runner,
             check=callback,
             clock=lambda: now,
+            primary_check=primary_check or Mock(return_value=(primary, "test probe")),
         )
         return callback
 
@@ -350,12 +352,341 @@ class RecoveryTests(unittest.TestCase):
 
         self.assertEqual(state, health.State("old", 2, 12.5, (), None))
 
+    def fail_over(self, profiles, start):
+        for now in (start, start + 30, start + 60):
+            self.tick(False, now, profiles=profiles)
+
+    def stay_healthy(self, profiles, start, end, *, primary=True):
+        for now in range(start, end + 1, 30):
+            self.tick(True, now, profiles=profiles, primary=primary)
+
+    def test_backup_fails_back_once_primary_stays_healthy(self):
+        profiles = FakeProfileStore(("first", "second"))
+        self.fail_over(profiles, 100)
+        self.tick(True, 190, profiles=profiles, status=("active", "second"), primary=True)
+        due = 190 + health.FAILBACK_AFTER
+        self.stay_healthy(profiles, 220, due - 30)
+        self.assertEqual(profiles.selections, ["second"])
+
+        self.tick(True, due, profiles=profiles, primary=True)
+
+        self.assertEqual(profiles.selections, ["second", "first"])
+        self.assertEqual(len(self.runner.restarts()), 2)
+        state = health.read_state(self.path)
+        self.assertEqual(state.pending_profile, "first")
+        self.assertEqual(state.failback_from, "second")
+        output = self.output.getvalue()
+        self.assertIn("first is reachable through the probe tunnel", output)
+        self.assertIn("failback queued: wg-quick-proton0.service; profile=second -> first", output)
+
+    def test_failed_primary_probe_restarts_the_healthy_period(self):
+        profiles = FakeProfileStore(("first", "second"))
+        profiles.current_name = "second"
+        self.stay_healthy(profiles, 100, 400)
+        self.tick(True, 430, profiles=profiles, primary=False)
+        self.assertIn("first probe failed; staying on second: test probe", self.output.getvalue())
+        self.stay_healthy(profiles, 460, 460 + health.FAILBACK_AFTER - 30)
+        self.assertEqual(profiles.selections, [])
+
+        self.tick(True, 460 + health.FAILBACK_AFTER, profiles=profiles, primary=True)
+
+        self.assertEqual(profiles.selections, ["first"])
+
+    def test_primary_probe_failure_is_logged_when_a_streak_starts(self):
+        profiles = FakeProfileStore(("first", "second"))
+        profiles.current_name = "second"
+        message = "first probe failed; staying on second: test probe"
+        for now in (100, 130, 160):
+            self.tick(True, now, profiles=profiles, primary=False)
+        self.assertEqual(self.output.getvalue().count(message), 1)
+
+        self.tick(True, 190, profiles=profiles, primary=True)
+        self.tick(True, 220, profiles=profiles, primary=False)
+        self.assertEqual(self.output.getvalue().count(message), 2)
+
+        self.tick(True, 220 + health.PRIMARY_PROBE_GAP + 1, profiles=profiles, primary=False)
+        self.assertEqual(self.output.getvalue().count(message), 3)
+
+    def test_long_gap_between_primary_probes_restarts_the_healthy_period(self):
+        profiles = FakeProfileStore(("first", "second"))
+        profiles.current_name = "second"
+        self.tick(True, 100, profiles=profiles, primary=True)
+        resumed = 100 + health.PRIMARY_PROBE_GAP + 1
+
+        self.tick(True, resumed, profiles=profiles, primary=True)
+
+        self.assertEqual(health.read_state(self.path).primary_healthy_since, resumed)
+
+    def test_failed_failback_returns_to_last_healthy_backup_and_doubles_the_period(self):
+        profiles = FakeProfileStore(("first", "second", "third"))
+        self.fail_over(profiles, 100)
+        self.runner.queue_status(("active", "second"))
+        self.fail_over(profiles, 190)
+        self.tick(True, 280, profiles=profiles, status=("active", "third"), primary=True)
+        due = 280 + health.FAILBACK_AFTER
+        self.stay_healthy(profiles, 310, due)
+        self.assertEqual(profiles.current_name, "first")
+
+        self.runner.queue_status(("active", "first-again"))
+        self.fail_over(profiles, due + 30)
+
+        self.assertEqual(profiles.selections, ["second", "third", "first", "third"])
+        state = health.read_state(self.path)
+        self.assertEqual(state.failback_after, 2 * health.FAILBACK_AFTER)
+        self.assertIsNone(state.failback_from)
+
+    def test_failback_period_is_capped(self):
+        profiles = FakeProfileStore(("first", "second"))
+        self.path.write_text(
+            '{"invocation_id":"first","failures":2,"last_restart":null,'
+            f'"failback_after":{health.FAILBACK_AFTER_MAX},"last_failback":90}}'
+        )
+
+        self.tick(False, 100, profiles=profiles)
+
+        self.assertEqual(health.read_state(self.path).failback_after, health.FAILBACK_AFTER_MAX)
+
+    def test_primary_that_stays_healthy_resets_the_period(self):
+        profiles = FakeProfileStore(("first", "second"))
+        self.fail_over(profiles, 100)
+        self.tick(True, 190, profiles=profiles, status=("active", "second"), primary=True)
+        due = 190 + health.FAILBACK_AFTER
+        self.stay_healthy(profiles, 220, due)
+        self.tick(True, due + 30, profiles=profiles, status=("active", "first-again"))
+
+        later = due + health.FAILBACK_STABLE
+        self.fail_over(profiles, later)
+
+        self.assertEqual(profiles.current_name, "second")
+        self.assertEqual(health.read_state(self.path).failback_after, health.FAILBACK_AFTER)
+
+    def test_active_primary_is_not_probed_through_a_second_tunnel(self):
+        primary_check = Mock(side_effect=AssertionError("the active primary must not be probed again"))
+
+        self.tick(True, 100, primary_check=primary_check)
+
+        primary_check.assert_not_called()
+
+    def test_unhealthy_backup_skips_the_primary_probe_and_restarts_the_period(self):
+        profiles = FakeProfileStore(("first", "second"))
+        profiles.current_name = "second"
+        self.tick(True, 100, profiles=profiles, primary=True)
+        primary_check = Mock(side_effect=AssertionError("primary must not be probed while the backup fails"))
+
+        self.tick(False, 130, profiles=profiles, primary_check=primary_check)
+
+        primary_check.assert_not_called()
+        self.assertIsNone(health.read_state(self.path).primary_healthy_since)
+
+    def test_unit_change_during_the_check_cancels_failback(self):
+        profiles = FakeProfileStore(("first", "second"))
+        profiles.current_name = "second"
+        self.path.write_text(
+            '{"invocation_id":"first","failures":0,"last_restart":null,'
+            '"primary_healthy_since":100,"primary_checked_at":680}'
+        )
+        self.runner.queue_status(("active", "first"), ("active", "manual-restart"))
+
+        self.tick(True, 100 + health.FAILBACK_AFTER, profiles=profiles, primary=True)
+
+        self.assertEqual(self.runner.restarts(), [])
+        self.assertEqual(profiles.current_name, "second")
+
+    def test_inactive_vpn_clears_failback_state(self):
+        self.path.write_text(
+            '{"invocation_id":"old","failures":0,"last_restart":null,"failback_from":"second",'
+            '"primary_healthy_since":50,"primary_checked_at":60}'
+        )
+        self.runner.queue_status(("inactive", ""))
+
+        self.tick(True, 100)
+
+        state = health.read_state(self.path)
+        self.assertIsNone(state.failback_from)
+        self.assertIsNone(state.primary_healthy_since)
+        self.assertIsNone(state.primary_checked_at)
+
     def test_recovery_logs_do_not_expose_profile_secret_fields(self):
         profiles = FakeProfileStore(("only",))
         for now in (100, 130, 160):
             self.tick(False, now, profiles=profiles)
 
         self.assertNotIn("TOP-SECRET-PRIVATE-KEY", self.output.getvalue())
+
+
+PROBE_PRIVATE_KEY = base64.b64encode(bytes([9]) * 32).decode()
+PRIMARY = sys.modules["proton_vpn_profiles"].Profile(
+    "primary",
+    Path("/var/lib/proton-vpn/proton0.conf"),
+    "198.51.100.10",
+    51820,
+    "[Interface]\n"
+    f"PrivateKey = {PROBE_PRIVATE_KEY}\n"
+    "Address = 10.2.0.2/32, 2a07:b944::2:2/128\n"
+    "DNS = 10.2.0.1\n"
+    "[Peer]\n"
+    f"PublicKey = {base64.b64encode(bytes([8]) * 32).decode()}\n"
+    "AllowedIPs = 0.0.0.0/0, ::/0\n"
+    "Endpoint = 198.51.100.10:51820\n",
+)
+
+
+class PrimaryPathRunner:
+    def __init__(self, *, fwmark="0xca6c", probe_exits=(0,), fail=None):
+        self.fwmark = fwmark
+        # The last exit code repeats once the sequence runs out.
+        self.probe_exits = list(probe_exits)
+        self.fail = fail
+        self.calls = []
+
+    def __call__(self, command, **kwargs):
+        self.calls.append((list(command), kwargs.get("input")))
+        if command[:2] == ["wg", "show"]:
+            return subprocess.CompletedProcess(command, 0, f"{self.fwmark}\n", "")
+        if self.fail is not None and command[: len(self.fail)] == self.fail and kwargs.get("check"):
+            raise subprocess.CalledProcessError(1, command, "", f"Line unrecognized: `PrivateKey = {PROBE_PRIVATE_KEY}`")
+        if command[:3] == ["ip", "netns", "exec"]:
+            exit_code = self.probe_exits.pop(0) if len(self.probe_exits) > 1 else self.probe_exits[0]
+            if exit_code == 0:
+                return subprocess.CompletedProcess(command, 0, f"{health.PROBE_INTERFACE}: reachable\n", "")
+            output = (f"probe failed: {health.PROBE_INTERFACE} -> 1.1.1.1:443: EOF occurred in violation of protocol\n"
+                      f"{health.PROBE_INTERFACE}: unreachable\n")
+            return subprocess.CompletedProcess(command, exit_code, output, "")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    def commands(self):
+        return [command for command, _ in self.calls]
+
+    def probes(self):
+        return [command for command in self.commands() if command[:3] == ["ip", "netns", "exec"]]
+
+
+class FakeClock:
+    """A monotonic clock that only moves when the code under test sleeps."""
+
+    def __init__(self, now=1000.0):
+        self.now = now
+        self.sleeps = []
+
+    def __call__(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+class PrimaryPathTests(unittest.TestCase):
+    def setUp(self):
+        self.output = io.StringIO()
+        self.enterContext(contextlib.redirect_stdout(self.output))
+
+    def test_probe_tunnel_runs_in_its_own_namespace_and_is_removed(self):
+        runner = PrimaryPathRunner()
+
+        reachable, detail = health.primary_path_reachable(PRIMARY, "proton0", run=runner)
+
+        self.assertTrue(reachable)
+        self.assertEqual(detail, "pvpn-probe0: reachable")
+        namespace, interface = health.PROBE_NAMESPACE, health.PROBE_INTERFACE
+        cleanup = [["ip", "netns", "delete", namespace], ["ip", "link", "delete", interface]]
+        setup = [
+            ["ip", "netns", "add", namespace],
+            ["ip", "link", "add", interface, "type", "wireguard"],
+            ["wg", "setconf", interface, "/dev/stdin"],
+            ["ip", "link", "set", interface, "netns", namespace],
+            ["ip", "-n", namespace, "address", "add", "10.2.0.2/32", "dev", interface],
+            ["ip", "-n", namespace, "address", "add", "2a07:b944::2:2/128", "dev", interface],
+            ["ip", "-n", namespace, "link", "set", "lo", "up"],
+            ["ip", "-n", namespace, "link", "set", interface, "up"],
+            ["ip", "-n", namespace, "-4", "route", "add", "default", "dev", interface],
+            ["ip", "-n", namespace, "-6", "route", "add", "default", "dev", interface],
+        ]
+        allow = ["nft", "add", "element", "inet", "proton-killswitch", "proton_vpn4_endpoints",
+                 "{ 198.51.100.10 . 51820 }"]
+        commands = runner.commands()
+        self.assertEqual(commands[:4], [["wg", "show", "proton0", "fwmark"], *cleanup, allow])
+        self.assertEqual(commands[4:4 + len(setup)], setup)
+        probe = commands[4 + len(setup)]
+        self.assertEqual(probe[:4], ["ip", "netns", "exec", namespace])
+        self.assertEqual(probe[-5:], ["--check-only", "--interface", interface, "--dns-server", "10.2.0.1"])
+        self.assertEqual(commands[-2:], cleanup)
+        setconf = next(stdin for command, stdin in runner.calls if command[:2] == ["wg", "setconf"])
+        self.assertIn("FwMark = 0xca6c", setconf)
+        self.assertNotIn("Address", setconf)
+        self.assertFalse(any(PROBE_PRIVATE_KEY in " ".join(command) for command in commands))
+
+    def test_wg_errors_are_not_echoed_and_the_tunnel_is_removed(self):
+        runner = PrimaryPathRunner(fail=["wg", "setconf"])
+
+        reachable, detail = health.primary_path_reachable(PRIMARY, "proton0", run=runner)
+
+        self.assertFalse(reachable)
+        self.assertEqual(detail, "probe setup failed: wg setconf pvpn-probe0")
+        self.assertNotIn(PROBE_PRIVATE_KEY, detail + self.output.getvalue())
+        self.assertEqual(
+            runner.commands()[-2:],
+            [["ip", "netns", "delete", health.PROBE_NAMESPACE], ["ip", "link", "delete", health.PROBE_INTERFACE]],
+        )
+
+    def test_probe_needs_the_main_tunnel_fwmark_to_bypass_it(self):
+        runner = PrimaryPathRunner(fwmark="off")
+
+        reachable, detail = health.primary_path_reachable(PRIMARY, "proton0", run=runner)
+
+        self.assertFalse(reachable)
+        self.assertIn("fwmark", detail)
+        self.assertEqual(runner.commands(), [["wg", "show", "proton0", "fwmark"]])
+
+    def test_fresh_session_is_retried_until_the_probe_passes(self):
+        runner = PrimaryPathRunner(probe_exits=(1, 1, 0))
+        clock = FakeClock()
+
+        reachable, detail = health.primary_path_reachable(PRIMARY, "proton0", run=runner, clock=clock,
+                                                          sleep=clock.sleep)
+
+        self.assertTrue(reachable)
+        self.assertEqual(detail, "pvpn-probe0: reachable")
+        self.assertEqual(len(runner.probes()), 3)
+        self.assertEqual(clock.sleeps, [health.PROBE_RETRY_GAP] * 2)
+        # Every attempt reuses the one tunnel, so the session that settles is the one being probed.
+        self.assertEqual(runner.commands().count(["ip", "netns", "add", health.PROBE_NAMESPACE]), 1)
+        self.assertEqual(
+            runner.commands()[-2:],
+            [["ip", "netns", "delete", health.PROBE_NAMESPACE], ["ip", "link", "delete", health.PROBE_INTERFACE]],
+        )
+
+    def test_unreachable_primary_is_reported_after_the_settle_period(self):
+        runner = PrimaryPathRunner(probe_exits=(1,))
+        clock = FakeClock()
+
+        reachable, detail = health.primary_path_reachable(PRIMARY, "proton0", run=runner, clock=clock,
+                                                          sleep=clock.sleep)
+
+        self.assertFalse(reachable)
+        attempts = len(runner.probes())
+        self.assertGreater(attempts, 1)
+        # It neither gives up early nor sleeps past the settle period.
+        self.assertLess(sum(clock.sleeps), health.PROBE_SETTLE)
+        self.assertGreaterEqual(sum(clock.sleeps) + health.PROBE_RETRY_GAP, health.PROBE_SETTLE)
+        self.assertEqual(
+            detail,
+            f"probe failed: pvpn-probe0 -> 1.1.1.1:443: EOF occurred in violation of protocol ({attempts} attempts)",
+        )
+        self.assertEqual(
+            runner.commands()[-2:],
+            [["ip", "netns", "delete", health.PROBE_NAMESPACE], ["ip", "link", "delete", health.PROBE_INTERFACE]],
+        )
+
+    def test_check_only_can_query_an_explicit_dns_server(self):
+        argv = ["proton-vpn-healthcheck.py", "--check-only", "--interface", "pvpn-probe0", "--dns-server", "10.2.0.1"]
+        with patch.object(sys, "argv", argv), patch.object(health, "probe", return_value=True) as probe, patch.object(
+            health, "query_dns"
+        ) as query:
+            self.assertEqual(health.main(), 0)
+            probe.call_args.kwargs["resolve"]("pvpn-probe0", 28)
+
+        query.assert_called_once_with("pvpn-probe0", 28, ("10.2.0.1", 53))
 
 
 class ProbeTests(unittest.TestCase):

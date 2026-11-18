@@ -1,4 +1,4 @@
-"""Check Proton's data path and rotate saved profiles after sustained failures."""
+"""Check Proton's data path, rotate saved profiles after sustained failures, and fail back to the primary profile."""
 
 import argparse
 from dataclasses import asdict, dataclass, replace
@@ -11,9 +11,10 @@ import socket
 import ssl
 import struct
 import subprocess
+import sys
 import time
 
-from proton_vpn_profiles import ConfigError, ProfileStore
+from proton_vpn_profiles import ConfigError, ProfileStore, probe_tunnel
 
 
 PROBE_TARGETS = (
@@ -27,6 +28,16 @@ DNS_HEADER_SIZE = 12
 CONNECT_TIMEOUT = 5
 FAILURE_THRESHOLD = 3
 RESTART_COOLDOWN = 300
+FAILBACK_AFTER = 600
+FAILBACK_AFTER_MAX = 7200
+FAILBACK_STABLE = 3600
+PRIMARY_PROBE_GAP = 180
+PROBE_NAMESPACE = "proton-probe"
+PROBE_INTERFACE = "pvpn-probe0"
+PROBE_TIMEOUT = 60
+# A fresh Proton session closes TLS for its first seconds, so one failure right after setup proves nothing. / Proton は新しい接続の最初の数秒は TLS を切るため、作った直後の 1 回の失敗では判定しない。
+PROBE_SETTLE = 30
+PROBE_RETRY_GAP = 2
 NETWORK_ERRORS = {
     errno.ENETDOWN, errno.ENETUNREACH, errno.EHOSTUNREACH, errno.ENODEV,
     errno.EADDRNOTAVAIL, errno.ECONNREFUSED, errno.ECONNRESET, errno.EPIPE, errno.ETIMEDOUT,
@@ -40,6 +51,11 @@ class State:
     last_restart: float | None
     attempted_profiles: tuple[str, ...] = ()
     pending_profile: str | None = None
+    failback_after: float = FAILBACK_AFTER
+    failback_from: str | None = None
+    last_failback: float | None = None
+    primary_healthy_since: float | None = None
+    primary_checked_at: float | None = None
 
 
 def observe(state, invocation_id, reachable):
@@ -65,6 +81,118 @@ def recovery_target(state, current, names, now):
     if state.last_restart is not None and now - state.last_restart < RESTART_COOLDOWN:
         return None, state
     return ordered[0], replace(state, attempted_profiles=(current,) if len(names) > 1 else ())
+
+
+def recently_failed_back(state, now):
+    return state.last_failback is not None and now - state.last_failback < FAILBACK_STABLE
+
+
+def leave_primary(state, current, target, names, now):
+    primary = names[0]
+    if current != primary or target == primary:
+        return target, state
+    # A failed failback returns to the backup that was last healthy. / primary に戻して失敗したら、直前まで正常だったバックアップへ戻す。
+    if state.failback_from in names[1:]:
+        target = state.failback_from
+    after = min(state.failback_after * 2, FAILBACK_AFTER_MAX) if recently_failed_back(state, now) else FAILBACK_AFTER
+    return target, replace(state, failback_after=after, failback_from=None,
+                           primary_healthy_since=None, primary_checked_at=None)
+
+
+def failback_target(state, current, names, now, primary_reachable):
+    primary = names[0]
+    if current == primary:
+        keep = state.failback_from if recently_failed_back(state, now) else None
+        return None, replace(state, failback_from=keep, primary_healthy_since=None, primary_checked_at=None)
+    if not primary_reachable:
+        return None, replace(state, primary_healthy_since=None, primary_checked_at=now)
+    resumed = state.primary_checked_at is None or now - state.primary_checked_at > PRIMARY_PROBE_GAP
+    since = now if resumed or state.primary_healthy_since is None else state.primary_healthy_since
+    if now - since < state.failback_after:
+        return None, replace(state, primary_healthy_since=since, primary_checked_at=now)
+    return primary, replace(state, failback_from=current, last_failback=now,
+                            primary_healthy_since=None, primary_checked_at=None)
+
+
+def primary_probe_failing(state, now):
+    """Whether the previous primary probe failed recently, so a new failure continues a known streak."""
+    return (state.primary_healthy_since is None and state.primary_checked_at is not None
+            and now - state.primary_checked_at <= PRIMARY_PROBE_GAP)
+
+
+def run_quietly(run, command):
+    try:
+        run(command, check=False, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def remove_probe_tunnel(run):
+    run_quietly(run, ["ip", "netns", "delete", PROBE_NAMESPACE])
+    run_quietly(run, ["ip", "link", "delete", PROBE_INTERFACE])
+
+
+def allow_probe_endpoint(primary, run):
+    # The endpoint sets only gain the primary when the tunnel restarts, so add it here too. / 許可リストに primary が入るのはトンネルの起動時なので、ここでも足しておく。
+    address = ipaddress.ip_address(primary.endpoint_host)
+    family = "proton_vpn4_endpoints" if address.version == 4 else "proton_vpn6_endpoints"
+    run_quietly(run, ["nft", "add", "element", "inet", "proton-killswitch", family,
+                      f"{{ {address} . {primary.endpoint_port} }}"])
+
+
+def primary_path_reachable(primary, interface, run=subprocess.run, clock=time.monotonic, sleep=time.sleep):
+    """Probe the primary server directly through a temporary tunnel in its own network namespace."""
+    try:
+        fwmark = run(["wg", "show", interface, "fwmark"], check=True, capture_output=True, text=True,
+                     timeout=5).stdout.strip()
+        tunnel = probe_tunnel(primary, fwmark)
+    except (ConfigError, OSError, subprocess.SubprocessError):
+        # Without the main tunnel's fwmark the probe would ride inside the active tunnel. / 本線の fwmark がないと、確認用の通信が本線のトンネルの中を通ってしまう。
+        return False, f"probe needs the fwmark of {interface}"
+    namespace = ["ip", "-n", PROBE_NAMESPACE]
+    setup = [
+        (["ip", "netns", "add", PROBE_NAMESPACE], None),
+        (["ip", "link", "add", PROBE_INTERFACE, "type", "wireguard"], None),
+        (["wg", "setconf", PROBE_INTERFACE, "/dev/stdin"], tunnel.setconf),
+        (["ip", "link", "set", PROBE_INTERFACE, "netns", PROBE_NAMESPACE], None),
+        *[([*namespace, "address", "add", address, "dev", PROBE_INTERFACE], None) for address in tunnel.addresses],
+        ([*namespace, "link", "set", "lo", "up"], None),
+        ([*namespace, "link", "set", PROBE_INTERFACE, "up"], None),
+        ([*namespace, "-4", "route", "add", "default", "dev", PROBE_INTERFACE], None),
+        ([*namespace, "-6", "route", "add", "default", "dev", PROBE_INTERFACE], None),
+    ]
+    remove_probe_tunnel(run)
+    allow_probe_endpoint(primary, run)
+    try:
+        for command, stdin in setup:
+            try:
+                run(command, input=stdin, check=True, capture_output=True, text=True, timeout=10)
+            except (OSError, subprocess.SubprocessError):
+                # wg can quote the rejected line, which may hold the private key. / wg は受け付けなかった行を表示することがあり、秘密鍵を含みうる。
+                return False, f"probe setup failed: {' '.join(command[:3])}"
+        deadline = clock() + PROBE_SETTLE
+        attempts = 0
+        while True:
+            attempts += 1
+            try:
+                result = run(
+                    ["ip", "netns", "exec", PROBE_NAMESPACE, sys.executable, str(Path(__file__).resolve()),
+                     "--check-only", "--interface", PROBE_INTERFACE, "--dns-server", DNS_SERVER[0]],
+                    check=False, capture_output=True, text=True, timeout=PROBE_TIMEOUT,
+                )
+            except subprocess.TimeoutExpired:
+                return False, "probe timed out"
+            lines = (result.stdout + result.stderr).strip().splitlines()
+            if result.returncode == 0:
+                return True, lines[-1] if lines else "probe passed"
+            if clock() + PROBE_RETRY_GAP >= deadline:
+                # The summary line does not say which target failed, so report the last reason. / 要約の行ではどの宛先で失敗したか分からないため、最後の理由を返す。
+                reasons = [line for line in lines if line.startswith("probe failed: ")] or lines
+                reason = reasons[-1] if reasons else f"probe exited with {result.returncode}"
+                return False, f"{reason} ({attempts} attempts)"
+            sleep(PROBE_RETRY_GAP)
+    finally:
+        remove_probe_tunnel(run)
 
 
 def bound_socket(interface, family, kind):
@@ -194,7 +322,7 @@ def record_diagnostics(interface, run):
         print(result.stdout + result.stderr, end="", flush=True)
 
 
-def queue_recovery(unit, state_file, state, profiles, previous, target, run):
+def queue_recovery(unit, state_file, state, profiles, previous, target, run, action="recovery"):
     write_state(state_file, state)
     try:
         profiles.select(target)
@@ -203,10 +331,11 @@ def queue_recovery(unit, state_file, state, profiles, previous, target, run):
         profiles.select(previous)
         write_state(state_file, replace(state, pending_profile=None))
         raise
-    print(f"recovery queued: {unit}; profile={previous.name} -> {target.name}", flush=True)
+    print(f"{action} queued: {unit}; profile={previous.name} -> {target.name}", flush=True)
 
 
-def check_once(interface, state_file, *, profiles, run=subprocess.run, check=probe, clock=time.monotonic):
+def check_once(interface, state_file, *, profiles, run=subprocess.run, check=probe, clock=time.monotonic,
+               primary_check=None):
     unit = f"wg-quick-{interface}.service"
     status, invocation_id = unit_status(unit, run)
     state = read_state(state_file)
@@ -215,7 +344,8 @@ def check_once(interface, state_file, *, profiles, run=subprocess.run, check=pro
     if status != "active":
         print(f"skipping {unit}: {status}", flush=True)
         if status == "inactive" and state_file.exists():
-            write_state(state_file, replace(state, failures=0, attempted_profiles=(), pending_profile=None))
+            write_state(state_file, replace(state, failures=0, attempted_profiles=(), pending_profile=None,
+                                            failback_from=None, primary_healthy_since=None, primary_checked_at=None))
         return
 
     candidates = profiles.load()
@@ -227,29 +357,51 @@ def check_once(interface, state_file, *, profiles, run=subprocess.run, check=pro
         return
 
     reachable = check(interface)
+    now = clock()
+    names = tuple(profile.name for profile in candidates)
     updated = observe(state, invocation_id, reachable)
     updated = replace(updated, pending_profile=None)
-    target_name, updated = recovery_target(updated, current.name, tuple(p.name for p in candidates), clock())
+    target_name, updated = recovery_target(updated, current.name, names, now)
+    action = "recovery"
+    if target_name is not None:
+        target_name, updated = leave_primary(updated, current.name, target_name, names, now)
+    elif not reachable:
+        updated = replace(updated, primary_healthy_since=None)
+    else:
+        action = "failback"
+        primary_reachable, detail = None, ""
+        if current.name != names[0]:
+            primary_check = primary_check or (lambda profile: primary_path_reachable(profile, interface, run))
+            primary_reachable, detail = primary_check(candidates[0])
+        target_name, updated = failback_target(updated, current.name, names, now, primary_reachable)
+        if primary_reachable and state.primary_healthy_since is None and updated.primary_healthy_since is not None:
+            print(f"{interface}: {names[0]} is reachable through the probe tunnel; "
+                  f"failing back after {round(updated.failback_after)}s of continuous health", flush=True)
+        elif primary_reachable is False and not primary_probe_failing(state, now):
+            # Log when a failure streak starts, so a probe that never passes is visible. / 失敗が始まったら記録し、一度も通らない確認に気づけるようにする。
+            print(f"{interface}: {names[0]} probe failed; staying on {current.name}: {detail}", flush=True)
     if target_name is None:
         write_state(state_file, updated)
         if not reachable or state.failures or state.pending_profile:
-            action = "healthy" if reachable else "wait"
+            status_text = "healthy" if reachable else "wait"
             if updated.failures == FAILURE_THRESHOLD:
-                action = f"all {len(candidates)} profiles failed; cooldown={RESTART_COOLDOWN}s"
-            print(f"{interface}: {action}; profile={current.name}; consecutive failures={updated.failures}", flush=True)
+                status_text = f"all {len(candidates)} profiles failed; cooldown={RESTART_COOLDOWN}s"
+            print(f"{interface}: {status_text}; profile={current.name}; consecutive failures={updated.failures}",
+                  flush=True)
         return
 
-    record_diagnostics(interface, run)
+    if action == "recovery":
+        record_diagnostics(interface, run)
     if unit_status(unit, run) != (status, invocation_id) or profiles.selected(candidates).name != current.name:
-        print(f"skipping recovery: {unit} changed during the check", flush=True)
+        print(f"skipping {action}: {unit} changed during the check", flush=True)
         write_state(state_file, replace(state, failures=0, pending_profile=None))
         return
 
     if len(candidates) == 1:
         print("only one Proton profile is installed; restarting the same server", flush=True)
     target = next(profile for profile in candidates if profile.name == target_name)
-    updated = replace(updated, failures=0, last_restart=clock(), pending_profile=target.name)
-    queue_recovery(unit, state_file, updated, profiles, current, target, run)
+    updated = replace(updated, failures=0, last_restart=now, pending_profile=target.name)
+    queue_recovery(unit, state_file, updated, profiles, current, target, run, action)
 
 
 def main():
@@ -258,9 +410,18 @@ def main():
     parser.add_argument("--state-file", type=Path)
     parser.add_argument("--profiles-dir", type=Path, default=Path("/var/lib/proton-vpn"))
     parser.add_argument("--check-only", action="store_true", help="probe without state changes or recovery")
+    parser.add_argument("--dns-server", type=ipaddress.ip_address,
+                        help="with --check-only, query this server instead of /etc/resolv.conf")
     arguments = parser.parse_args()
     if arguments.check_only:
-        reachable = probe(arguments.interface)
+        resolve = query_configured_dns
+        if arguments.dns_server is not None:
+            server = (str(arguments.dns_server), 53)
+
+            def resolve(interface, record_type):
+                query_dns(interface, record_type, server)
+
+        reachable = probe(arguments.interface, resolve=resolve)
         print(f"{arguments.interface}: {'reachable' if reachable else 'unreachable'}")
         return 0 if reachable else 1
     if arguments.state_file is None:
