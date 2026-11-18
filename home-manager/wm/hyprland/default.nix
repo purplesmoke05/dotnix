@@ -1,10 +1,34 @@
-{ pkgs, inputs, lib, hyprsplit, hostname, ... }:
+{ pkgs, inputs, lib, hostname, ... }:
 let
   displayLayout = import ./display-layout.nix;
   quickTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
   devTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.right}" else "DP-2";
   isuconLayoutMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
   hyprlandPackage = inputs.hyprland.packages.${pkgs.system}.hyprland;
+
+  # Lua config helpers. Home Manager renders each settings entry as hl.<name>(...). / Lua 設定の補助。Home Manager は settings の各項目を hl.<name>(...) として出力する。
+  toLua = lib.generators.toLua { };
+  luaInline = lib.generators.mkLuaInline;
+  mainMod = "ALT";
+  term = "term-main";
+  exec = command: "hl.dsp.exec_cmd(${toLua command})";
+  # Bind a key combination such as "ALT + SHIFT + Q" to a dispatcher expression. / "ALT + SHIFT + Q" のようなキーの組み合わせに dispatcher の式を割り当てる。
+  keyCombo = mods: key: lib.concatStringsSep " + " (mods ++ [ key ]);
+  mkBind = mods: key: dispatcher: { _args = [ (keyCombo mods key) (luaInline dispatcher) ]; };
+  mkMouseBind = mods: key: dispatcher: { _args = [ (keyCombo mods key) (luaInline dispatcher) { mouse = true; } ]; };
+  # Single-line window rule: a name, a match table, and effects. / ウィンドウ規則 1 件。名前、照合条件、効果からなる。
+  mkWindowRule = name: match: effects: { inherit name match; } // effects;
+
+  # split-monitor-workspaces settings. On hq, order monitors by description, not connector. / split-monitor-workspaces の設定。hq ではコネクター名ではなく説明文でモニターの順を決める。
+  splitWorkspacesConfig = {
+    workspace_count = displayLayout.workspacesPerMonitor;
+    enable_persistent_workspaces = true;
+    keep_focused = true;
+    monitor_priority = lib.optionals (hostname == "hq") [
+      "desc:${displayLayout.hq.left}"
+      "desc:${displayLayout.hq.right}"
+    ];
+  };
   hyprlandPipDrag = pkgs.callPackage ../../../pkgs/hyprland-pip-drag {
     hyprland = hyprlandPackage;
   };
@@ -272,7 +296,7 @@ in
             return 1
           fi
 
-          hyprctl dispatch focuswindow "address:$_address" >/dev/null
+          hyprctl dispatch "hl.dsp.focus({ window = 'address:$_address' })" >/dev/null
         }
 
         get_preferred_quick_term_class() {
@@ -425,11 +449,11 @@ in
             fi
 
             if [ "$_desired" = "true" ] && [ "$_is_pinned_now" != "true" ]; then
-              append_batch_command "dispatch pin pid:$_pid"
+              append_batch_command "dispatch hl.dsp.window.pin({ action = 'enable', window = 'pid:$_pid' })"
             fi
 
             if [ "$_desired" = "false" ] && [ "$_is_pinned_now" = "true" ]; then
-              append_batch_command "dispatch pin pid:$_pid"
+              append_batch_command "dispatch hl.dsp.window.pin({ action = 'disable', window = 'pid:$_pid' })"
             fi
           done
         }
@@ -446,13 +470,13 @@ in
 
           _ws="$(get_client_workspace "$_class")"
           if [ -n "$_active_ws" ] && [ "$_ws" != "$_active_ws" ]; then
-            append_batch_command "dispatch movetoworkspacesilent $_active_ws,pid:$_pid"
+            append_batch_command "dispatch hl.dsp.window.move({ workspace = '$_active_ws', follow = false, window = 'pid:$_pid' })"
           fi
 
           if [ -n "$_geometry" ]; then
             read -r _x _y _w _h <<< "$_geometry"
-            append_batch_command "dispatch resizewindowpixel exact $_w $_h,pid:$_pid"
-            append_batch_command "dispatch movewindowpixel exact $_x $_y,pid:$_pid"
+            append_batch_command "dispatch hl.dsp.window.resize({ x = $_w, y = $_h, window = 'pid:$_pid' })"
+            append_batch_command "dispatch hl.dsp.window.move({ x = $_x, y = $_y, window = 'pid:$_pid' })"
           fi
         }
 
@@ -464,7 +488,7 @@ in
             return 0
           fi
 
-          append_batch_command "dispatch movetoworkspacesilent $hidden_workspace,pid:$_pid"
+          append_batch_command "dispatch hl.dsp.window.move({ workspace = '$hidden_workspace', follow = false, window = 'pid:$_pid' })"
         }
 
         _focused_class="$(get_active_window_class)"
@@ -531,13 +555,13 @@ in
         _preferred_class="$(get_preferred_quick_term_class)"
         _preferred_pid="$(get_client_pid "$_preferred_class")"
         if [ -n "$_preferred_pid" ]; then
-          append_batch_command "dispatch focuswindow pid:$_preferred_pid"
+          append_batch_command "dispatch hl.dsp.focus({ window = 'pid:$_preferred_pid' })"
           remember_last_focused_quick_term "$_preferred_class"
         else
           _alternate_class="$(get_alternate_quick_term_class "$_preferred_class")"
           _alternate_pid="$(get_client_pid "$_alternate_class")"
           if [ -n "$_alternate_pid" ]; then
-            append_batch_command "dispatch focuswindow pid:$_alternate_pid"
+            append_batch_command "dispatch hl.dsp.focus({ window = 'pid:$_alternate_pid' })"
             remember_last_focused_quick_term "$_alternate_class"
           fi
         fi
@@ -634,7 +658,7 @@ in
             return 1
           fi
 
-          hyprctl dispatch focuswindow "address:$_address" >/dev/null
+          hyprctl dispatch "hl.dsp.focus({ window = 'address:$_address' })" >/dev/null
         }
 
         focus_dev_workspace() {
@@ -645,7 +669,7 @@ in
             exit 1
           fi
 
-          hyprctl --batch "dispatch focusmonitor $_monitor ; dispatch split:workspace $workspace_number" >/dev/null
+          hyprctl --batch "dispatch hl.dsp.focus({ monitor = '$_monitor' }) ; dispatch smw.workspace('$workspace_number')" >/dev/null
           get_monitor_active_workspace "$_monitor"
         }
 
@@ -653,7 +677,7 @@ in
           _workspace="$1"
 
           if [ -n "$_workspace" ]; then
-            hyprctl dispatch exec "[workspace $_workspace silent] ${pkgs.ghostty}/bin/ghostty --class=$dev_class --gtk-single-instance=false --window-padding-y=2,8 --font-size=12.5" >/dev/null
+            hyprctl dispatch "hl.dsp.exec_cmd('${pkgs.ghostty}/bin/ghostty --class=$dev_class --gtk-single-instance=false --window-padding-y=2,8 --font-size=12.5', { workspace = '$_workspace silent' })" >/dev/null
             return 0
           fi
 
@@ -668,7 +692,7 @@ in
             return 0
           fi
 
-          hyprctl dispatch movetoworkspacesilent "$_workspace,address:$_address" >/dev/null
+          hyprctl dispatch "hl.dsp.window.move({ workspace = '$_workspace', follow = false, window = 'address:$_address' })" >/dev/null
         }
 
         wait_for_dev_terminal() {
@@ -693,7 +717,7 @@ in
             return 1
           fi
 
-          hyprctl dispatch focuswindow "address:$_address" >/dev/null
+          hyprctl dispatch "hl.dsp.focus({ window = 'address:$_address' })" >/dev/null
         }
 
         if [ "$(get_active_window_class)" = "$dev_class" ]; then
@@ -756,6 +780,12 @@ in
           notify "$1"
           printf '%s\n' "$1" >&2
           exit 1
+        }
+
+        # Quote a shell string as a Lua string literal for hyprctl dispatch. / hyprctl dispatch に渡す Lua の文字列リテラルにする。
+        lua_string() {
+          _escaped="''${1//\\/\\\\}"
+          printf "'%s'" "''${_escaped//\'/\\\'}"
         }
 
         get_target_monitor() {
@@ -821,14 +851,14 @@ in
             return 0
           fi
 
-          hyprctl dispatch exec "$_command" >/dev/null
+          hyprctl dispatch "hl.dsp.exec_cmd($(lua_string "$_command"))" >/dev/null
           wait_for_new_window "$_class" ""
         }
 
         monitor="$(get_target_monitor)"
         [ -n "$monitor" ] || fail "monitor not found"
 
-        hyprctl --batch "dispatch focusmonitor $monitor ; dispatch split:workspace $workspace_number" >/dev/null
+        hyprctl --batch "dispatch hl.dsp.focus({ monitor = '$monitor' }) ; dispatch smw.workspace('$workspace_number')" >/dev/null
         workspace_id="$(get_monitor_active_workspace "$monitor")"
         [ -n "$workspace_id" ] || fail "workspace not found on $monitor"
 
@@ -839,7 +869,7 @@ in
         term_address="$(get_term_on_workspace "$workspace_id")"
         if [ -z "$term_address" ]; then
           known_terms="$(get_addresses_by_class "$term_class")"
-          hyprctl dispatch exec "$term_command" >/dev/null
+          hyprctl dispatch "hl.dsp.exec_cmd($(lua_string "$term_command"))" >/dev/null
           term_address="$(wait_for_new_window "$term_class" "$known_terms")" || fail "Ghostty window did not appear"
         fi
 
@@ -855,33 +885,40 @@ in
 
         batch=""
         append() {
-          batch="''${batch:+$batch ; }$1"
+          batch="''${batch:+$batch ; }dispatch $1"
+        }
+        move_silent() {
+          append "hl.dsp.window.move({ workspace = '$1', follow = false, window = 'address:$2' })"
+        }
+        focus_window() {
+          append "hl.dsp.focus({ window = 'address:$1' })"
         }
 
         for address in "$linear_address" "$term_address" "$discord_address"; do
-          append "dispatch settiled address:$address"
-          append "dispatch movetoworkspacesilent $stage_workspace,address:$address"
+          append "hl.dsp.window.float({ action = 'disable', window = 'address:$address' })"
+          move_silent "$stage_workspace" "$address"
         done
 
         extra_count=0
         while IFS= read -r address; do
           [ -n "$address" ] || continue
-          append "dispatch movetoworkspacesilent $extra_workspace,address:$address"
+          move_silent "$extra_workspace" "$address"
           extra_count=$((extra_count + 1))
         done <<< "$extra_addresses"
 
         # Insert from left to right; preselect opens each window right of the focused one. / 左から順に入れ、preselect でフォーカス窓の右に開く。
-        append "dispatch movetoworkspacesilent $workspace_id,address:$linear_address"
-        append "dispatch focuswindow address:$linear_address"
-        append "dispatch layoutmsg preselect r"
-        append "dispatch movetoworkspacesilent $workspace_id,address:$term_address"
-        append "dispatch focuswindow address:$term_address"
-        append "dispatch layoutmsg preselect r"
-        append "dispatch movetoworkspacesilent $workspace_id,address:$discord_address"
-        append "dispatch focuswindow address:$linear_address"
-        append "dispatch splitratio exact $root_ratio"
-        append "dispatch focuswindow address:$term_address"
-        append "dispatch splitratio exact $right_ratio"
+        move_silent "$workspace_id" "$linear_address"
+        focus_window "$linear_address"
+        append "hl.dsp.layout('preselect r')"
+        move_silent "$workspace_id" "$term_address"
+        focus_window "$term_address"
+        append "hl.dsp.layout('preselect r')"
+        move_silent "$workspace_id" "$discord_address"
+        focus_window "$linear_address"
+        # The dwindle layout message takes the value before "exact". / dwindle のレイアウトメッセージは値を exact より前に書く。
+        append "hl.dsp.layout('splitratio $root_ratio exact')"
+        focus_window "$term_address"
+        append "hl.dsp.layout('splitratio $right_ratio exact')"
 
         hyprctl --batch "$batch" >/dev/null
 
@@ -927,240 +964,223 @@ in
 
   wayland.windowManager.hyprland = {
     enable = true;
-    # Hyprland is pinned to v0.52.1, which reads hyprlang; home-manager now defaults to Lua. / Hyprland は hyprlang を読む v0.52.1 に固定しており、home-manager の既定は Lua に変わった。
-    configType = "hyprlang";
+    # Hyprland 0.57 reads only Lua; it removed the hyprlang reader. / Hyprland 0.57 は Lua の設定だけを読む。hyprlang の読み込みは削除された。
+    configType = "lua";
 
     package = null;
 
     systemd.enable = true;
     systemd.enableXdgAutostart = true;
 
+    # Home Manager renders settings in name order. Emit curves first so animations can name them. / Home Manager は settings を名前順に出力する。アニメーションが参照できるよう曲線を先に出す。
+    importantPrefixes = [ "env" "curve" ];
+
+    # Load before settings because the workspace binds call smw.*. Keep it global so hyprctl dispatch can reach it. / ワークスペースのバインドが smw.* を呼ぶので settings より先に読み込む。hyprctl dispatch から使えるようグローバルにする。
+    extraLuaFiles.split-workspaces = ''
+      smw = require("plugins.split-monitor-workspaces")
+      smw.setup(${toLua splitWorkspacesConfig})
+    '';
+
     settings = {
-      # render.explicit_sync = 0; # Not available on 0.49.0 / Hyprland 0.49.0 では未対応
-      xwayland = {
-        use_nearest_neighbor = false;
-        force_zero_scaling = true;
+      config = {
+        xwayland = {
+          use_nearest_neighbor = false;
+          force_zero_scaling = true;
+        };
+
+        # Input devices / 入力デバイス
+        input = {
+          kb_layout = "jp";
+          kb_model = "";
+          kb_variant = "";
+          kb_options = "";
+          follow_mouse = 2; # フォーカスなしでホバー / Hover-follow
+          repeat_rate = 50; # リピートレート / Repeat rate
+          repeat_delay = 200; # Repeat delay / リピート開始遅延
+        };
+
+        # Window appearance / ウィンドウ外観
+        general = {
+          gaps_in = 4; # Inner gaps / 内側余白
+          gaps_out = 8; # Outer gaps / 外側余白
+          border_size = 2; # Border width / 枠線幅
+        };
+
+        # Misc / その他
+        misc = {
+          enable_anr_dialog = false; # Disable ANR dialog / ANR ダイアログを無効化
+        };
+
+        # Disable Hyprland update news popup. / Hyprland アップデート情報ポップアップを無効化。
+        ecosystem = {
+          no_update_news = true;
+        };
+
+        animations = {
+          enabled = true;
+        };
       };
-
-      # Basic Hyprland config / Hyprland 基本設定
-      "$mainMod" = "ALT";
-      "$term" = "term-main";
-
-      # Hyprsplit config / Hyprsplit 設定
-      "plugin:hyprsplit:persistent_workspaces" = true;
-      "plugin:hyprsplit:num_workspaces" = displayLayout.workspacesPerMonitor;
 
       # Environment variables / 環境変数
-      env = [
-        "XMODIFIERS, @im=fcitx" # Input method config / IME 設定
-        "QT_QPA_PLATFORM,wayland" # Qt を Wayland へ / Force Qt to Wayland
-        "QT_QPA_PLATFORMTHEME,qt5ct" # Qt theme config / Qt テーマ設定
-        "QT_STYLE_OVERRIDE,Adwaita-Dark" # Qt スタイル / Qt style override
-        "QT_WAYLAND_DISABLE_WINDOWDECORATION,1" # Disable Qt decorations / Qt 装飾無効
-        "NIXOS_OZONE_WL,1" # Force Wayland for Chromium apps / Chromium を Wayland 化
-        "ELECTRON_OZONE_PLATFORM_HINT,auto"
+      env = map (pair: { _args = pair; }) [
+        [ "XMODIFIERS" "@im=fcitx" ] # Input method config / IME 設定
+        [ "QT_QPA_PLATFORM" "wayland" ] # Qt を Wayland へ / Force Qt to Wayland
+        [ "QT_QPA_PLATFORMTHEME" "qt5ct" ] # Qt theme config / Qt テーマ設定
+        [ "QT_STYLE_OVERRIDE" "Adwaita-Dark" ] # Qt スタイル / Qt style override
+        [ "QT_WAYLAND_DISABLE_WINDOWDECORATION" "1" ] # Disable Qt decorations / Qt 装飾無効
+        [ "NIXOS_OZONE_WL" "1" ] # Force Wayland for Chromium apps / Chromium を Wayland 化
+        [ "ELECTRON_OZONE_PLATFORM_HINT" "auto" ]
         # Declare window system for hints / hints 用にウィンドウシステムを明示
-        "HINTS_WINDOW_SYSTEM,hyprland"
+        [ "HINTS_WINDOW_SYSTEM" "hyprland" ]
       ];
 
-      # Input devices / 入力デバイス
-      input = {
-        kb_layout = "jp";
-        kb_model = "";
-        kb_variant = "";
-        kb_options = "";
-        follow_mouse = 2; # フォーカスなしでホバー / Hover-follow
-        repeat_rate = 50; # リピートレート / Repeat rate
-        repeat_delay = 200; # Repeat delay / リピート開始遅延
-      };
+      # Animations / アニメーション設定
+      curve = [
+        { _args = [ "myBezier" { type = "bezier"; points = [ [ 0.05 0.9 ] [ 0.1 1.05 ] ]; } ]; }
+      ];
+      animation = [
+        { leaf = "windows"; enabled = true; speed = 7; bezier = "myBezier"; }
+        { leaf = "windowsOut"; enabled = true; speed = 7; bezier = "default"; style = "popin 80%"; }
+        { leaf = "workspaces"; enabled = true; speed = 6; bezier = "default"; }
+      ];
 
-      # Window appearance / ウィンドウ外観
-      general = {
-        gaps_in = 4; # Inner gaps / 内側余白
-        gaps_out = 8; # Outer gaps / 外側余白
-        border_size = 2; # Border width / 枠線幅
-      };
-
-      # Misc / その他
-      misc = {
-        enable_anr_dialog = false; # Disable ANR dialog / ANR ダイアログを無効化
-      };
-
-      # Disable Hyprland update news popup. / Hyprland アップデート情報ポップアップを無効化。
-      ecosystem = {
-        no_update_news = true;
-      };
-
-      # Window rules / ウィンドウルール
-      windowrule = [ ];
-
-      windowrulev2 = [
-        "float,class:^(pavucontrol)$"
-        "float,class:^(nm-connection-editor)$"
-        "float,class:^()$,title:^(Picture in picture|ピクチャー イン ピクチャー)$"
-        "pin,class:^()$,title:^(Picture in picture|ピクチャー イン ピクチャー)$"
-        "float,class:^(brave)$,title:^(Save File)$"
-        "float,class:^(brave)$,title:^(Open File)$"
-        "float,class:^(blueman-manager)$"
-        "float,class:^(xdg-desktop-portal-gtk)$"
-        "float,class:^(xdg-desktop-portal-kde)$"
-        "float,class:^(xdg-desktop-portal-hyprland)$"
-        "float,class:^(zenity)$"
-        "float,class:^()$,title:^(Steam - Self Updater)$"
-        "float,class:^(pavucontrol)$"
-        "float,class:^()$,title:^(Playwright Inspector)$"
+      # Window rules. Rules match the whole class or title. / ウィンドウルール。クラスやタイトルの全体に一致させる。
+      window_rule = [
+        (mkWindowRule "float-utilities"
+          { class = "^(pavucontrol|nm-connection-editor|blueman-manager|xdg-desktop-portal-gtk|xdg-desktop-portal-kde|xdg-desktop-portal-hyprland|zenity)$"; }
+          { float = true; })
+        (mkWindowRule "float-pin-browser-pip"
+          { class = "^()$"; title = "^(Picture in picture|ピクチャー イン ピクチャー)$"; }
+          { float = true; pin = true; })
+        (mkWindowRule "float-brave-file-dialogs"
+          { class = "^(brave)$"; title = "^(Save File|Open File)$"; }
+          { float = true; })
+        (mkWindowRule "float-untitled-tools"
+          { class = "^()$"; title = "^(Steam - Self Updater|Playwright Inspector)$"; }
+          { float = true; })
 
         # Opaque rules / 不透明ルール
-        "opaque, class:(code)"
-        "opaque, class:(Code)"
-        "opaque, class:(thunar)"
-        "opaque, class:(Thunar)"
-        "opaque, class:(pavucontrol)"
-        "opaque, class:(Pavucontrol)"
-        "opaque, class:(org.gnome.Nautilus)"
-        "opaque, class:(nemo)"
-        "opaque, class:(Nemo)"
-        "opaque, class:(zen)"
-        "float, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
-        "noshadow, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
-        "noanim, class:^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"
+        (mkWindowRule "opaque-apps"
+          { class = "(code|Code|thunar|Thunar|pavucontrol|Pavucontrol|org.gnome.Nautilus|nemo|Nemo|zen)"; }
+          { opaque = true; })
+        (mkWindowRule "quick-term"
+          { class = "^(com\\.mitchellh\\.ghostty\\.quick\\.(left|right))$"; }
+          { float = true; no_shadow = true; no_anim = true; })
 
         # Street Fighter 6 fullscreen. / Street Fighter 6 をフルスクリーン表示。
-        "fullscreen, class:^(steam_app_1364780)$"
+        (mkWindowRule "street-fighter-6-fullscreen" { class = "^(steam_app_1364780)$"; } { fullscreen = true; })
       ] ++ lib.optionals (hostname != "hq") [
-        "monitor DP-2, class:^(steam_app_1364780)$"
-        "workspace 2 silent,class:^(steam)$"
+        (mkWindowRule "street-fighter-6-monitor" { class = "^(steam_app_1364780)$"; } { monitor = "DP-2"; })
+        (mkWindowRule "steam-workspace" { class = "^(steam)$"; } { workspace = "2 silent"; })
+      ];
+
+      # Layer rules / レイヤールール
+      # Disable animations for hints overlay. / hints のオーバーレイはアニメーションを無効化。
+      layer_rule = [
+        { name = "hints-no-anim"; match = { namespace = "hints"; }; no_anim = true; }
       ];
 
       # Keybindings / キーバインド
       bind = [
         # System controls / システム操作
-        "$mainMod,Return,exec,$term"
-        "$mainMod SHIFT,Q,killactive,"
-        "$mainMod SHIFT, E, exec, ironbar-toggle-power-menu"
-        "$mainMod SHIFT, F,fullscreen,"
-        "$mainMod SHIFT, P, pin"
-        "$mainMod,E,exec,nautilus"
-        "CTRL, 4, exec,rofi -show drun"
-        "CTRL SHIFT, 4, exec, term-ghostty"
-        "CTRL, 1, exec, dev-monitor-term"
-        "CTRL, 2, exec, hints-once"
-        "$mainMod,P,pseudo,"
-        "CTRL, 5, exec,bemoji -t -c -e -n"
+        (mkBind [ mainMod ] "Return" (exec term))
+        (mkBind [ mainMod "SHIFT" ] "Q" "hl.dsp.window.close()")
+        (mkBind [ mainMod "SHIFT" ] "E" (exec "ironbar-toggle-power-menu"))
+        (mkBind [ mainMod "SHIFT" ] "F" "hl.dsp.window.fullscreen()")
+        (mkBind [ mainMod "SHIFT" ] "P" "hl.dsp.window.pin()")
+        (mkBind [ mainMod ] "E" (exec "nautilus"))
+        (mkBind [ "CTRL" ] "4" (exec "rofi -show drun"))
+        (mkBind [ "CTRL" "SHIFT" ] "4" (exec "term-ghostty"))
+        (mkBind [ "CTRL" ] "1" (exec "dev-monitor-term"))
+        (mkBind [ "CTRL" ] "2" (exec "hints-once"))
+        (mkBind [ mainMod ] "P" "hl.dsp.window.pseudo()")
+        (mkBind [ "CTRL" ] "5" (exec "bemoji -t -c -e -n"))
 
         # Utility controls / ユーティリティ操作
-        "$mainMod SHIFT, c, exec, hyprpicker --autocopy"
-        "CTRL SHIFT, Space, exec, toggle-japanese-im"
+        (mkBind [ mainMod "SHIFT" ] "c" (exec "hyprpicker --autocopy"))
+        (mkBind [ "CTRL" "SHIFT" ] "Space" (exec "toggle-japanese-im"))
 
         # Window focus / フォーカス移動
-        "$mainMod, j, movefocus, l"
-        "$mainMod, k, movefocus, d"
-        "$mainMod, l, movefocus, u"
-        "$mainMod, semicolon, movefocus, r"
-        "$mainMod, Tab, cyclenext"
-        "$mainMod SHIFT, Tab, cyclenext, prev"
+        (mkBind [ mainMod ] "j" ''hl.dsp.focus({ direction = "left" })'')
+        (mkBind [ mainMod ] "k" ''hl.dsp.focus({ direction = "down" })'')
+        (mkBind [ mainMod ] "l" ''hl.dsp.focus({ direction = "up" })'')
+        (mkBind [ mainMod ] "semicolon" ''hl.dsp.focus({ direction = "right" })'')
+        (mkBind [ mainMod ] "Tab" "hl.dsp.window.cycle_next()")
+        (mkBind [ mainMod "SHIFT" ] "Tab" "hl.dsp.window.cycle_next({ next = false })")
 
         # Window movement / ウィンドウ移動
-        "$mainMod SHIFT, j, movewindow, l"
-        "$mainMod SHIFT, k, movewindow, d"
-        "$mainMod SHIFT, l, movewindow, u"
-        "$mainMod SHIFT, semicolon, movewindow, r"
+        (mkBind [ mainMod "SHIFT" ] "j" ''hl.dsp.window.move({ direction = "left" })'')
+        (mkBind [ mainMod "SHIFT" ] "k" ''hl.dsp.window.move({ direction = "down" })'')
+        (mkBind [ mainMod "SHIFT" ] "l" ''hl.dsp.window.move({ direction = "up" })'')
+        (mkBind [ mainMod "SHIFT" ] "semicolon" ''hl.dsp.window.move({ direction = "right" })'')
 
         # Window layout / ウィンドウレイアウト
-        "$mainMod CTRL, k, layoutmsg, preselect d"
-        "$mainMod SHIFT, I, exec, isucon-layout"
+        (mkBind [ mainMod "CTRL" ] "k" ''hl.dsp.layout("preselect d")'')
+        (mkBind [ mainMod "SHIFT" ] "I" (exec "isucon-layout"))
 
         # Screenshot controls / スクリーンショット操作
-        '', Print, exec, grimblast save output - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png $HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png''
-        ''$mainMod, Print, exec, grimblast save active - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png "$HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png"''
-        ''$mainMod SHIFT, Print, exec, grimblast save area - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png "$HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png"''
-        ''CTRL, Print, exec, grim -g "$(slurp)" $HOME/Pictures/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png''
-        ''SHIFT, Print, exec, grimblast copy area && notify-send "Screenshot" "領域のスクリーンショットをクリップボードにコピーしました"''
-        ''CTRL SHIFT, Print, exec, grimblast copy output && notify-send "Screenshot" "画面全体のスクリーンショットをクリップボードにコピーしました"''
+        (mkBind [ ] "Print" (exec ''grimblast save output - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png $HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png''))
+        (mkBind [ mainMod ] "Print" (exec ''grimblast save active - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png "$HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png"''))
+        (mkBind [ mainMod "SHIFT" ] "Print" (exec ''grimblast save area - | swappy -f - -o /tmp/screenshot.png && zenity --question --text="Save?" && cp /tmp/screenshot.png "$HOME/Pictures/$(date +%Y-%m-%dT%H:%M:%S).png"''))
+        (mkBind [ "CTRL" ] "Print" (exec ''grim -g "$(slurp)" $HOME/Pictures/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png''))
+        (mkBind [ "SHIFT" ] "Print" (exec ''grimblast copy area && notify-send "Screenshot" "領域のスクリーンショットをクリップボードにコピーしました"''))
+        (mkBind [ "CTRL" "SHIFT" ] "Print" (exec ''grimblast copy output && notify-send "Screenshot" "画面全体のスクリーンショットをクリップボードにコピーしました"''))
 
         # Screen recording / 画面録画
-        ''$mainMod SHIFT, r, exec, wf-recorder -g "$(slurp)" -f ~/Videos/screencast_$(date +%Y-%m-%d_%H-%M-%S).mp4''
-        ''$mainMod SHIFT, s, exec, killall -s SIGINT wf-recorder''
+        (mkBind [ mainMod "SHIFT" ] "r" (exec ''wf-recorder -g "$(slurp)" -f ~/Videos/screencast_$(date +%Y-%m-%d_%H-%M-%S).mp4''))
+        (mkBind [ mainMod "SHIFT" ] "s" (exec "killall -s SIGINT wf-recorder"))
 
         # Volume controls / 音量調整
-        ", XF86AudioLowerVolume, exec, hypr-media volume-down"
-        ", XF86AudioRaiseVolume, exec, hypr-media volume-up"
-        ", XF86AudioMute, exec, hypr-media volume-mute"
+        (mkBind [ ] "XF86AudioLowerVolume" (exec "hypr-media volume-down"))
+        (mkBind [ ] "XF86AudioRaiseVolume" (exec "hypr-media volume-up"))
+        (mkBind [ ] "XF86AudioMute" (exec "hypr-media volume-mute"))
 
         # Media playback / メディア操作
-        ", XF86AudioPlay, exec, playerctl play-pause"
-        ", XF86AudioNext, exec, playerctl next"
-        ", XF86AudioPrev, exec, playerctl previous"
+        (mkBind [ ] "XF86AudioPlay" (exec "playerctl play-pause"))
+        (mkBind [ ] "XF86AudioNext" (exec "playerctl next"))
+        (mkBind [ ] "XF86AudioPrev" (exec "playerctl previous"))
 
         # Brightness / 輝度調整
-        ", XF86MonBrightnessUp, exec, hypr-media brightness-up"
-        ", XF86MonBrightnessDown, exec, hypr-media brightness-down"
+        (mkBind [ ] "XF86MonBrightnessUp" (exec "hypr-media brightness-up"))
+        (mkBind [ ] "XF86MonBrightnessDown" (exec "hypr-media brightness-down"))
 
         # Quick terminal / クイックターミナル
-        "CTRL, 3, exec, quick-term"
+        (mkBind [ "CTRL" ] "3" (exec "quick-term"))
 
-      ] ++ [
-        "$mainMod, 0, split:workspace, 10"
-        "$mainMod SHIFT, 0, split:movetoworkspace, 10"
-      ] ++ (builtins.concatLists (
-        builtins.genList
-          (
-            x:
-            let
-              ws = builtins.toString (x + 1);
-            in
-            [
-              "$mainMod, ${ws}, split:workspace, ${ws}"
-              "$mainMod SHIFT, ${ws}, split:movetoworkspace, ${ws}"
-            ]
-          ) 9
-      ));
-
-      # Mouse window controls. / マウスによるウィンドウ操作。
-      bindm = [
-        "$mainMod, mouse:272, movewindow"
-        "$mainMod, mouse:273, resizewindow"
-      ];
-
-      # Animations / アニメーション設定
-      animations = {
-        enabled = true;
-        bezier = [
-          "myBezier, 0.05, 0.9, 0.1, 1.05"
-        ];
-        animation = [
-          "windows, 1, 7, myBezier"
-          "windowsOut, 1, 7, default, popin 80%"
-          "workspaces, 1, 6, default"
-        ];
-      };
-
-      "exec-once" = [
-        "hyprctl dispatch exec [workspace 1 silent] ${pkgs.brave}/bin/brave"
-        "hyprctl dispatch exec [workspace 2 silent] term-main"
-        "hyprctl dispatch exec [workspace 20 silent] ${pkgs.vesktop}/bin/vesktop"
-      ];
-
-      # Layer rules / レイヤールール
-      # Disable animations for hints overlay. / hints のオーバーレイはアニメーションを無効化。
-      layerrule = [
-        "noanim, namespace:hints"
-      ];
+        # Mouse window controls. / マウスによるウィンドウ操作。
+        (mkMouseBind [ mainMod ] "mouse:272" "hl.dsp.window.drag()")
+        (mkMouseBind [ mainMod ] "mouse:273" "hl.dsp.window.resize()")
+      ] ++ builtins.concatLists (map
+        (slot:
+          let
+            # Key 0 selects workspace 10. / キー 0 はワークスペース 10。
+            key = builtins.toString (lib.mod slot 10);
+            workspace = toLua (builtins.toString slot);
+          in
+          [
+            (mkBind [ mainMod ] key "smw.workspace(${workspace})")
+            (mkBind [ mainMod "SHIFT" ] key "smw.move_to_workspace(${workspace})")
+          ])
+        (lib.range 1 displayLayout.workspacesPerMonitor));
     };
+
+    # Start apps after Home Manager's startup hook imports the session environment. / Home Manager の起動フックがセッションの環境を取り込んだ後に、アプリを起動する。
+    extraConfig = ''
+      hl.on("hyprland.start", function()
+        hl.exec_cmd(${toLua "${pkgs.brave}/bin/brave"}, { workspace = "1 silent" })
+        hl.exec_cmd(${toLua term}, { workspace = "2 silent" })
+        hl.exec_cmd(${toLua "${pkgs.vesktop}/bin/vesktop"}, { workspace = "20 silent" })
+      end)
+    '';
 
     # Hyprland plugins / Hyprland プラグイン
     plugins = [
-      # Per-monitor workspaces. Its meson.build globs every .cpp under the source root, which now includes meson's generated sanity check in ./build. / モニター別ワークスペース。meson.build がソース直下の .cpp をすべて拾い、./build 内の meson の生成ファイルまで含めてしまうため除外する。
-      (hyprsplit.packages.${pkgs.system}.hyprsplit.overrideAttrs (old: {
-        postPatch = (old.postPatch or "") + ''
-          substituteInPlace meson.build \
-            --replace-fail "run_command('find', '.', '-name', '*.cpp', check: true)" \
-                           "run_command('find', '.', '-path', './build', '-prune', '-o', '-name', '*.cpp', '-print', check: true)"
-        '';
-      }))
       hyprlandPipDrag # Move and aspect-ratio resize browser PiP. / ブラウザPiPを移動し、比率を保ってリサイズ。
     ];
   };
+
+  # split-monitor-workspaces Lua package, required as plugins.split-monitor-workspaces. / split-monitor-workspaces の Lua パッケージ。plugins.split-monitor-workspaces として require する。
+  xdg.configFile."hypr/plugins/split-monitor-workspaces".source = inputs.split-monitor-workspaces;
 
   # Hints UI config / Hints UI 設定
   # Shrink overlay footprint. / オーバーレイを小さく表示。

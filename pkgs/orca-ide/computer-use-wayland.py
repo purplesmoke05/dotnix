@@ -14,8 +14,8 @@ functions that need Wayland-native tools:
   type_text      -> wtype
   press_key      -> dotool
   hotkey         -> dotool
-  click/scroll/drag -> hyprctl movecursor + dotool
-  restore_window -> AT-SPI grab_focus, then hyprctl focuswindow
+  click/scroll/drag -> hyprctl dispatch hl.dsp.cursor.move + dotool
+  restore_window -> AT-SPI grab_focus, then hyprctl dispatch hl.dsp.focus
 
 It is wired in through ORCA_COMPUTER_DESKTOP_SCRIPT_PROVIDER_PATH, so the
 upstream file stays byte-for-byte intact and `make update` needs no patch
@@ -158,13 +158,13 @@ def move_cursor(x, y):
     if not binary or not signature:
         raise RuntimeError("hyprctl is required to position the pointer on Wayland")
     result = subprocess.run(
-        [binary, "-i", signature, "dispatch", "movecursor", str(round(x)), str(round(y))],
+        [binary, "-i", signature, "dispatch", f"hl.dsp.cursor.move({{ x = {round(x)}, y = {round(y)} }})"],
         capture_output=True,
         text=True,
         timeout=POINTER_TIMEOUT_SECONDS,
     )
     if result.returncode != 0 or "ok" not in result.stdout.lower():
-        raise RuntimeError(f"hyprctl movecursor failed for ({round(x)}, {round(y)})")
+        raise RuntimeError(f"hyprctl cursor move failed for ({round(x)}, {round(y)})")
 
 
 def capture_png(rect):
@@ -419,7 +419,7 @@ def restore_window(app, window=None):
         if not address:
             continue
         subprocess.run(
-            [binary, "-i", signature, "dispatch", "focuswindow", f"address:{address}"],
+            [binary, "-i", signature, "dispatch", f"hl.dsp.focus({{ window = 'address:{address}' }})"],
             check=False,
             capture_output=True,
             timeout=POINTER_TIMEOUT_SECONDS,

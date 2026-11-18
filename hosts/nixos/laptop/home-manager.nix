@@ -1,6 +1,6 @@
 # Home Manager configuration / Home Manager 設定
 # Define the laptop user's environment. / ラップトップ向け個人環境を定義。
-{ pkgs, username, ... }: {
+{ pkgs, lib, username, ... }: {
   # Module imports / モジュール読み込み
   # Bring in development, CLI, GUI, and Hyprland modules. / 開発・CLI・GUI・Hyprland を統合。
   imports = [
@@ -21,21 +21,13 @@
 
   # Monitor configuration / モニター設定
   wayland.windowManager.hyprland.settings.monitor = [
-    "eDP-1,1920x1080@60,0x0,1" # Built-in panel 1080p60 / 内蔵ディスプレイ 1920x1080@60
+    # Built-in panel 1080p60 / 内蔵ディスプレイ 1920x1080@60
+    { output = "eDP-1"; mode = "1920x1080@60"; position = "0x0"; scale = "1"; }
   ];
-  # Workspace-to-monitor assignment / ワークスペース割当
-  wayland.windowManager.hyprland.settings.workspace = [
-    "1,monitor:eDP-1,default:true" # Primary workspace / 主要ワークスペース
-    "2,monitor:eDP-1"
-    "3,monitor:eDP-1"
-    "4,monitor:eDP-1"
-    "5,monitor:eDP-1"
-    "6,monitor:eDP-1"
-    "7,monitor:eDP-1"
-    "8,monitor:eDP-1"
-    "9,monitor:eDP-1"
-    "10,monitor:eDP-1"
-  ];
+  # Workspace-to-monitor assignment; workspace 1 is the primary one. / ワークスペース割当。1 番を主要ワークスペースにする。
+  wayland.windowManager.hyprland.settings.workspace_rule = map
+    (n: { workspace = toString n; monitor = "eDP-1"; } // lib.optionalAttrs (n == 1) { default = true; })
+    (lib.range 1 10);
 
   # Alias HQ host via Tailscale FQDN. / Tailscale FQDN 経由で HQ ホストをエイリアス化。
   programs.ssh.matchBlocks = {

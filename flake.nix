@@ -27,12 +27,13 @@
       url = "github:Jas-SinghFSU/HyprPanel";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    hyprsplit = {
-      url = "github:shezdy/hyprsplit?ref=v0.52.1";
-      inputs.hyprland.follows = "hyprland";
+    # Per-monitor workspaces as a Lua package; hyprsplit does not build on Hyprland 0.56 or later. / モニター別ワークスペースを Lua パッケージで提供する。hyprsplit は Hyprland 0.56 以降でビルドできない。
+    split-monitor-workspaces = {
+      url = "github:zjeffer/split-monitor-workspaces/v0.57.2";
+      flake = false;
     };
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.52.1";
+      url = "github:hyprwm/Hyprland/v0.57.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-darwin = {
@@ -57,7 +58,7 @@
 
   # Outputs / 出力定義
   # Collect systems, overlays, and Home Manager setups. / システム構成・オーバーレイ・Home Manager を束ねる。
-  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, hyprland, hyprsplit, hyprpanel, nix-darwin, brew-nix, sops-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, rust-overlay, nixos-hardware, xremap, flake-utils, hyprland, hyprpanel, nix-darwin, brew-nix, sops-nix, ... }@inputs:
     let
       # Python builders / Python ビルダー
       mkPythonBuilders = pkgs: {
@@ -560,7 +561,6 @@
           backupFileExtension = "backup-hm";
           extraSpecialArgs = {
             inherit inputs nixpkgs hostname username;
-            inherit (inputs) hyprsplit;
             userConfig = {
               desktop = true;
               dev = true;
@@ -627,7 +627,6 @@
           ] ++ extraModules;
           specialArgs = {
             inherit nixpkgs inputs hostname username;
-            inherit (inputs) hyprsplit;
           };
         };
 

@@ -228,12 +228,13 @@ class Hyprland:
         selector = f"address:{address}"
         global_x = monitor.x + placement.x
         global_y = monitor.y + placement.y
+        # hyprctl dispatch takes Lua dispatcher expressions; each succeeds with "ok". / hyprctl dispatch は Lua の dispatcher の式を受け取り、成功すると "ok" を返す。
         batch = (
-            f"dispatch resizewindowpixel exact {window_size[0]} {window_size[1]},{selector} ; "
-            f"dispatch movewindowpixel exact {global_x} {global_y},{selector}"
+            f"dispatch hl.dsp.window.resize({{ x = {window_size[0]}, y = {window_size[1]}, window = '{selector}' }}) ; "
+            f"dispatch hl.dsp.window.move({{ x = {global_x}, y = {global_y}, window = '{selector}' }})"
         )
         output = self._run("--batch", batch)
-        if any(line.lower().startswith("error") for line in output.splitlines()):
+        if any(line.strip().lower() not in ("", "ok") for line in output.splitlines()):
             raise PipStateError(
                 f"hyprctl rejected PiP placement restore: {output.strip()}"
             )

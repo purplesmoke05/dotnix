@@ -1436,13 +1436,13 @@ let
     target: slot:
     let
       slotText = builtins.toString slot;
-      batch = "dispatch focusmonitor desc:${target.description}; dispatch split:workspace ${slotText}";
+      batch = ''dispatch hl.dsp.focus({ monitor = "desc:${target.description}" }); dispatch smw.workspace("${slotText}")'';
       workspace = target.monitorId * displayLayout.workspacesPerMonitor + slot;
     in
     if target ? description then
       "!${hyprctlBin} --batch ${lib.escapeShellArg batch}"
     else
-      "!${hyprctlBin} dispatch workspace ${builtins.toString workspace}";
+      "!${hyprctlBin} dispatch ${lib.escapeShellArg ''hl.dsp.focus({ workspace = "${builtins.toString workspace}" })''}";
   mkWorkspaceModule = target: slot: {
     type = "custom";
     name = workspaceModuleName target.role slot;
@@ -1689,7 +1689,7 @@ let
                 type = "button";
                 class = "power-action";
                 label = "<span font-size='18pt'>󰜉</span>";
-                on_click = "!${hyprctlBin} dispatch exit";
+                on_click = "!${hyprctlBin} dispatch 'hl.dsp.exit()'";
               }
               {
                 type = "button";

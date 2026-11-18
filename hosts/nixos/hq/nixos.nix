@@ -61,7 +61,8 @@ in
           name=''${assignment%%=*}
           [ -n "''${!name+x}" ] || export "$assignment"
         done < <(${config.systemd.package}/lib/systemd/user-environment-generators/30-systemd-environment-d-generator)
-        exec Hyprland
+        # Upstream launches through the start-hyprland watchdog, which restarts Hyprland in safe mode after a crash. / 上流と同じく start-hyprland 経由で起動する。異常終了するとセーフモードで起動し直す。
+        exec start-hyprland
       '';
     in
     {

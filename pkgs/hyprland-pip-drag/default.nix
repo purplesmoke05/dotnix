@@ -1,18 +1,17 @@
 { lib
-, stdenv
 , pkg-config
 , meson
 , ninja
-, gcc14
 , hyprland
 , pixman
 , libdrm
 ,
 }:
 
-stdenv.mkDerivation {
+# Build with Hyprland's own stdenv so the plugin uses the same compiler and C++ standard. / プラグインが同じコンパイラーと C++ の規格を使うよう、Hyprland 自身の stdenv でビルドする。
+hyprland.stdenv.mkDerivation {
   pname = "hyprland-pip-drag";
-  version = "1.1.0";
+  version = "2.0.0";
 
   src = ./.;
 
@@ -20,7 +19,6 @@ stdenv.mkDerivation {
     pkg-config
     meson
     ninja
-    gcc14
   ];
 
   buildInputs = [
