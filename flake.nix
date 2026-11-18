@@ -477,13 +477,6 @@
               ];
             });
 
-            # Ghostty that keeps drawing when Hyprland before 0.55 leaves a visible window suspended. / Hyprland 0.55 未満が表示中のウィンドウを suspended のまま残しても描画を止めない Ghostty。
-            ghostty = prev.ghostty.overrideAttrs (old: {
-              patches = (old.patches or [ ]) ++ [
-                ./pkgs/ghostty/ignore-suspended.patch
-              ];
-            });
-
             # wpaperd that frees a removed output's GL objects in that output's own context; 1.3.0 freed them in another output's context, which crashed it in Mesa whenever an output was re-added (every LG PBP switch-off). / 外れた出力の GL オブジェクトをその出力のコンテキストで解放する wpaperd。1.3.0 は別の出力のコンテキストで解放し、出力の付け直し（LG の PBP を切るたび）で Mesa の中で落ちていた。
             wpaperd = prev.wpaperd.overrideAttrs (old: {
               patches = (old.patches or [ ]) ++ [
