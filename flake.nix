@@ -484,6 +484,13 @@
               ];
             });
 
+            # wpaperd that frees a removed output's GL objects in that output's own context; 1.3.0 freed them in another output's context, which crashed it in Mesa whenever an output was re-added (every LG PBP switch-off). / 外れた出力の GL オブジェクトをその出力のコンテキストで解放する wpaperd。1.3.0 は別の出力のコンテキストで解放し、出力の付け直し（LG の PBP を切るたび）で Mesa の中で落ちていた。
+            wpaperd = prev.wpaperd.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [
+                ./pkgs/wpaperd/drop-renderer-in-own-context.patch
+              ];
+            });
+
             # hints package (NixOS only) / hints パッケージ（NixOS 限定）
             hints = final.callPackage ./pkgs/hints {
               python3Packages = final.python312Packages;

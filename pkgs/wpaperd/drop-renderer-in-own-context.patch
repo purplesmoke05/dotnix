@@ -1,0 +1,55 @@
+--- a/daemon/src/render/egl_context.rs
++++ b/daemon/src/render/egl_context.rs
+@@ -1,3 +1,5 @@
++use std::mem::ManuallyDrop;
++
+ use image::DynamicImage;
+ use log::warn;
+ use smithay_client_toolkit::reexports::client::{protocol::wl_surface::WlSurface, Proxy};
+@@ -24,7 +26,8 @@
+     wl_egl_surface: WlEglSurface,
+     surface: khronos_egl::Surface,
+     display_name: String,
+-    pub renderer: Renderer,
++    // Dropped by hand in Drop, while this context is current.
++    pub renderer: ManuallyDrop<Renderer>,
+ }
+ 
+ impl EglContext {
+@@ -119,7 +122,7 @@
+             surface,
+             wl_egl_surface,
+             display_name: display_info.name.to_owned(),
+-            renderer,
++            renderer: ManuallyDrop::new(renderer),
+         })
+     }
+ 
+@@ -228,6 +231,27 @@
+ 
+ impl Drop for EglContext {
+     fn drop(&mut self) {
++        // Delete the renderer's buffers, program and textures in this context.
++        // Left to the implicit field drop, the deletions ran after
++        // eglDestroyContext against whichever context was current, often the
++        // context of another output. All contexts use the same object names, so
++        // that output lost its index buffer and its next glDrawElements read the
++        // indices from a null pointer and crashed inside Mesa when an output was
++        // removed and re-added. Surface drops its layer before its context, so
++        // the wl_surface is already gone here: bind no EGL surface.
++        match egl.make_current(self.display, None, None, Some(self.context)) {
++            // SAFETY: the renderer is not used after this point.
++            Ok(()) => unsafe { ManuallyDrop::drop(&mut self.renderer) },
++            // Leave the GL objects to eglDestroyContext rather than delete them
++            // in the context of another output.
++            Err(err) => warn!(
++                "{:?}",
++                eyre!(err).wrap_err(format!(
++                    "Failed to make the EGL context current for display {}, not freeing its renderer",
++                    self.display_name
++                ))
++            ),
++        }
+         if let Err(err) = egl.destroy_surface(self.display, self.surface) {
+             warn!(
+                 "{:?}",
