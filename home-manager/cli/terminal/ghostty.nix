@@ -101,6 +101,9 @@ let
 
     gtk-custom-css = [ "${config.xdg.configHome}/ghostty/ghostty-gtk.css" ];
     gtk-single-instance = false;
+
+    # Hide the drag handle that Ghostty 1.4.0 lays over the top edge of every split; splits can no longer be rearranged with the mouse. / Ghostty 1.4.0 が各分割の上端に重ねるドラッグハンドルを出さない。マウスでの分割の並べ替えはできなくなる。
+    drag-handle = "never";
   };
 in
 {
