@@ -316,8 +316,6 @@ in
             actions = {
               update-props = {
                 node.pause-on-idle = false
-                session.suspend-timeout-seconds = 0
-                resample.disable = true
                 resample.prefill = true
               }
             }
