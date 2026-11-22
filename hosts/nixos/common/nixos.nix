@@ -133,6 +133,8 @@ in
       nerd-fonts.noto
       nerd-fonts.jetbrains-mono
       nerd-fonts.hack
+      # Zed's terminal font: Hack with Japanese at exactly twice its width, so IME text lines up with the grid. / Zed の端末用。Hack と、ちょうど 2 倍幅の日本語の組み合わせで、変換中の文字もマス目とそろう。
+      hackgen-nf-font
       twemoji-color-font
       migu
       ipafont

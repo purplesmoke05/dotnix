@@ -9,7 +9,7 @@
   },
   "base_keymap": "VSCode",
   "buffer_font_fallbacks": [
-    "Noto Sans CJK JP"
+    "Source Han Sans"
   ],
   "buffer_font_family": "Hack Nerd Font",
   "buffer_font_size": 15,
@@ -38,6 +38,9 @@
     "diagnostics": false,
     "metrics": false
   },
+  "terminal": {
+    "font_family": "HackGen Console NF"
+  },
   "theme": {
     "dark": "Catppuccin Macchiato",
     "light": "Catppuccin Latte",
@@ -50,7 +53,7 @@
     "show_user_picture": false
   },
   "ui_font_fallbacks": [
-    "Noto Sans CJK JP"
+    "Source Han Sans"
   ],
   "ui_font_size": 16,
   "window_decorations": "server"
