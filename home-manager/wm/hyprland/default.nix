@@ -967,6 +967,8 @@ in
     configType = "lua";
 
     package = null;
+    # The NixOS module installs the portal too (programs.hyprland.portalPackage). With a portal package here, Home Manager also sets up a user-level portal: it adds nixpkgs' xdg-desktop-portal-hyprland to the profile and sets NIX_XDG_DESKTOP_PORTAL_DIR, which xdg-desktop-portal 1.22 no longer reads. / ポータルも NixOS のモジュールが入れる（programs.hyprland.portalPackage）。ここでポータルを指定すると、Home Manager がユーザー側のポータルも用意し、nixpkgs の xdg-desktop-portal-hyprland をプロファイルに足して NIX_XDG_DESKTOP_PORTAL_DIR を設定する。xdg-desktop-portal 1.22 はこの変数をもう読まない。
+    portalPackage = null;
 
     systemd.enable = true;
     systemd.enableXdgAutostart = true;
