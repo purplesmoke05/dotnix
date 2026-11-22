@@ -289,6 +289,19 @@ in
         $DRY_RUN_CMD ${pkgs.herdr}/bin/herdr plugin link ${lib.escapeShellArg "${plugin}"} --enabled
       '')
       herdrPlugins
+    + ''
+      # Unlink plugins linked from the Nix store that are no longer in herdrPlugins; Herdr keeps a link after its plugin leaves this list. A failed unlink only prints a message. / Nix ストアから登録したプラグインのうち、herdrPlugins にもうないものの登録を外す。一覧から外しても Herdr には登録が残るため。外せなくてもメッセージを出すだけにする。
+      ${pkgs.herdr}/bin/herdr plugin list --json \
+        | ${pkgs.jq}/bin/jq -r --argjson keep ${lib.escapeShellArg (builtins.toJSON (map toString herdrPlugins))} '
+            .result.plugins[]
+            | select(.source.kind == "local" and ((.plugin_root // "") | startswith("/nix/store/")))
+            | select((.plugin_root as $root | $keep | any(. == $root)) | not)
+            | .plugin_id' \
+        | while IFS= read -r plugin_id; do
+            $DRY_RUN_CMD ${pkgs.herdr}/bin/herdr plugin unlink "$plugin_id" \
+              || echo "linkHerdrPlugins: could not unlink $plugin_id" >&2
+          done
+    ''
   );
 
   xdg.configFile =
