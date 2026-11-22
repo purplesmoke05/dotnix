@@ -25,7 +25,7 @@
       // Files and buffers / ファイルとバッファー
       "ctrl-x ctrl-f": "file_finder::Toggle",
       "ctrl-x ctrl-b": "file_finder::Toggle",
-      "ctrl-x b": "pane::ActivatePreviousItem",
+      "ctrl-x b": "file_finder::Toggle",
       "ctrl-x n": "pane::ActivateNextItem",
       "ctrl-x ctrl-p": "pane::GoBack",
       "ctrl-x ctrl-o": "projects::OpenRecent",
@@ -34,7 +34,7 @@
       "ctrl-x s": "workspace::SaveAll",
       "ctrl-x k": "pane::CloseActiveItem",
       "ctrl-x c": "pane::CloseActiveItem",
-      "ctrl-x ctrl-c": "pane::CloseActiveItem",
+      "ctrl-x ctrl-c": "pane::CloseAllItems",
 
       // Panes and windows / ペインとウィンドウ
       "ctrl-x 0": "pane::CloseActiveItem",
@@ -50,6 +50,8 @@
       "alt-x": "command_palette::Toggle",
       "ctrl-[": "editor::ToggleFocus",
       "ctrl-=": "workspace::ToggleBottomDock",
+      // The key right of "-" on the JIS layout, which VSCode binds as ctrl+[Equal]. / JIS 配列で - の右のキー。VSCode では ctrl+[Equal] として割り当てている。
+      "ctrl-^": "workspace::ToggleBottomDock",
       "ctrl-\\": "zed::OpenKeymap",
       "ctrl-shift-b": "git::Blame",
 
@@ -142,6 +144,9 @@
       "alt-,": "pane::GoBack",
       "alt-?": "editor::FindAllReferences",
       "shift-f12": "editor::FindAllReferences",
+
+      // Focus the last buffer, as in VSCode, instead of Zed's outdent. / Zed の既定のインデント戻しではなく、VSCode と同じく直近のバッファーにフォーカスする。
+      "ctrl-[": "editor::ToggleFocus",
 
       // F8 and F9 do nothing outside debugging, as in VSCode. / F8・F9 は VSCode と同じく、デバッグ中でなければ何もしない。
       "f8": null,
@@ -293,6 +298,7 @@
     "context": "Terminal",
     "bindings": {
       "ctrl-=": "terminal_panel::Toggle",
+      "ctrl-^": "terminal_panel::Toggle",
       "ctrl-y": "terminal::Paste",
       "ctrl-x ctrl-c": "pane::CloseActiveItem",
       // Keep these C-x keys from reaching the workspace while in a terminal. / 端末では、これらの C-x キーをワークスペースに渡さない。
@@ -329,6 +335,8 @@
       "ctrl-x ctrl-n": "project_panel::NewFile",
       "ctrl-u f": "project_panel::NewDirectory",
       "ctrl-u ctrl-f": "project_panel::NewDirectory",
+      "ctrl-u d": "project_panel::NewDirectory",
+      "ctrl-u ctrl-d": "project_panel::NewDirectory",
       "ctrl-u r": "project_panel::Rename",
       "ctrl-u ctrl-r": "project_panel::Rename",
       "ctrl-x d": "project_panel::OpenSplitVertical",
