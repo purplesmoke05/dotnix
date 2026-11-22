@@ -24,6 +24,26 @@
     "dock": "left"
   },
   "icon_theme": "Zed (Default)",
+  "languages": {
+    "Python": {
+      "language_servers": [
+        "pyrefly",
+        "!basedpyright",
+        "..."
+      ]
+    }
+  },
+  "lsp": {
+    "pyrefly": {
+      "initialization_options": {
+        "python": {
+          "pyrefly": {
+            "displayTypeErrors": "force-on"
+          }
+        }
+      }
+    }
+  },
   "outline_panel": {
     "dock": "left"
   },

@@ -25,6 +25,7 @@
     zig
     uv
     python3
+    pyrefly # Python type checker and language server; Zed runs this one from PATH / Python の型チェッカー兼言語サーバー。Zed は PATH にあるこれを使う
     sqlite
     codex
     opencode
