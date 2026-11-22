@@ -489,6 +489,59 @@
               python3Packages = final.python312Packages;
             };
 
+            # FFmpeg 9.1 until nixpkgs ships it (NixOS/nixpkgs#590840). 9.1 fixes the FFmpeg CVEs published on 2026-11-09 ("FFmpeg through 9.0.2"). It is nixpkgs' own generic.nix with what that PR changes for 9.1: 9.1 already contains the openapv 1.1 fix and drops the OpenGL option. The version reads 9.1.0 so that hq can swap it in for 9.0.2 with replaceDependencies, which needs names of the same length. Remove it once nixpkgs has 9.1. / nixpkgs に入るまでの FFmpeg 9.1（NixOS/nixpkgs#590840）。2026-11-09 に公開された FFmpeg の CVE（「9.0.2 以下」）を直している。nixpkgs の generic.nix に、その PR が 9.1 で変える点（openapv 1.1 の修正は取り込み済み、OpenGL のオプションは廃止）だけを合わせる。版を 9.1.0 と書くのは、hq が replaceDependencies で 9.0.2 と差し替えるときに同じ長さの名前が要るため。nixpkgs が 9.1 になったら外す。
+            ffmpeg-headless_9_1 = (final.callPackage "${prev.path}/pkgs/development/libraries/ffmpeg/generic.nix" {
+              inherit (final.darwin) xcode;
+              inherit (final.cudaPackages) cuda_cudart cuda_nvcc libnpp;
+              version = "9.1.0";
+              source = final.fetchgit {
+                url = "https://git.ffmpeg.org/ffmpeg.git";
+                rev = "n9.1";
+                hash = "sha256-XK9nk9wqoINbMqjTE6dWm4E5b3wmke4vsqeHshgu6UQ=";
+              };
+              ffmpegVariant = "headless";
+            }).overrideAttrs (old: {
+              patches = prev.lib.filter (patch: !(prev.lib.hasInfix "openapv" (patch.name or ""))) (old.patches or [ ]);
+              configureFlags = prev.lib.filter (flag: !(prev.lib.hasSuffix "-opengl" flag)) old.configureFlags;
+            });
+
+            # FFmpeg for the media that StreamController opens through imageio-ffmpeg and videoprops. It reads GIF, MP4 (H.264) and WebM (VP8/VP9) only, so CVEs in every other decoder, demuxer or filter are not compiled into it, and the vulnerability check sees that per CVE. / StreamController が imageio-ffmpeg と videoprops 経由で開く動画用の FFmpeg。GIF、MP4（H.264）、WebM（VP8/VP9）だけを読むので、ほかのデコーダー・デマルチプレクサー・フィルターの CVE はこのビルドに入っておらず、脆弱性チェックも CVE ごとにそう判定する。
+            ffmpeg-streamcontroller = (final.ffmpeg-headless_9_1.override {
+              withHeadlessDeps = false;
+              buildFfmpeg = true;
+              buildFfprobe = true;
+              buildAvcodec = true;
+              buildAvdevice = true;
+              buildAvfilter = true;
+              buildAvformat = true;
+              buildAvutil = true;
+              buildSwresample = true;
+              buildSwscale = true;
+              withZlib = true;
+              withSafeBitstreamReader = true;
+            }).overrideAttrs (old: {
+              pname = "ffmpeg-streamcontroller";
+              # imageio-ffmpeg checks that the binary reports this version, and nothing swaps this build in, so it needs no padded name. The source stays the 9.1 tag, so the version-without-src warning does not apply. / imageio-ffmpeg はバイナリーが報告する版とこの版の一致を確かめる。このビルドは差し替えに使わないので、名前の長さを合わせる必要もない。ソースは 9.1 のタグのままなので、src なしで版を変えたという警告は当たらない。
+              version = "9.1";
+              __intentionallyOverridingVersion = true;
+              configureFlags = old.configureFlags ++ [
+                "--disable-everything"
+                "--enable-protocol=file,pipe"
+                "--enable-demuxer=gif,matroska,mov"
+                "--enable-decoder=gif,h264,vp8,vp9"
+                "--enable-parser=gif,h264,vp8,vp9"
+                "--enable-bsf=vp9_superframe_split"
+                # imageio-ffmpeg reads frames as raw video from a pipe. / imageio-ffmpeg はフレームを raw video としてパイプから読む。
+                "--enable-encoder=rawvideo"
+                "--enable-muxer=image2pipe,rawvideo"
+                "--enable-filter=format,null,scale"
+              ];
+              # FATE would test components this build leaves out. / FATE はこのビルドに入れない部品も試験する。
+              doCheck = false;
+            });
+            # OpenCV without FFmpeg: nixpkgs' OpenCV still needs FFmpeg 8, which the 2026-11-09 FFmpeg CVEs all reach. StreamController reads key and background videos through OpenCV's GStreamer backend instead, and hints only processes screenshots. / FFmpeg なしの OpenCV。nixpkgs の OpenCV はまだ FFmpeg 8 が必要で、2026-11-09 の FFmpeg の CVE がすべて当たる。StreamController のキーと背景の動画は GStreamer バックエンドで読み、hints はスクリーンショットを処理するだけ。
+            opencv4 = prev.opencv4.override { enableFfmpeg = false; };
+
             # nixpkgs ships typepy 2.0 while these typepy users still require typepy<2, which breaks sbomnix (via df-diskcache and SimpleSQLite) for the vulnerability check. / nixpkgs の typepy 2.0 とこれらの typepy<2 指定が衝突し、脆弱性チェックの sbomnix（df-diskcache・SimpleSQLite 経由）がビルドできないため緩める。
             pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
               (_pyFinal: pyPrev:
@@ -503,6 +556,18 @@
                   sqliteschema = relaxTypepy pyPrev.sqliteschema;
                   tabledata = relaxTypepy pyPrev.tabledata;
                 })
+              # StreamController's other FFmpeg users get the same narrow build as OpenCV. / StreamController のほかの FFmpeg 利用者も OpenCV と同じ絞ったビルドを使う。
+              (_pyFinal: pyPrev: {
+                imageio-ffmpeg = pyPrev.imageio-ffmpeg.override { ffmpeg = final.ffmpeg-streamcontroller; };
+                get-video-properties = pyPrev.get-video-properties.override { ffmpeg-headless = final.ffmpeg-streamcontroller; };
+                # imageio's FFmpeg tests write H.264 video, which the narrow build cannot encode. StreamController does not write video with imageio. / imageio の FFmpeg テストは H.264 の動画を書き出すが、絞ったビルドではエンコードできない。StreamController は imageio で動画を書き出さない。
+                imageio = pyPrev.imageio.overridePythonAttrs (old: {
+                  disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
+                    "tests/test_ffmpeg.py"
+                    "tests/test_ffmpeg_info.py"
+                  ];
+                });
+              })
             ];
 
             python312Packages = prev.python312Packages.overrideScope (pyFinal: pyPrev: {
