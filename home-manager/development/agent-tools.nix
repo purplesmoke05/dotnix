@@ -96,18 +96,6 @@ let
       description = "annotate: review agent's last reply"
 
       [[keys.command]]
-      key = "prefix+up"
-      type = "plugin_action"
-      command = "cloudmanic.herdr-plus.projects"
-      description = "herdr-plus: projects"
-
-      [[keys.command]]
-      key = "prefix+down"
-      type = "plugin_action"
-      command = "cloudmanic.herdr-plus.quick-actions"
-      description = "herdr-plus: quick actions"
-
-      [[keys.command]]
       key = "prefix+m"
       type = "plugin_action"
       command = "nicosuave.memex.palette"
@@ -136,7 +124,6 @@ let
     pkgs.herdr-reviewr-plugin
     pkgs.herdr-annotate-plugin
     pkgs.herdr-auto-title-plugin
-    pkgs.herdr-plus-plugin
     pkgs.herdr-memex-plugin
     pkgs.herdr-navigator-plugin
     pkgs.herdr-agent-usage-plugin
@@ -311,7 +298,7 @@ in
       herdrProfiles
     // {
       "herdr/config.toml".source = config.lib.file.mkOutOfStoreSymlink herdrActiveConfig;
-      # Let Herdr Plus own worktree layouts without racing reviewr's auto-open hook. / Herdr Plus に worktree layout を任せ、reviewr の自動起動との競合を避ける。
+      # Do not open reviewr automatically when a worktree is created. / worktree を作ったときに reviewr を自動で開かない。
       "herdr/plugins/config/persiyanov.reviewr/config.toml".text = ''
         auto_open = false
       '';

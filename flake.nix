@@ -277,7 +277,6 @@
             herdr-reviewr-plugin = final.callPackage ./pkgs/herdr-reviewr-plugin { };
             herdr-annotate-plugin = final.callPackage ./pkgs/herdr-annotate-plugin { };
             herdr-auto-title-plugin = final.callPackage ./pkgs/herdr-auto-title-plugin { };
-            herdr-plus-plugin = final.callPackage ./pkgs/herdr-plus-plugin { };
             herdr-memex-plugin = final.callPackage ./pkgs/herdr-memex-plugin { };
             herdr-navigator-plugin = final.callPackage ./pkgs/herdr-navigator-plugin { };
             herdr-agent-usage-plugin = final.callPackage ./pkgs/herdr-agent-usage-plugin { };
@@ -854,7 +853,6 @@
           herdr-reviewr-plugin = pkgs.herdr-reviewr-plugin;
           herdr-annotate-plugin = pkgs.herdr-annotate-plugin;
           herdr-auto-title-plugin = pkgs.herdr-auto-title-plugin;
-          herdr-plus-plugin = pkgs.herdr-plus-plugin;
           herdr-memex-plugin = pkgs.herdr-memex-plugin;
           herdr-navigator-plugin = pkgs.herdr-navigator-plugin;
           herdr-agent-usage-plugin = pkgs.herdr-agent-usage-plugin;
