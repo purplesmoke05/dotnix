@@ -1,5 +1,5 @@
 { lib
-, python313
+, python3
 , symlinkJoin
 , uv
 , writeShellApplication
@@ -9,6 +9,7 @@ let
   version = "0.34.0";
   excludeNewer = "2026-08-09T00:00:00Z";
 
+  # headroom-ai installs litellm only below Python 3.14; litellm serves the litellm-* backends and extra pricing data, while these wrappers use the default backend and headroom's own pricing table. / headroom-ai は Python 3.14 以上では litellm を入れない。litellm は litellm-* のバックエンドと料金の補足に使うもので、このラッパーは既定のバックエンドと headroom 自身の料金表を使う。
   headroomCli = writeShellApplication {
     name = "headroom";
     runtimeInputs = [ uv ];
@@ -20,7 +21,7 @@ let
         --no-progress \
         --no-build \
         --exclude-newer ${excludeNewer} \
-        --python ${python313}/bin/python3 \
+        --python ${python3}/bin/python3 \
         --from "headroom-ai[proxy]==${version}" \
         headroom "$@"
     '';

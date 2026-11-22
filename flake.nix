@@ -485,9 +485,7 @@
             });
 
             # hints package (NixOS only) / hints パッケージ（NixOS 限定）
-            hints = final.callPackage ./pkgs/hints {
-              python3Packages = final.python312Packages;
-            };
+            hints = final.callPackage ./pkgs/hints { };
 
             # FFmpeg 9.1 until nixpkgs ships it (NixOS/nixpkgs#590840). 9.1 fixes the FFmpeg CVEs published on 2026-11-09 ("FFmpeg through 9.0.2"). It is nixpkgs' own generic.nix with what that PR changes for 9.1: 9.1 already contains the openapv 1.1 fix and drops the OpenGL option. The version reads 9.1.0 so that hq can swap it in for 9.0.2 with replaceDependencies, which needs names of the same length. Remove it once nixpkgs has 9.1. / nixpkgs に入るまでの FFmpeg 9.1（NixOS/nixpkgs#590840）。2026-11-09 に公開された FFmpeg の CVE（「9.0.2 以下」）を直している。nixpkgs の generic.nix に、その PR が 9.1 で変える点（openapv 1.1 の修正は取り込み済み、OpenGL のオプションは廃止）だけを合わせる。版を 9.1.0 と書くのは、hq が replaceDependencies で 9.0.2 と差し替えるときに同じ長さの名前が要るため。nixpkgs が 9.1 になったら外す。
             ffmpeg-headless_9_1 = (final.callPackage "${prev.path}/pkgs/development/libraries/ffmpeg/generic.nix" {
@@ -835,9 +833,7 @@
 
         packages = pythonTools.pythonVersions // {
           # hints flake output / hints フレーク出力
-          hints = pkgs.callPackage ./pkgs/hints {
-            python3Packages = pkgs.python312Packages;
-          };
+          hints = pkgs.callPackage ./pkgs/hints { };
           fcitx5-hazkey = pkgs.fcitx5-hazkey;
           claude-code = pkgs.claude-code;
           grype = pkgs.grype;
