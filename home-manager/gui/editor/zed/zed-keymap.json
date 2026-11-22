@@ -21,6 +21,15 @@
       "ctrl-b": null,
       "ctrl-n": null,
       "ctrl-p": null,
+      // Keys VSCode unbinds or uses only inside editors; they do nothing elsewhere. / VSCode で外しているか、エディターの中だけで使うキー。それ以外の場所では何もしない。
+      "ctrl-s": null,
+      "ctrl-w": null,
+      "ctrl-j": null,
+      "ctrl-e": null,
+      "ctrl-r": null,
+      "ctrl-o": null,
+      "ctrl-0": null,
+      "ctrl--": null,
 
       // Files and buffers / ファイルとバッファー
       "ctrl-x ctrl-f": "file_finder::Toggle",
@@ -116,18 +125,24 @@
 
       // Deleting / 削除
       "ctrl-d": "editor::Delete",
+      // C-h (on macOS; xremap handles it on hq) and C-Backspace delete one character, as in VSCode. / C-h（macOS 用。hq では xremap が処理する）と C-Backspace は、VSCode と同じく 1 文字削除にする。
+      "ctrl-h": "editor::Backspace",
+      "ctrl-backspace": "editor::Backspace",
       "alt-d": ["editor::DeleteToNextWordEnd", { "ignore_newlines": false, "ignore_brackets": false }],
       "alt-backspace": "editor::DeleteToPreviousWordStart",
       "alt-delete": "editor::DeleteToPreviousWordStart",
+      "ctrl-0": "editor::DeleteToPreviousSubwordStart",
+      "ctrl-9": "editor::DeleteToNextSubwordEnd",
 
       // Undo / 元に戻す
       "ctrl-/": "editor::Undo",
       "ctrl-_": "editor::Undo",
       "ctrl-x u": "editor::Undo",
 
-      // Search / 検索
+      // Search and replace / 検索と置換
       "ctrl-s": "buffer_search::Deploy",
       "ctrl-r": "buffer_search::Deploy",
+      "ctrl-o": "buffer_search::DeployReplace",
 
       // Editing / 編集
       "ctrl-t": "editor::Transpose",
@@ -148,6 +163,12 @@
       // Focus the last buffer, as in VSCode, instead of Zed's outdent. / Zed の既定のインデント戻しではなく、VSCode と同じく直近のバッファーにフォーカスする。
       "ctrl-[": "editor::ToggleFocus",
 
+      // Zed defaults that VSCode unbinds: rename, undo selection, delete word and paste. / VSCode で外している Zed の既定（名前の変更、選択を戻す、単語の削除、貼り付け）。
+      "f2": null,
+      "ctrl-u": null,
+      "ctrl-delete": null,
+      "shift-insert": null,
+
       // F8 and F9 do nothing outside debugging, as in VSCode. / F8・F9 は VSCode と同じく、デバッグ中でなければ何もしない。
       "f8": null,
       "f9": null
@@ -157,15 +178,7 @@
     // Full-size editors only / 通常のエディターだけ
     "context": "Editor && mode == full",
     "bindings": {
-      // Backspace for C-h on macOS and for C-Backspace / macOS の C-h と C-Backspace を Backspace にする
-      "ctrl-h": "editor::Backspace",
-      "ctrl-backspace": "editor::Backspace",
-      "ctrl-0": "editor::DeleteToPreviousSubwordStart",
-      "ctrl-9": "editor::DeleteToNextSubwordEnd",
       "cmd-b": "editor::MoveToPreviousWordStart",
-
-      // Replace / 置換
-      "ctrl-o": "buffer_search::DeployReplace",
 
       // Code / コード
       "ctrl-.": "editor::ToggleCodeActions",
@@ -301,6 +314,10 @@
       "ctrl-^": "terminal_panel::Toggle",
       "ctrl-y": "terminal::Paste",
       "ctrl-x ctrl-c": "pane::CloseActiveItem",
+      // Send C-s and C-j to the shell, which the workspace no longer uses; VSCode also unbinds the Shift+Insert paste. / ワークスペースで使わなくなった C-s・C-j はシェルに送る。Shift+Insert の貼り付けは VSCode でも外している。
+      "ctrl-s": ["terminal::SendKeystroke", "ctrl-s"],
+      "ctrl-j": ["terminal::SendKeystroke", "ctrl-j"],
+      "shift-insert": null,
       // Keep these C-x keys from reaching the workspace while in a terminal. / 端末では、これらの C-x キーをワークスペースに渡さない。
       "ctrl-x ctrl-f": null,
       "ctrl-x ctrl-s": null,
@@ -312,7 +329,10 @@
     "context": "Pane",
     "bindings": {
       "ctrl-alt-left": "pane::GoBack",
-      "ctrl-alt-right": "pane::GoForward"
+      "ctrl-alt-right": "pane::GoForward",
+      // VSCode unbinds closing a tab with C-w and moving to the next tab with C-PageDown. / C-w でタブを閉じる操作と C-PageDown で次のタブへ移る操作は、VSCode で外している。
+      "ctrl-w": null,
+      "ctrl-pagedown": null
     }
   },
   {
@@ -340,7 +360,10 @@
       "ctrl-u r": "project_panel::Rename",
       "ctrl-u ctrl-r": "project_panel::Rename",
       "ctrl-x d": "project_panel::OpenSplitVertical",
-      "ctrl-x ctrl-d": "project_panel::OpenSplitVertical"
+      "ctrl-x ctrl-d": "project_panel::OpenSplitVertical",
+      // Renaming and pasting use C-u r and C-y, as in VSCode. / 名前の変更と貼り付けは、VSCode と同じく C-u r と C-y を使う。
+      "f2": null,
+      "shift-insert": null
     }
   },
   {
