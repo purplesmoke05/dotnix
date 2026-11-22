@@ -1646,7 +1646,8 @@ let
         name = "vuln-status-trigger";
         label = "{{10000:${nixVulnStatusLabelScript}}}";
         on_click = "popup:toggle";
-        on_click_right = "!${nixVulnStatusTriggerScript}";
+        # A common option, so Ironbar hands the string to sh as it is; only a custom button's on_click takes the "!" prefix. / 共通オプションなので Ironbar は文字列をそのまま sh に渡す。"!" を付けるのはカスタムボタンの on_click だけ。
+        on_click_right = "${nixVulnStatusTriggerScript}";
       }
     ];
     popup = [
