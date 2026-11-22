@@ -306,13 +306,6 @@
             end
 
             echo "VSCode configuration updated successfully."
-
-            echo "Updating Zed keymap from VSCode keybindings..."
-            if not $HOME/.nix/scripts/zed-sync-keymap
-              echo "Error: Failed to update Zed keymap. Aborting."
-              return 1
-            end
-            echo "Zed keymap updated successfully."
           else
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
@@ -357,13 +350,6 @@
             end
 
             echo "VSCode configuration updated successfully."
-
-            echo "Updating Zed keymap from VSCode keybindings..."
-            if not $HOME/.nix/scripts/zed-sync-keymap
-              echo "Error: Failed to update Zed keymap. Aborting."
-              return 1
-            end
-            echo "Zed keymap updated successfully."
           else
             echo "Skipping VSCode settings/keybindings sync (--skip-vscode)."
           end
