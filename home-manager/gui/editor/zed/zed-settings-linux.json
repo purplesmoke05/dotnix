@@ -4,10 +4,21 @@
     "favorite_models": [],
     "model_parameters": []
   },
+  "auto_install_extensions": {
+    "catppuccin": true
+  },
   "base_keymap": "VSCode",
+  "buffer_font_fallbacks": [
+    "Noto Sans CJK JP"
+  ],
+  "buffer_font_family": "Hack Nerd Font",
   "buffer_font_size": 15,
   "collaboration_panel": {
+    "button": false,
     "dock": "left"
+  },
+  "edit_predictions": {
+    "button": false
   },
   "git_panel": {
     "dock": "left"
@@ -28,9 +39,19 @@
     "metrics": false
   },
   "theme": {
-    "dark": "Ayu Dark",
-    "light": "One Light",
+    "dark": "Catppuccin Macchiato",
+    "light": "Catppuccin Latte",
     "mode": "dark"
   },
-  "ui_font_size": 16
+  "title_bar": {
+    "show_onboarding_banner": false,
+    "show_sign_in": false,
+    "show_user_menu": false,
+    "show_user_picture": false
+  },
+  "ui_font_fallbacks": [
+    "Noto Sans CJK JP"
+  ],
+  "ui_font_size": 16,
+  "window_decorations": "server"
 }
