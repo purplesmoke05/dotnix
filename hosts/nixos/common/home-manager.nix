@@ -188,14 +188,23 @@ in
   # Exa MCP service / Exa MCP サービス
   # Start after network and restart on failure. / ネットワーク後に自動起動し失敗時に再起動。
 
+  # SSH client defaults / SSH クライアントの既定値
+  # Home Manager plans to drop its built-in Host * defaults, so they are written here. Values other than AddKeysToAgent and ServerAliveInterval keep those former defaults. / Home Manager は組み込みの Host * の既定値をなくす予定なので、ここで書く。AddKeysToAgent と ServerAliveInterval 以外は、その以前の既定値のまま。
   programs.ssh = {
     enable = true;
-
-    extraConfig = ''
-      AddKeysToAgent yes
-      ServerAliveInterval 60
-    '';
-
+    enableDefaultConfig = false;
+    settings."*" = {
+      AddKeysToAgent = "yes";
+      ServerAliveInterval = 60;
+      ServerAliveCountMax = 3;
+      ForwardAgent = false;
+      Compression = false;
+      HashKnownHosts = false;
+      UserKnownHostsFile = "~/.ssh/known_hosts";
+      ControlMaster = "no";
+      ControlPath = "~/.ssh/master-%r@%n:%p";
+      ControlPersist = "no";
+    };
   };
 
 }

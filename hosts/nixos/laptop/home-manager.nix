@@ -30,11 +30,9 @@
     (lib.range 1 10);
 
   # Alias HQ host via Tailscale FQDN. / Tailscale FQDN 経由で HQ ホストをエイリアス化。
-  programs.ssh.matchBlocks = {
-    "hq" = {
-      hostname = "nixos-hq.tailfdaf8.ts.net";
-      user = "purplehaze";
-      identityFile = "~/.ssh/id_ed25519";
-    };
+  programs.ssh.settings."hq" = {
+    HostName = "nixos-hq.tailfdaf8.ts.net";
+    User = "purplehaze";
+    IdentityFile = "~/.ssh/id_ed25519";
   };
 }
