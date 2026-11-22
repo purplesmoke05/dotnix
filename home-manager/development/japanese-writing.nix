@@ -5,7 +5,7 @@ let
   # Fetch the full guideline instead of committing it, because its source states no license. / 出典にライセンスの記載がないため、全文はコミットせずに取得する。
   humanizerGuideline = pkgs.fetchurl {
     url = "https://imoz.jp/humanizer.ja.txt";
-    hash = "sha256-R8D1ei/XyXx9DIogSCRdvoxkgrBRqiB0xK/rexY9Ne4=";
+    hash = "sha256-PHP0Eg11n0jmy+VsVt10fnqO01AGRMP4JktUv2sWrns=";
   };
   humanizerSkill = pkgs.runCommand "humanizer-ja-skill" { } ''
     install -Dm644 ${./japanese-writing/humanizer-ja/SKILL.md} "$out/SKILL.md"
