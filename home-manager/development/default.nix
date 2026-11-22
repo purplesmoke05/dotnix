@@ -28,6 +28,7 @@
     sqlite
     codex
     opencode
+    antigravity-cli # agy: Google Antigravity's terminal agent / agy: Google Antigravity のターミナル用エージェント
     confluence-cli
     officecli
     claude-code

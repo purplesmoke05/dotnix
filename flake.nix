@@ -241,6 +241,30 @@
                   vendorHash = "sha256-FvMqeUfX4c2Vm+L2GIDGoxN3w+7UyNI0VRada0zSvcc=";
                 });
 
+            # antigravity-cli (agy) at the latest upstream release. The hashes are the sha512 values in Google's manifest (https://storage.googleapis.com/antigravity-public/antigravity-cli/<version>/manifest.json). Follows nixpkgs once it catches up. / antigravity-cli（agy）を上流の最新版にする。ハッシュは Google のマニフェストにある sha512。nixpkgs が追いつけばそちらを使う。
+            antigravity-cli =
+              let
+                version = "1.5.14";
+                buildId = "5799134742052864";
+                archives = {
+                  x86_64-linux = { dir = "linux-x64"; file = "cli_linux_x64.tar.gz"; hash = "sha512-pdhjWXa/2NLsCFhIGJ0k/0+k2RZc8Tgv4NwpICrzzoX30F+9mAH38hijxdxvFs/QhQFXICZwYk3tKXWnzF0RLA=="; };
+                  aarch64-linux = { dir = "linux-arm"; file = "cli_linux_arm64.tar.gz"; hash = "sha512-AyNL+05TLlAET5zuncomP3tF+BK3iGJdY6aQ9szKb/QpJyXzbQsjNrM7RvNusjdOF52DS3bE6VvdMzg2+uzK8Q=="; };
+                  aarch64-darwin = { dir = "darwin-arm"; file = "cli_mac_arm64.tar.gz"; hash = "sha512-sF0IV9myQQLa4jtnLhMjBSBHqBDhApACqejJf4VgGZ7OZbQgqWX1J5DvwduNwC1k+x4hgJ/q6wgwlHflcFud6w=="; };
+                };
+                archive = archives.${final.stdenv.hostPlatform.system}
+                  or (throw "antigravity-cli: unsupported system ${final.stdenv.hostPlatform.system}");
+              in
+              if final.lib.versionAtLeast prev.antigravity-cli.version version then
+                prev.antigravity-cli
+              else
+                prev.antigravity-cli.overrideAttrs (_: {
+                  inherit version;
+                  src = final.fetchurl {
+                    url = "https://storage.googleapis.com/antigravity-public/antigravity-cli/${version}-${buildId}/${archive.dir}/${archive.file}";
+                    inherit (archive) hash;
+                  };
+                });
+
             # claude-code package / claude-code パッケージ
             claude-code = final.callPackage ./pkgs/claude-code { };
 
