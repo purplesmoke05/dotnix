@@ -5,7 +5,8 @@
     "model_parameters": []
   },
   "auto_install_extensions": {
-    "catppuccin": true
+    "catppuccin": true,
+    "catppuccin-icons": true
   },
   "base_keymap": "VSCode",
   "buffer_font_fallbacks": [
@@ -23,7 +24,7 @@
   "git_panel": {
     "dock": "left"
   },
-  "icon_theme": "Zed (Default)",
+  "icon_theme": "Catppuccin Macchiato",
   "languages": {
     "Python": {
       "language_servers": [
@@ -53,6 +54,9 @@
   },
   "session": {
     "trust_all_worktrees": true
+  },
+  "tabs": {
+    "file_icons": true
   },
   "telemetry": {
     "diagnostics": false,
