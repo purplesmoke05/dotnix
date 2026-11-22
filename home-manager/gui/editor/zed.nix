@@ -48,13 +48,14 @@ in
 
         ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$shared_tmp" "$platform_tmp" > "$merged_tmp"
         if [ "$(${pkgs.jq}/bin/jq 'length' "$merged_tmp")" -gt 0 ]; then
-          $DRY_RUN_CMD cp --remove-destination "$merged_tmp" "${zedConfigDir}/settings.json"
+          # Write in place: a replaced file is no longer watched by a running Zed. / 置き換えたファイルは動いている Zed が監視しなくなるので、上書きで書く。
+          $DRY_RUN_CMD cp -f "$merged_tmp" "${zedConfigDir}/settings.json"
           $DRY_RUN_CMD chmod 644 "${zedConfigDir}/settings.json"
         fi
         cleanup
         trap - EXIT
       fi
-      $DRY_RUN_CMD cp --remove-destination ${./zed/zed-keymap.json} "${zedConfigDir}/keymap.json"
+      $DRY_RUN_CMD cp -f ${./zed/zed-keymap.json} "${zedConfigDir}/keymap.json"
       $DRY_RUN_CMD chmod 644 "${zedConfigDir}/keymap.json"
     '';
   };
