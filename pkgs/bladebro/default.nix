@@ -50,7 +50,7 @@ rustPlatform.buildRustPackage rec {
       --set CHROME_PATH ${lib.getExe google-chrome}
       --set BLADE_NO_UPDATE_CHECK 1
     )
-    ${lib.optionalString stdenv.isLinux ''
+    ${lib.optionalString stdenv.hostPlatform.isLinux ''
       # Provide an invisible headful display and font discovery on Linux. / Linux では不可視の headful display とフォント検出を提供する。
       wrapper_args+=(--prefix PATH : ${lib.makeBinPath [ xvfb fontconfig ]})
     ''}

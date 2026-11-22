@@ -39,7 +39,7 @@
     # - Custom keybindings
     # - Plugin settings
     # - Editor behavior
-    extraLuaConfig = ''
+    initLua = ''
       -- Lua configuration goes here
     '';
   };

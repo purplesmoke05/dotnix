@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }:
 let
-  isLinux = pkgs.stdenv.isLinux;
-  isDarwin = pkgs.stdenv.isDarwin;
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
+  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
 
   ghosttyExe = lib.getExe config.programs.ghostty.package;
 

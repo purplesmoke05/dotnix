@@ -64,9 +64,9 @@ stdenv.mkDerivation {
   dontStrip = true;
 
   nativeBuildInputs = [ makeWrapper ]
-    ++ lib.optionals stdenv.isLinux (lib.filter (x: x != null) [ autoPatchelfHook ]);
+    ++ lib.optionals stdenv.hostPlatform.isLinux (lib.filter (x: x != null) [ autoPatchelfHook ]);
 
-  buildInputs = lib.optionals stdenv.isLinux [ stdenv.cc.cc.lib ];
+  buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ stdenv.cc.cc.lib ];
 
   installPhase = ''
     runHook preInstall

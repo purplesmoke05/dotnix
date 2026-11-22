@@ -69,6 +69,7 @@ in
   # Cursor theme / カーソルテーマ
   # Use Adwaita across desktops. / Adwaita を全体で利用。
   home.pointerCursor = {
+    enable = true;
     name = "Adwaita";
     package = pkgs.adwaita-icon-theme;
     size = 24;

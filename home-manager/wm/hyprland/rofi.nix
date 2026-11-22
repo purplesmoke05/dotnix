@@ -5,11 +5,11 @@
       enable = true;
       # rofi-wayland is merged upstream; nixpkgs variant fails. / rofi-wayland は rofi に統合済み（nixpkgs 版はエラー）
       package = pkgs.rofi; # Wayland support comes from core rofi. / Wayland 対応は rofi 本体が提供
-      terminal = "term-main"; # Default terminal for terminal commands
       theme = builtins.toString ./rofi.rasi; # Custom theme file
 
-      # Additional configuration options
-      extraConfig = {
+      # Rasi configuration block
+      settings = {
+        terminal = "term-main"; # Default terminal for terminal commands
         modi = "run,drun,window"; # Available modes
         icon-theme = "Papirus"; # Icon theme for application entries
         show-icons = true; # Display application icons

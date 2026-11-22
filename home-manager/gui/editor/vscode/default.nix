@@ -11,8 +11,8 @@ let
     '';
 
   # Platform detection
-  isDarwin = pkgs.stdenv.isDarwin;
-  isLinux = pkgs.stdenv.isLinux;
+  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+  isLinux = pkgs.stdenv.hostPlatform.isLinux;
 
   # Keep settings/keybindings for our manual copy flow only. / 手動コピー用に設定とキーバインドを保持。
   vscodeSettings = import ./settings.nix;

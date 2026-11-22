@@ -669,8 +669,7 @@
             (mkHomeManagerConfig { inherit hostname username; })
             ({ config, pkgs, ... }: {
               assertions = [{
-                assertion = builtins.trace "Debug - Checking assertion: currentUser=${currentUser}, username=${username}"
-                  (currentUser != "" && currentUser == username);
+                assertion = currentUser != "" && currentUser == username;
                 message = "Current user (${if currentUser == "" then "unknown" else currentUser}) does not match configured username (${username})";
               }];
 

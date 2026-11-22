@@ -4,7 +4,7 @@ let
   quickTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
   devTermMonitor = if hostname == "hq" then "desc:${displayLayout.hq.right}" else "DP-2";
   isuconLayoutMonitor = if hostname == "hq" then "desc:${displayLayout.hq.left}" else "";
-  hyprlandPackage = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  hyprlandPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
 
   # Lua config helpers. Home Manager renders each settings entry as hl.<name>(...). / Lua 設定の補助。Home Manager は settings の各項目を hl.<name>(...) として出力する。
   toLua = lib.generators.toLua { };

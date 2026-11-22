@@ -66,7 +66,7 @@ in
       };
     };
   };
-  networking.wireless.userControlled.enable = true;
+  networking.wireless.userControlled = true;
   hardware.wirelessRegulatoryDatabase = true;
   # Do not fail activation when unused NetworkManager profiles stay pending. / 未使用の NetworkManager プロファイル待機で有効化を失敗させない。
   systemd.services.NetworkManager-wait-online.enable = false;
@@ -437,12 +437,12 @@ in
       at-spi2-core
       libdrm
       expat
-      xorg.libX11
-      xorg.libXcomposite
-      xorg.libXdamage
-      xorg.libXext
-      xorg.libXfixes
-      xorg.libXrandr
+      libx11
+      libxcomposite
+      libxdamage
+      libxext
+      libxfixes
+      libxrandr
       libxcb
       mesa
       libxkbcommon
@@ -450,10 +450,10 @@ in
       cairo
       nspr
       libxcursor
-      xorg.libXi
+      libxi
       gtk3
       gdk-pixbuf
-      xorg.libXrender
+      libxrender
       freetype
       # Additional runtime libs / 追加ランタイムライブラリ
       flac
@@ -475,7 +475,7 @@ in
       libgcrypt
       libvpx
       librsvg
-      xorg.libXft
+      libxft
       libvdpau
       libiconv
       llvmPackages.libclang.lib
@@ -504,8 +504,8 @@ in
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
-    package = inputs.hyprland.packages.${pkgs.system}.hyprland;
-    portalPackage = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+    portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };
 
   # uinput for hintsd / hintsd 用に uinput を有効化
@@ -720,7 +720,7 @@ in
   # Logitech Wireless Devices / Logicool ワイヤレスデバイス
   # Enable Solaar and udev rules for Unifying/Bolt receivers. / Solaar とレシーバー用 udev ルールを有効化。
   hardware.logitech.wireless.enable = true;
-  hardware.logitech.wireless.enableGraphical = true;
+  programs.solaar.enable = true;
 
   # Disable Bluetooth USB autosuspend / Bluetooth USB autosuspend を無効化
   boot.extraModprobeConfig = ''
