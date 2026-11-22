@@ -1,202 +1,240 @@
 [
+  // Zed keymap shared by hq and macOS, layered on base_keymap "VSCode". It follows the VSCode (emacs-mcx) setup; edit this file directly.
+  // base_keymap "VSCode" に重ねる Zed のキーマップ（hq と macOS で共通）。VSCode（emacs-mcx）の設定に合わせている。このファイルを直接編集する。
+  //
+  // When bindings in two blocks match at the same depth, the later block wins, so keep the block order.
+  // 同じ深さで重なった割り当ては、後ろのブロックが勝つ。ブロックの順番を崩さない。
+  //
+  // On hq, Hyprland takes ALT keys such as alt-; alt-l and alt-p first, and xremap turns C-h into Backspace.
+  // hq では、alt-;・alt-l・alt-p などの ALT キーを Hyprland が先に使い、C-h は xremap が Backspace に変える。
   {
+    // Everywhere / どこでも
     "bindings": {
       "ctrl-g": "menu::Cancel",
       "ctrl-q": "project_panel::ToggleFocus"
     }
   },
   {
+    "context": "Workspace",
+    "bindings": {
+      // Leave C-b, C-n and C-p to movement instead of the VSCode defaults. / C-b・C-n・C-p は VSCode の既定ではなく移動に使う。
+      "ctrl-b": null,
+      "ctrl-n": null,
+      "ctrl-p": null,
+
+      // Files and buffers / ファイルとバッファー
+      "ctrl-x ctrl-f": "file_finder::Toggle",
+      "ctrl-x ctrl-b": "file_finder::Toggle",
+      "ctrl-x b": "pane::ActivatePreviousItem",
+      "ctrl-x n": "pane::ActivateNextItem",
+      "ctrl-x ctrl-p": "pane::GoBack",
+      "ctrl-x ctrl-o": "projects::OpenRecent",
+      "ctrl-x ctrl-s": "workspace::Save",
+      "ctrl-x ctrl-w": "workspace::SaveAs",
+      "ctrl-x s": "workspace::SaveAll",
+      "ctrl-x k": "pane::CloseActiveItem",
+      "ctrl-x c": "pane::CloseActiveItem",
+      "ctrl-x ctrl-c": "pane::CloseActiveItem",
+
+      // Panes and windows / ペインとウィンドウ
+      "ctrl-x 0": "pane::CloseActiveItem",
+      "ctrl-x 1": "pane::CloseOtherItems",
+      "ctrl-x 2": "pane::SplitDown",
+      "ctrl-x 3": "pane::SplitRight",
+      "ctrl-x o": "workspace::ActivateNextPane",
+      "ctrl-x 5 2": "workspace::NewWindow",
+      "ctrl-x 5 0": "workspace::CloseWindow",
+      "alt-shift-n": "workspace::NewWindow",
+
+      // Commands and panels / コマンドとパネル
+      "alt-x": "command_palette::Toggle",
+      "ctrl-[": "editor::ToggleFocus",
+      "ctrl-=": "workspace::ToggleBottomDock",
+      "ctrl-\\": "zed::OpenKeymap",
+      "ctrl-shift-b": "git::Blame",
+
+      // Agent / エージェント
+      "ctrl-i": "agent::Chat",
+      "ctrl-]": "agent::Chat",
+      "ctrl-enter": "agent::OpenAddContextMenu",
+      "ctrl-shift-n": "agent::NewThread",
+      "ctrl-tab": "agent::CycleFavoriteModels"
+    }
+  },
+  {
+    // Every editor, including single-line inputs / すべてのエディター（1 行の入力欄を含む）
     "context": "Editor",
     "bindings": {
-      "alt-,": "pane::GoBack",
-      "alt-.": "editor::GoToDefinition",
-      "alt-;": [
-        "editor::ToggleComments",
-        {
-          "advance_downwards": false
-        }
-      ],
-      "alt-<": "editor::MoveToBeginning",
-      "alt->": "editor::MoveToEnd",
-      "alt-?": "editor::FindAllReferences",
-      "alt-^": "editor::JoinLines",
-      "alt-b": "editor::MoveToPreviousWordStart",
-      "alt-backspace": "editor::DeleteToPreviousWordStart",
-      "alt-c": "editor::ConvertToUpperCamelCase",
-      "alt-d": [
-        "editor::DeleteToNextWordEnd",
-        {
-          "ignore_newlines": false,
-          "ignore_brackets": false
-        }
-      ],
-      "alt-delete": "editor::DeleteToPreviousWordStart",
-      "alt-f": "editor::MoveToNextWordEnd",
-      "alt-g alt-g": "go_to_line::Toggle",
-      "alt-g g": "go_to_line::Toggle",
-      "alt-l": "editor::ConvertToLowerCase",
-      "alt-left": "editor::MoveToPreviousWordStart",
-      "alt-m": [
-        "editor::MoveToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false,
-          "stop_at_indent": true
-        }
-      ],
-      "alt-n": "editor::MoveToStartOfNextExcerpt",
-      "alt-p": [
-        "action::Sequence",
-        [
-          "editor::MoveToEndOfPreviousExcerpt",
-          "editor::MoveToStartOfExcerpt"
-        ]
-      ],
-      "alt-q": "editor::Rewrap",
-      "alt-right": "editor::MoveToNextWordEnd",
-      "alt-u": "editor::ConvertToUpperCase",
-      "alt-v": "editor::MovePageUp",
-      "alt-w": "editor::Copy",
-      "alt-{": "editor::MoveToStartOfParagraph",
-      "alt-}": "editor::MoveToEndOfParagraph",
-      "ctrl-/": "editor::Undo",
-      "ctrl-@": "editor::SetMark",
-      "ctrl-_": "editor::Undo",
-      "ctrl-a": [
-        "editor::MoveToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "ctrl-b": "editor::MoveLeft",
-      "ctrl-d": "editor::Delete",
-      "ctrl-down": "editor::MoveToEndOfParagraph",
-      "ctrl-e": [
-        "editor::MoveToEndOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "ctrl-end": "editor::MoveToEnd",
+      // Movement / 移動
       "ctrl-f": "editor::MoveRight",
-      "ctrl-g": "editor::Cancel",
-      "ctrl-home": "editor::MoveToBeginning",
-      "ctrl-k": "editor::KillRingCut",
-      "ctrl-l": "editor::ScrollCursorCenterTopBottom",
+      "ctrl-b": "editor::MoveLeft",
       "ctrl-n": "editor::MoveDown",
       "ctrl-p": "editor::MoveUp",
-      "ctrl-r": "buffer_search::Deploy",
-      "ctrl-s": "buffer_search::Deploy",
-      "ctrl-space": "editor::SetMark",
-      "ctrl-t": "editor::Transpose",
-      "ctrl-up": "editor::MoveToStartOfParagraph",
+      "ctrl-a": ["editor::MoveToBeginningOfLine", { "stop_at_soft_wraps": false }],
+      "ctrl-e": ["editor::MoveToEndOfLine", { "stop_at_soft_wraps": false }],
+      "home": ["editor::MoveToBeginningOfLine", { "stop_at_soft_wraps": false }],
+      "end": ["editor::MoveToEndOfLine", { "stop_at_soft_wraps": false }],
+      "alt-m": ["editor::MoveToBeginningOfLine", { "stop_at_soft_wraps": false, "stop_at_indent": true }],
+      "alt-f": "editor::MoveToNextWordEnd",
+      "alt-b": "editor::MoveToPreviousWordStart",
+      "alt-right": "editor::MoveToNextWordEnd",
+      "alt-left": "editor::MoveToPreviousWordStart",
       "ctrl-v": "editor::MovePageDown",
-      "ctrl-w": "editor::Cut",
-      "ctrl-x": null,
+      "alt-v": "editor::MovePageUp",
+      "alt-<": "editor::MoveToBeginning",
+      "alt->": "editor::MoveToEnd",
       "ctrl-x [": "editor::MoveToBeginning",
       "ctrl-x ]": "editor::MoveToEnd",
-      "ctrl-x ctrl-;": "editor::ToggleComments",
+      "alt-{": "editor::MoveToStartOfParagraph",
+      "alt-}": "editor::MoveToEndOfParagraph",
+      "ctrl-up": "editor::MoveToStartOfParagraph",
+      "ctrl-down": "editor::MoveToEndOfParagraph",
+      "alt-n": "editor::MoveToStartOfNextExcerpt",
+      "ctrl-l": "editor::ScrollCursorCenterTopBottom",
+      "alt-g g": "go_to_line::Toggle",
+      "alt-g alt-g": "go_to_line::Toggle",
+      "shift-home": ["editor::SelectToBeginningOfLine", { "stop_at_soft_wraps": false }],
+      "shift-end": ["editor::SelectToEndOfLine", { "stop_at_soft_wraps": false }],
+
+      // Mark / マーク
+      "ctrl-space": "editor::SetMark",
+      "ctrl-@": "editor::SetMark",
       "ctrl-x ctrl-x": "editor::SwapSelectionEnds",
       "ctrl-x h": "editor::SelectAll",
+      "ctrl-g": "editor::Cancel",
+
+      // Cut, copy and paste all use the system clipboard, as in VSCode. Unlike emacs-mcx, repeated C-k does not join the cut text.
+      // 切り取り・コピー・貼り付けは、VSCode と同じくすべてクリップボードを使う。emacs-mcx と違い、C-k を続けて押しても切り取った内容はつながらない。
+      "ctrl-k": "editor::CutToEndOfLine",
+      "ctrl-w": "editor::Cut",
+      "alt-w": "editor::Copy",
+      "ctrl-y": "editor::Paste",
+      // Free C-x for the C-x prefix. / C-x を接頭キーとして使う。
+      "ctrl-x": null,
+
+      // Deleting / 削除
+      "ctrl-d": "editor::Delete",
+      "alt-d": ["editor::DeleteToNextWordEnd", { "ignore_newlines": false, "ignore_brackets": false }],
+      "alt-backspace": "editor::DeleteToPreviousWordStart",
+      "alt-delete": "editor::DeleteToPreviousWordStart",
+
+      // Undo / 元に戻す
+      "ctrl-/": "editor::Undo",
+      "ctrl-_": "editor::Undo",
       "ctrl-x u": "editor::Undo",
-      "ctrl-y": "editor::KillRingYank",
-      "end": [
-        "editor::MoveToEndOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "home": [
-        "editor::MoveToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "shift-end": [
-        "editor::SelectToEndOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
+
+      // Search / 検索
+      "ctrl-s": "buffer_search::Deploy",
+      "ctrl-r": "buffer_search::Deploy",
+
+      // Editing / 編集
+      "ctrl-t": "editor::Transpose",
+      "alt-^": "editor::JoinLines",
+      "alt-q": "editor::Rewrap",
+      "alt-u": "editor::ConvertToUpperCase",
+      "alt-c": "editor::ConvertToUpperCamelCase",
+      // C-x C-l as in Emacs, because Hyprland takes alt-l. / Hyprland が alt-l を使うので、Emacs と同じ C-x C-l にする。
+      "ctrl-x ctrl-l": "editor::ConvertToLowerCase",
+      "ctrl-x ctrl-;": "editor::ToggleComments",
+
+      // Code navigation / コードの移動
+      "alt-.": "editor::GoToDefinition",
+      "alt-,": "pane::GoBack",
+      "alt-?": "editor::FindAllReferences",
       "shift-f12": "editor::FindAllReferences",
-      "shift-home": [
-        "editor::SelectToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ]
+
+      // F8 and F9 do nothing outside debugging, as in VSCode. / F8・F9 は VSCode と同じく、デバッグ中でなければ何もしない。
+      "f8": null,
+      "f9": null
     }
   },
   {
+    // Full-size editors only / 通常のエディターだけ
+    "context": "Editor && mode == full",
+    "bindings": {
+      // Backspace for C-h on macOS and for C-Backspace / macOS の C-h と C-Backspace を Backspace にする
+      "ctrl-h": "editor::Backspace",
+      "ctrl-backspace": "editor::Backspace",
+      "ctrl-0": "editor::DeleteToPreviousSubwordStart",
+      "ctrl-9": "editor::DeleteToNextSubwordEnd",
+      "cmd-b": "editor::MoveToPreviousWordStart",
+
+      // Replace / 置換
+      "ctrl-o": "buffer_search::DeployReplace",
+
+      // Code / コード
+      "ctrl-.": "editor::ToggleCodeActions",
+      "ctrl-x r": "editor::Rename",
+      "ctrl-x ctrl-r": "editor::Rename",
+      "ctrl-shift-k": "assistant::InlineAssist",
+
+      // Folding / 折りたたみ
+      "ctrl-x i": "editor::Fold",
+      "ctrl-x p": "editor::UnfoldLines",
+      "ctrl-alt-1": "editor::FoldAtLevel_1",
+      "ctrl-alt-2": "editor::FoldAtLevel_2",
+      "ctrl-alt-3": "editor::FoldAtLevel_3",
+      "ctrl-alt-4": "editor::FoldAtLevel_4",
+      "ctrl-alt-5": "editor::FoldAtLevel_5",
+      "ctrl-alt-6": "editor::FoldAtLevel_6",
+      "ctrl-alt-7": "editor::FoldAtLevel_7",
+
+      // Breakpoints and tests. VSCode debugs or runs the test at the cursor; Zed's closest actions are these.
+      // ブレークポイントとテスト。VSCode はカーソル位置のテストをデバッグ・実行する。Zed でいちばん近いのがこれ。
+      "ctrl-8": "editor::ToggleBreakpoint",
+      "ctrl-shift-f9": "debugger::Start",
+      "ctrl-shift-f10": "editor::SpawnNearestTask"
+    }
+  },
+  {
+    // While the mark is active, movement extends the selection. Keep this after the two blocks above.
+    // マーク中は、移動で選択範囲を広げる。上の 2 つのブロックより後ろに置く。
     "context": "Editor && selection_mode",
     "bindings": {
-      "alt-<": "editor::SelectToBeginning",
-      "alt->": "editor::SelectToEnd",
-      "alt-b": "editor::SelectToPreviousWordStart",
-      "alt-f": "editor::SelectToNextWordEnd",
-      "alt-left": "editor::SelectToPreviousWordStart",
-      "alt-m": [
-        "editor::SelectToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false,
-          "stop_at_indent": true
-        }
-      ],
-      "alt-right": "editor::SelectToNextWordEnd",
-      "alt-v": "editor::SelectPageUp",
-      "alt-{": "editor::SelectToStartOfParagraph",
-      "alt-}": "editor::SelectToEndOfParagraph",
-      "ctrl-a": [
-        "editor::SelectToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "ctrl-b": "editor::SelectLeft",
-      "ctrl-down": "editor::SelectToEndOfParagraph",
-      "ctrl-e": [
-        "editor::SelectToEndOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "ctrl-end": "editor::SelectToEnd",
       "ctrl-f": "editor::SelectRight",
-      "ctrl-g": "editor::Cancel",
-      "ctrl-home": "editor::SelectToBeginning",
+      "ctrl-b": "editor::SelectLeft",
       "ctrl-n": "editor::SelectDown",
       "ctrl-p": "editor::SelectUp",
-      "ctrl-s": "buffer_search::Deploy",
-      "ctrl-space": "editor::Cancel",
-      "ctrl-up": "editor::SelectToStartOfParagraph",
-      "ctrl-v": "editor::SelectPageDown",
-      "ctrl-x [": "editor::SelectToBeginning",
-      "ctrl-x ]": "editor::SelectToEnd",
-      "down": "editor::SelectDown",
-      "end": [
-        "editor::SelectToEndOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
-      "home": [
-        "editor::SelectToBeginningOfLine",
-        {
-          "stop_at_soft_wraps": false
-        }
-      ],
+      "right": "editor::SelectRight",
       "left": "editor::SelectLeft",
+      "down": "editor::SelectDown",
+      "up": "editor::SelectUp",
+      "ctrl-a": ["editor::SelectToBeginningOfLine", { "stop_at_soft_wraps": false }],
+      "ctrl-e": ["editor::SelectToEndOfLine", { "stop_at_soft_wraps": false }],
+      "home": ["editor::SelectToBeginningOfLine", { "stop_at_soft_wraps": false }],
+      "end": ["editor::SelectToEndOfLine", { "stop_at_soft_wraps": false }],
+      "alt-m": ["editor::SelectToBeginningOfLine", { "stop_at_soft_wraps": false, "stop_at_indent": true }],
+      "alt-f": "editor::SelectToNextWordEnd",
+      "alt-b": "editor::SelectToPreviousWordStart",
+      "alt-right": "editor::SelectToNextWordEnd",
+      "alt-left": "editor::SelectToPreviousWordStart",
+      "ctrl-v": "editor::SelectPageDown",
+      "alt-v": "editor::SelectPageUp",
       "pagedown": "editor::SelectPageDown",
       "pageup": "editor::SelectPageUp",
-      "right": "editor::SelectRight",
-      "up": "editor::SelectUp"
+      "alt-<": "editor::SelectToBeginning",
+      "alt->": "editor::SelectToEnd",
+      "ctrl-home": "editor::SelectToBeginning",
+      "ctrl-end": "editor::SelectToEnd",
+      "ctrl-x [": "editor::SelectToBeginning",
+      "ctrl-x ]": "editor::SelectToEnd",
+      "alt-{": "editor::SelectToStartOfParagraph",
+      "alt-}": "editor::SelectToEndOfParagraph",
+      "ctrl-up": "editor::SelectToStartOfParagraph",
+      "ctrl-down": "editor::SelectToEndOfParagraph",
+      "ctrl-s": "buffer_search::Deploy",
+      "ctrl-space": "editor::Cancel",
+      "ctrl-g": "editor::Cancel"
     }
   },
   {
+    // Completion and code action menus. C-n and C-p must stay here, or the Editor bindings above would win over the default menu keys.
+    // 補完とコードアクションのメニュー。C-n・C-p はここに残す。消すと、上の Editor の割り当てが既定のメニュー操作に勝ってしまう。
     "context": "Editor && (showing_code_actions || showing_completions)",
     "bindings": {
-      "ctrl-g": "editor::Cancel",
       "ctrl-n": "editor::ContextMenuNext",
-      "ctrl-p": "editor::ContextMenuPrevious"
+      "ctrl-p": "editor::ContextMenuPrevious",
+      "ctrl-g": "editor::Cancel"
     }
   },
   {
@@ -207,70 +245,61 @@
     }
   },
   {
-    "context": "Workspace",
+    // Buffer search / バッファー内の検索
+    "context": "BufferSearchBar > Editor",
     "bindings": {
-      "alt-shift-n": "workspace::NewWindow",
-      "alt-x": "command_palette::Toggle",
-      "ctrl-=": "workspace::ToggleBottomDock",
-      "ctrl-[": "editor::ToggleFocus",
-      "ctrl-\\": "zed::OpenKeymap",
-      "ctrl-]": "agent::Chat",
-      "ctrl-b": null,
-      "ctrl-enter": "agent::OpenAddContextMenu",
-      "ctrl-i": "agent::Chat",
-      "ctrl-n": null,
-      "ctrl-p": null,
-      "ctrl-shift-b": "git::Blame",
-      "ctrl-shift-f": "pane::DeploySearch",
-      "ctrl-shift-l": "agent::NewTextThread",
-      "ctrl-shift-n": "agent::NewThread",
-      "ctrl-shift-p": "command_palette::Toggle",
-      "ctrl-tab": "agent::CycleFavoriteModels",
-      "ctrl-x 0": "pane::CloseActiveItem",
-      "ctrl-x 1": "pane::CloseOtherItems",
-      "ctrl-x 2": "pane::SplitDown",
-      "ctrl-x 3": "pane::SplitRight",
-      "ctrl-x 5 0": "workspace::CloseWindow",
-      "ctrl-x 5 2": "workspace::NewWindow",
-      "ctrl-x b": "pane::ActivatePreviousItem",
-      "ctrl-x c": "pane::CloseActiveItem",
-      "ctrl-x ctrl-b": "file_finder::Toggle",
-      "ctrl-x ctrl-c": "pane::CloseActiveItem",
-      "ctrl-x ctrl-f": "file_finder::Toggle",
-      "ctrl-x ctrl-h": "agent::OpenHistory",
-      "ctrl-x ctrl-o": "projects::OpenRecent",
-      "ctrl-x ctrl-p": "pane::GoBack",
-      "ctrl-x ctrl-s": "workspace::Save",
-      "ctrl-x ctrl-w": "workspace::SaveAs",
-      "ctrl-x k": "pane::CloseActiveItem",
-      "ctrl-x n": "pane::ActivateNextItem",
-      "ctrl-x o": "workspace::ActivateNextPane",
-      "ctrl-x s": "workspace::SaveAll",
-      "f7": "debugger::StepInto",
+      "ctrl-s": "search::SelectNextMatch",
+      "ctrl-r": "search::SelectPreviousMatch",
+      "enter": "search::SelectNextMatch",
+      "ctrl-g": "buffer_search::Dismiss"
+    }
+  },
+  {
+    // Debugger keys follow VSCode: F7 while a session exists, F8, F9 and Shift+F8 while stopped.
+    // デバッガーのキーは VSCode に合わせる。F7 はセッション中、F8・F9・Shift+F8 は一時停止中だけ。
+    "context": "Workspace && debugger_session",
+    "bindings": {
+      "f7": "debugger::StepInto"
+    }
+  },
+  {
+    "context": "Workspace && debugger_stopped",
+    "bindings": {
       "f8": "debugger::StepOver",
       "f9": "debugger::Continue",
       "shift-f8": "debugger::StepOut"
     }
   },
   {
-    "context": "Terminal",
+    // The same keys at editor depth, so that they win over the editor's own F8 and Shift+F8.
+    // エディターの F8・Shift+F8 に勝つように、エディターの深さでも同じキーを書く。
+    "context": "Workspace && debugger_stopped > Editor",
     "bindings": {
-      "ctrl-=": "terminal_panel::Toggle",
-      "ctrl-x ctrl-c": "pane::CloseActiveItem",
-      "ctrl-x ctrl-f": null,
-      "ctrl-x ctrl-s": null,
-      "ctrl-x ctrl-w": null,
-      "ctrl-x s": null,
-      "ctrl-y": "terminal::Paste"
+      "f8": "debugger::StepOver",
+      "f9": "debugger::Continue",
+      "shift-f8": "debugger::StepOut"
     }
   },
   {
-    "context": "BufferSearchBar > Editor",
+    // In the git diff view, F7 and Shift+F7 move between changes, as in VSCode's diff editor.
+    // git の差分表示では、VSCode の diff エディターと同じく F7・Shift+F7 で変更を移動する。
+    "context": "GitDiff > Editor",
     "bindings": {
-      "ctrl-g": "buffer_search::Dismiss",
-      "ctrl-r": "search::SelectPreviousMatch",
-      "ctrl-s": "search::SelectNextMatch",
-      "enter": "search::SelectNextMatch"
+      "f7": "editor::GoToHunk",
+      "shift-f7": "editor::GoToPreviousHunk"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-=": "terminal_panel::Toggle",
+      "ctrl-y": "terminal::Paste",
+      "ctrl-x ctrl-c": "pane::CloseActiveItem",
+      // Keep these C-x keys from reaching the workspace while in a terminal. / 端末では、これらの C-x キーをワークスペースに渡さない。
+      "ctrl-x ctrl-f": null,
+      "ctrl-x ctrl-s": null,
+      "ctrl-x ctrl-w": null,
+      "ctrl-x s": null
     }
   },
   {
@@ -281,75 +310,40 @@
     }
   },
   {
-    "context": "Editor && mode == full",
-    "bindings": {
-      "alt-f": "editor::MoveToNextWordEnd",
-      "alt-v": "editor::MovePageUp",
-      "cmd-b": "editor::MoveToPreviousWordStart",
-      "ctrl-.": "editor::ToggleCodeActions",
-      "ctrl-0": "editor::DeleteToPreviousSubwordStart",
-      "ctrl-8": "editor::ToggleBreakpoint",
-      "ctrl-9": "editor::DeleteToNextSubwordEnd",
-      "ctrl-alt-1": "editor::FoldAtLevel_1",
-      "ctrl-alt-2": "editor::FoldAtLevel_2",
-      "ctrl-alt-3": "editor::FoldAtLevel_3",
-      "ctrl-alt-4": "editor::FoldAtLevel_4",
-      "ctrl-alt-5": "editor::FoldAtLevel_5",
-      "ctrl-alt-6": "editor::FoldAtLevel_6",
-      "ctrl-alt-7": "editor::FoldAtLevel_7",
-      "ctrl-backspace": "editor::Backspace",
-      "ctrl-g": "editor::Cancel",
-      "ctrl-h": "editor::Backspace",
-      "ctrl-k": "editor::KillRingCut",
-      "ctrl-o": "buffer_search::DeployReplace",
-      "ctrl-s": "buffer_search::Deploy",
-      "ctrl-shift-f10": "repl::Run",
-      "ctrl-shift-f9": "debugger::Start",
-      "ctrl-shift-k": "assistant::InlineAssist",
-      "ctrl-space": "editor::SetMark",
-      "ctrl-x ctrl-r": "editor::Rename",
-      "ctrl-x i": "editor::Fold",
-      "ctrl-x p": "editor::UnfoldLines",
-      "ctrl-x r": "editor::Rename",
-      "ctrl-y": "editor::Paste",
-      "f7": "editor::GoToNextChange",
-      "shift-f7": "editor::GoToPreviousChange"
-    }
-  },
-  {
+    // Project panel. Keep this before the menu block. / プロジェクトパネル。menu のブロックより前に置く。
     "context": "ProjectPanel && not_editing",
     "bindings": {
-      "alt-v": "menu::SelectFirst",
-      "alt-w": "project_panel::Copy",
-      "ctrl-[": "editor::ToggleFocus",
-      "ctrl-b": "project_panel::CollapseSelectedEntry",
-      "ctrl-f": "project_panel::ExpandSelectedEntry",
       "ctrl-n": "menu::SelectNext",
       "ctrl-p": "menu::SelectPrevious",
-      "ctrl-u ctrl-f": "project_panel::NewDirectory",
-      "ctrl-u ctrl-n": "project_panel::NewFile",
-      "ctrl-u ctrl-r": "project_panel::Rename",
-      "ctrl-u f": "project_panel::NewDirectory",
-      "ctrl-u n": "project_panel::NewFile",
-      "ctrl-u r": "project_panel::Rename",
+      "ctrl-f": "project_panel::ExpandSelectedEntry",
+      "ctrl-b": "project_panel::CollapseSelectedEntry",
       "ctrl-v": "menu::SelectLast",
+      "alt-v": "menu::SelectFirst",
+      "enter": "project_panel::OpenPermanent",
+      "ctrl-[": "editor::ToggleFocus",
       "ctrl-w": "project_panel::Cut",
-      "ctrl-x ctrl-d": "project_panel::OpenSplitVertical",
-      "ctrl-x ctrl-n": "project_panel::NewFile",
-      "ctrl-x d": "project_panel::OpenSplitVertical",
+      "alt-w": "project_panel::Copy",
       "ctrl-y": "project_panel::Paste",
-      "enter": "project_panel::OpenPermanent"
+      "ctrl-u n": "project_panel::NewFile",
+      "ctrl-u ctrl-n": "project_panel::NewFile",
+      "ctrl-x ctrl-n": "project_panel::NewFile",
+      "ctrl-u f": "project_panel::NewDirectory",
+      "ctrl-u ctrl-f": "project_panel::NewDirectory",
+      "ctrl-u r": "project_panel::Rename",
+      "ctrl-u ctrl-r": "project_panel::Rename",
+      "ctrl-x d": "project_panel::OpenSplitVertical",
+      "ctrl-x ctrl-d": "project_panel::OpenSplitVertical"
     }
   },
   {
     "context": "menu",
     "bindings": {
-      "ctrl-b": "menu::SelectParent",
-      "ctrl-f": "menu::SelectChild",
-      "ctrl-g": "menu::Cancel",
       "ctrl-n": "menu::SelectNext",
       "ctrl-p": "menu::SelectPrevious",
-      "ctrl-s": "search::FocusSearch"
+      "ctrl-f": "menu::SelectChild",
+      "ctrl-b": "menu::SelectParent",
+      "ctrl-s": "search::FocusSearch",
+      "ctrl-g": "menu::Cancel"
     }
   }
 ]
