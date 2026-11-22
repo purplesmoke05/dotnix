@@ -57,7 +57,6 @@ in
     swappy
     zenity
     hyprpicker
-    wf-recorder
 
     # Input & clipboard / 入力とクリップボード
     bemoji
@@ -1125,10 +1124,6 @@ in
         (mkBind [ "CTRL" ] "Print" (exec ''grim -g "$(slurp)" $HOME/Pictures/screenshot_$(date +%Y-%m-%d_%H-%M-%S).png''))
         (mkBind [ "SHIFT" ] "Print" (exec ''grimblast copy area && notify-send "Screenshot" "領域のスクリーンショットをクリップボードにコピーしました"''))
         (mkBind [ "CTRL" "SHIFT" ] "Print" (exec ''grimblast copy output && notify-send "Screenshot" "画面全体のスクリーンショットをクリップボードにコピーしました"''))
-
-        # Screen recording / 画面録画
-        (mkBind [ mainMod "SHIFT" ] "r" (exec ''wf-recorder -g "$(slurp)" -f ~/Videos/screencast_$(date +%Y-%m-%d_%H-%M-%S).mp4''))
-        (mkBind [ mainMod "SHIFT" ] "s" (exec "killall -s SIGINT wf-recorder"))
 
         # Volume controls / 音量調整
         (mkBind [ ] "XF86AudioLowerVolume" (exec "hypr-media volume-down"))
