@@ -580,7 +580,10 @@ let
       if [ -n "$public_nix" ]; then
         update_inputs+=(target/public-nix)
       fi
-      nix flake update --flake "path:$wrapper_dir" "''${update_inputs[@]}"
+      # Updating the lock in place prints the whole input diff as a warning on
+      # every run; writing it elsewhere and moving it into place does not.
+      nix flake update --flake "path:$wrapper_dir" --output-lock-file "$work_dir/flake.lock" "''${update_inputs[@]}"
+      mv "$work_dir/flake.lock" "$wrapper_dir/flake.lock"
 
       # sbomnix builds its target, so a flake that has moved on since the build
       # is rejected before anything is built.
