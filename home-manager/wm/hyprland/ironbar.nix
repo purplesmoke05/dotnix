@@ -302,9 +302,10 @@ let
   vulnStatusLagWarnDays = 14;
   vulnStatusLagAlertDays = 30;
   vulnStatusSbomKeep = 5;
-  # Findings reviewed as not applicable. Each entry names an exact package
-  # version, so its findings count again once the version changes and need a new
-  # review.
+  # Findings reviewed as not applicable. An entry with `version` names an exact
+  # package version, so its findings count again once the version changes and
+  # need a new review. An entry with `versionAtLeast` covers that version and
+  # every later one, for findings whose fix every later release keeps.
   vulnStatusReviewed = pkgs.writeText "nix-vuln-status-reviewed.json" (builtins.toJSON [
     {
       # Commits in nixpkgs' 2.44-master.patch fix these, except CVE-2026-0861,
@@ -327,9 +328,9 @@ let
     }
     {
       # The CPE ranges have no upper bound. The Debian security tracker lists
-      # the fixes in 4.19 to 6.7.
+      # the fixes in 4.19 to 6.7, so every kernel from 6.7 on has them.
       package = "linux";
-      version = "7.3.1";
+      versionAtLeast = "6.7";
       ids = [
         "CVE-2019-3016"
         "CVE-2019-3819"
@@ -372,6 +373,14 @@ let
       ];
     }
     {
+      # A 3.14.10 regression in hashlib that only affects OpenSSL in FIPS mode.
+      # Nothing in these configurations enables FIPS; on hq there is no
+      # /etc/ssl/openssl.cnf and _hashlib.get_fips_mode() returns 0.
+      package = "python3";
+      version = "3.14.10";
+      ids = [ "CVE-2026-119170" ];
+    }
+    {
       # GnuTLS and wolfSSL builds only. Every libcurl in the closure links OpenSSL.
       package = "curl";
       version = "8.22.0";
@@ -406,6 +415,64 @@ let
       ];
     }
   ]);
+  # Per-CVE judgment for package families whose CVE texts name the code they
+  # affect. FFmpeg CVEs name a source file, function or component; the judge
+  # checks whether each build in the closure compiles that code and whether the
+  # programs linking the build can call it. Nothing is skipped by package, so
+  # every new CVE goes through the same checks, and anything the judge cannot
+  # resolve stays counted.
+  vulnStatusJudge = ./nix-vuln-status/judge.py;
+  # Build rules of each FFmpeg version in nixpkgs, read from its source tree.
+  vulnStatusFfmpegMaps = lib.listToAttrs (map
+    (ffmpeg: lib.nameValuePair ffmpeg.version (pkgs.runCommand "nix-vuln-status-ffmpeg-map-${ffmpeg.version}"
+      { nativeBuildInputs = [ pkgs.python3 ]; } ''
+      python3 -I ${./nix-vuln-status/ffmpeg-map.py} ${ffmpeg.src} > "$out"
+    ''))
+    [ pkgs.ffmpeg pkgs.ffmpeg_8 ]);
+  # SBOM entries that sbomnix leaves without a CPE get one by name. sbomnix
+  # only finds metadata for nixpkgs attributes, so fixed builds swapped in by
+  # replaceDependencies (hq-private-nix modules/security-swaps.nix), 32-bit
+  # builds and secondary interpreters such as python312 are otherwise never
+  # matched. Vendor and product come from nixpkgs' own metadata.
+  vulnStatusCpeByName = lib.listToAttrs (map
+    (pkg:
+      let
+        c = pkg.meta.identifiers.cpeParts;
+      in
+      lib.nameValuePair pkg.pname "cpe:2.3:${c.part}:${c.vendor}:${c.product}:{version}:${c.update or "*"}:*:*:*:*:*:*")
+    [ pkgs.python3 pkgs.git pkgs.rsync ]);
+  vulnStatusJudgeConfig = pkgs.writeText "nix-vuln-status-judge.json" (builtins.toJSON {
+    cpeByName = vulnStatusCpeByName;
+    families = [
+      {
+        name = "ffmpeg";
+        component = "^ffmpeg(-[a-z0-9]+)*$";
+        cpe = "cpe:2.3:a:ffmpeg:ffmpeg:{version}:*:*:*:*:*:*:*";
+        maps = vulnStatusFfmpegMaps;
+        # When every runtime user of a build matches a profile, only code those
+        # users can call counts. A build that ships the ffmpeg or ffprobe binary
+        # counts everything it compiles, since the binary can open any input.
+        profiles = [
+          {
+            # LiveKit's WebRTC in Zed links only libavcodec and libavutil, and
+            # opens FFmpeg's H.264 decoder alone.
+            consumer = "^livekit-libwebrtc-";
+            libraries = [ "libavcodec" "libavutil" ];
+            decoders = [ "h264" ];
+            # CVEs in shared libavcodec/libavutil code that the H.264 decoder
+            # never reaches, checked against the FFmpeg 8.1.3 source. They are
+            # skipped only while WebRTC is the build's only user.
+            notCalled = {
+              "CVE-2026-107676" = "av_dynamic_hdr_plus_to_t35() is only called by libaomenc and the Matroska muxer";
+              "CVE-2026-107678" = "av_encryption_init_info_free() is only called by the MOV demuxer and muxer";
+              "CVE-2026-125180" = "EXIF is parsed by image decoders and demuxers, and by decode.c only from packet side data, which WebRTC never attaches";
+              "CVE-2026-125224" = "the Vorbis parser is only used by libvorbisenc and the Ogg demuxer";
+            };
+          }
+        ];
+      }
+    ];
+  });
   vulnStatusStatusColor = ''
     def color:
       if . == "ok" then "#a6da95"
@@ -593,6 +660,7 @@ let
       pkgs.grype
       pkgs.jq
       pkgs.nix
+      pkgs.python3
       pkgs.unzip
     ];
     text = ''
@@ -668,30 +736,57 @@ let
       : > "$work_dir/fetch-failed.txt"
 
       # CVE: grype against the SBOM that `make switch` generated for this
-      # system. Only packages with an exact nixpkgs CPE can match, and matches
-      # without a version range, fixed by a CVE-named patch, or listed in
-      # vulnStatusReviewed are not counted.
+      # system. Only packages with an exact nixpkgs CPE can match, plus members
+      # of a judged family that sbomnix left without one. Matches without a
+      # version range, fixed by a CVE-named patch, listed in vulnStatusReviewed,
+      # or judged not compiled or not callable (vulnStatusJudge) are not counted.
       sbom_file="$sbom_dir/$target_name.cdx.json"
       sbom_meta="$sbom_dir/$target_name.meta.json"
       if [ ! -s "$sbom_meta" ]; then
         sbom_meta="$work_dir/sbom-meta.json"
         printf '{}\n' > "$sbom_meta"
       fi
+      # sbomnix finds no CPE for some builds, such as variants that are not
+      # nixpkgs attributes. The judge gives those family members the family's
+      # CPE first, so that grype checks them too.
+      cpe_from_name=0
+      scan_sbom() {
+        local prepared
+        if prepared="$(python3 -I ${vulnStatusJudge} prepare --config ${vulnStatusJudgeConfig} \
+          --sbom "$sbom_file" --out "$work_dir/sbom.cdx.json" 2> "$work_dir/judge-prepare.log")"; then
+          cpe_from_name="$(jq -r '.cpeFromName // 0' <<< "$prepared")"
+        else
+          cp "$sbom_file" "$work_dir/sbom.cdx.json"
+        fi
+        grype -q "sbom:$work_dir/sbom.cdx.json" -o json --file "$work_dir/grype.json" > "$work_dir/grype.log" 2>&1 \
+          && jq -e . "$work_dir/grype.json" > /dev/null 2>&1
+      }
       if [ ! -s "$sbom_file" ]; then
         jq -n '{status: "missing", message: "No SBOM for this system yet. make switch generates it after the build."}' \
           > "$work_dir/cve.json"
-      elif ! grype -q "sbom:$sbom_file" -o json --file "$work_dir/grype.json" > "$work_dir/grype.log" 2>&1 \
-        || ! jq -e . "$work_dir/grype.json" > /dev/null 2>&1; then
+      elif ! scan_sbom; then
         jq -n --arg message "grype failed: $(summarize_log "$work_dir/grype.log")" '{status: "error", message: $message}' \
           > "$work_dir/cve.json"
       else
+        # A failed judgment leaves every match counted, and the tooltip says so.
+        judge_error=""
+        if ! python3 -I ${vulnStatusJudge} judge --config ${vulnStatusJudgeConfig} --grype "$work_dir/grype.json" \
+          --closure "$work_dir/closure.txt" --out "$work_dir/judgments.json" 2> "$work_dir/judge.log" \
+          || ! jq -e . "$work_dir/judgments.json" > /dev/null 2>&1; then
+          judge_error="judge failed: $(summarize_log "$work_dir/judge.log")"
+          printf '{"judgments": {}}\n' > "$work_dir/judgments.json"
+        fi
         jq -n \
-          --slurpfile sbom "$sbom_file" \
+          --slurpfile sbom "$work_dir/sbom.cdx.json" \
           --slurpfile grype "$work_dir/grype.json" \
           --slurpfile meta "$sbom_meta" \
           --slurpfile reviewed ${vulnStatusReviewed} \
+          --slurpfile judged "$work_dir/judgments.json" \
+          --arg judgeError "$judge_error" \
+          --argjson cpeFromName "$cpe_from_name" \
           --argjson limit ${builtins.toString vulnStatusFindingLimit} \
           '
+            def vparts: [scan("[0-9]+") | tonumber];
             def sevrank:
               (.severity // "" | ascii_downcase) as $severity
               | if $severity == "critical" then 0
@@ -713,14 +808,17 @@ let
                 end;
             ($sbom[0].components // []) as $components
             | ($components
-                | map(select(.purl != null) | {key: .purl, value: [(.pedigree.patches // [])[].resolves[]?.id | ascii_upcase]})
+                # Keyed by bom-ref, which grype reports as the artifact id: builds
+                # that share a name and version can carry different patches.
+                | map(select(."bom-ref" != null) | {key: ."bom-ref", value: [(.pedigree.patches // [])[].resolves[]?.id | ascii_upcase]})
                 | from_entries) as $patched
             | ($reviewed[0]
-                | map(. as $entry | $entry.ids[] | {key: "\($entry.package) \($entry.version) \(.)", value: true})
+                | map(select(.version != null) | . as $entry | $entry.ids[] | {key: "\($entry.package) \($entry.version) \(.)", value: true})
                 | from_entries) as $reviewedKeys
+            | ($reviewed[0] | map(select(.versionAtLeast != null))) as $reviewedFrom
+            | ($judged[0].judgments // {}) as $verdicts
             | [ $grype[0].matches[]?
                 | . as $match
-                | ($match.artifact.purl // "") as $purl
                 | ([$match.vulnerability.id // ""] + [($match.relatedVulnerabilities // [])[] | .id // empty] | map(ascii_upcase)) as $ids
                 | {
                     id: ($match.vulnerability.id // "unknown"),
@@ -729,11 +827,20 @@ let
                     version: ($match.artifact.version // "unknown"),
                     fixVersions: (($match.vulnerability.fix.versions // [])[:3]),
                     ranged: ([$match.matchDetails[]?.found.versionConstraint // "none"] | any(startswith("none")) | not),
-                    patched: any($ids[]; . as $id | (($patched[$purl] // []) | index($id)) != null),
-                    reviewed: any($ids[]; $reviewedKeys["\($match.artifact.name // "") \($match.artifact.version // "") \(.)"] // false)
+                    patched: any($ids[]; . as $id | (($patched[$match.artifact.id // ""] // []) | index($id)) != null),
+                    reviewed: (
+                      any($ids[]; $reviewedKeys["\($match.artifact.name // "") \($match.artifact.version // "") \(.)"] // false)
+                      or any($reviewedFrom[];
+                        . as $entry
+                        | $entry.package == ($match.artifact.name // "")
+                          and (($match.artifact.version // "") | vparts) >= ($entry.versionAtLeast | vparts)
+                          and any($ids[]; . as $id | ($entry.ids | index($id)) != null))
+                    ),
+                    judged: ($verdicts["\($match.vulnerability.id // "")|\($match.artifact.id // "")"].verdict // "counted")
                   }
               ] as $rows
-            | ($rows | map(select(.ranged and (.patched | not) and (.reviewed | not)))) as $counted
+            | ($rows | map(select(.ranged and (.patched | not) and (.reviewed | not)))) as $kept
+            | ($kept | map(select(.judged == "counted"))) as $counted
             # One CVE can match several packages, such as ffmpeg and ffmpeg-headless.
             # Totals count it once. The package list still shows every match.
             | ($counted | unique_by(.id)) as $distinct
@@ -752,11 +859,15 @@ let
                 excluded: {
                   noVersionRange: ([$rows[] | select(.ranged | not)] | length),
                   patched: ([$rows[] | select(.ranged and .patched)] | length),
-                  reviewed: ([$rows[] | select(.ranged and (.patched | not) and .reviewed)] | length)
+                  reviewed: ([$rows[] | select(.ranged and (.patched | not) and .reviewed)] | length),
+                  notBuilt: ([$kept[] | select(.judged == "not-built")] | length),
+                  notCalled: ([$kept[] | select(.judged == "not-called")] | length)
                 },
+                judge: (if $judgeError == "" then null else $judgeError end),
                 coverage: {
                   components: ($components | length),
-                  withCpe: ([$components[] | select((.cpe // "") != "")] | length)
+                  withCpe: ([$components[] | select((.cpe // "") != "")] | length),
+                  cpeFromName: $cpeFromName
                 },
                 sbom: {
                   generatedAt: ($meta[0].generatedAt // $sbom[0].metadata.timestamp // null),
@@ -765,7 +876,9 @@ let
                 packages: (
                   $counted
                   | group_by([.package, .version])
-                  | map({package: .[0].package, version: .[0].version, count: length, worst: (map(sevrank) | min)})
+                  # Builds that share a name and version, such as the 32-bit and
+                  # 64-bit ffmpeg-headless, count each CVE once.
+                  | map({package: .[0].package, version: .[0].version, count: (map(.id) | unique | length), worst: (map(sevrank) | min)})
                   | sort_by(.worst, -.count)
                   | .[:$limit]
                 ),
@@ -774,7 +887,7 @@ let
                   | unique_by([.id, .package, .version])
                   | sort_by(sevrank, .package, .id)
                   | .[:$limit]
-                  | map(del(.ranged, .patched, .reviewed))
+                  | map(del(.ranged, .patched, .reviewed, .judged))
                 )
               }
           ' > "$work_dir/cve.json"
@@ -1155,9 +1268,12 @@ let
               (if $cve.status == "missing" or $cve.status == "error" then
                  "     " + (($cve.message // "") | esc)
                else
-                 "     scope    \($cve.coverage.withCpe) of \($cve.coverage.components) packages have an exact CPE",
+                 "     scope    \($cve.coverage.withCpe) of \($cve.coverage.components) packages have a CPE"
+                   + (if ($cve.coverage.cpeFromName // 0) > 0 then " (\($cve.coverage.cpeFromName) added by package name)" else "" end),
                  "     SBOM     " + (if $cve.sbom.generatedAtEpoch == null then "unknown" else when($cve.sbom.generatedAtEpoch) end),
                  "     skipped  \($cve.excluded.noVersionRange) without a version range, \($cve.excluded.patched) patched, \($cve.excluded.reviewed // 0) reviewed",
+                 "              \($cve.excluded.notBuilt // 0) not compiled, \($cve.excluded.notCalled // 0) not callable by the programs using the build",
+                 (if $cve.judge != null then "     " + tag("warn"; $cve.judge | esc) else empty end),
                  ($cve.packages[:$limit][] | "     " + ("\(.package) \(.version)" | esc | pad(32)) + " \(.count)")
                end),
               "",
