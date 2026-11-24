@@ -9,40 +9,40 @@
 }:
 
 let
-  version = "0.169.0";
+  version = "0.172.0";
 
   platforms = {
     x86_64-linux = {
       artifact = "codex-x86_64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-mvTXUfzhg/rt6mKUN9UlLb9FjusEEwz0+XvoRGIeqYU=";
+      sha256 = "sha256-ojQqj39o8Ii+MGIMz+nLhBYsk6a1YXeFWWHNo+1r45I=";
       hostArtifact = "codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz";
-      hostSha256 = "sha256-y+1qjSXoJoeSt1d2f7x21MYuhLz47kpj+XVH8N46rOs=";
+      hostSha256 = "sha256-ILCkvPMyQVpZl5FMlD0Er2w2J68MN5/b9lQAVQ41K7Q=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
       buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib libcap ];
     };
 
     aarch64-linux = {
       artifact = "codex-aarch64-unknown-linux-musl.tar.gz";
-      sha256 = "sha256-l7l9h+6gdcXLdwnH9hVqRRYip2Z5U+zaQOAnZjcZbz8=";
+      sha256 = "sha256-C5lSbBhaRCX+lqIhT7e2pqf3wUcYg7evvr6X4V6D554=";
       hostArtifact = "codex-code-mode-host-aarch64-unknown-linux-musl.tar.gz";
-      hostSha256 = "sha256-BZOX5NW+2np6zHRBpqVkV9D3nhAB0SmXasDSaw5u4Ew=";
+      hostSha256 = "sha256-tmN+uqNT6jqTTUDjdRKJqaOe2Bz5b+P6Ov6hHjhA3Gg=";
       nativeBuildInputs = lib.filter (x: x != null) [ autoPatchelfHook makeWrapper ];
       buildInputs = lib.filter (x: x != null) [ stdenv.cc.cc.lib openssl zlib libcap ];
     };
 
     x86_64-darwin = {
       artifact = "codex-x86_64-apple-darwin.tar.gz";
-      sha256 = "sha256-aivgWnXsuI+SuvPmmIzm774daDQbaNrDrlBcS4u85HU=";
+      sha256 = "sha256-EKCXKhU1IGMF57DOKwlt20JTVCtKwVmSZbLQwImNJ4o=";
       hostArtifact = "codex-code-mode-host-x86_64-apple-darwin.tar.gz";
-      hostSha256 = "sha256-LdMoXyQuqcsTAoEInu42BKlaSnUbHd8lqjkpwqSIp54=";
+      hostSha256 = "sha256-j5N/5fwDLCpcvkAdRLvb4W9kLvihduI7MZ92+Cst31M=";
       nativeBuildInputs = [ makeWrapper ];
     };
 
     aarch64-darwin = {
       artifact = "codex-aarch64-apple-darwin.tar.gz";
-      sha256 = "sha256-f0xJyAuuHQtONHrPzfEfqjR12Hrl5lpesSYdPDWBRe4=";
+      sha256 = "sha256-vRIfir1rKLP8R22gSjSOJag+ie2hnTkQf2j46WYFMJI=";
       hostArtifact = "codex-code-mode-host-aarch64-apple-darwin.tar.gz";
-      hostSha256 = "sha256-1AsyD28laDXUCUcrfTvuYYonVJs/Phy4tx3GxW04J78=";
+      hostSha256 = "sha256-6rJPiObiDIgdjBG39w7iIP0ZqUxYbsa86tEqIOAstuQ=";
       nativeBuildInputs = [ makeWrapper ];
     };
   };
